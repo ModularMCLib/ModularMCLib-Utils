@@ -13,7 +13,8 @@
 	],
 	"client": [
 		"client.level.ClientChunkCacheMixin",
-		"client.level.ClientChunkStorageMixin"
+		"client.level.ClientChunkStorageMixin",
+		"client.render.GlBufferAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

@@ -13,9 +13,9 @@ import org.jetbrains.annotations.ApiStatus;
 
 @ApiStatus.Internal
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID, value = Dist.CLIENT)
-public final class ClientSchedulerEvents {
+public final class ClientTickScheduler {
 
-    private ClientSchedulerEvents() {}
+    private ClientTickScheduler() {}
 
     @SubscribeEvent
     private static void onTick(ClientTickEvent.Post event) {
