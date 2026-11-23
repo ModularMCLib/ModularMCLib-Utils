@@ -1,7 +1,10 @@
 dependencies {
     compileOnly(libs.jetbrains.annotations)
+    compileOnly(libs.jspecify)
 
-    testImplementation(libs.testframework.get())
+    jarJar(api(libs.kotlin.stdlib.get())) {
+        exclude group: 'org.jetbrains', module: 'annotations'
+    }
 
 
     // Runtime Recipe Viewers - uncomment whichever one you want to use //
