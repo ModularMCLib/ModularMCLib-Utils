@@ -14,7 +14,8 @@
 	"client": [
 		"client.level.ClientChunkCacheMixin",
 		"client.level.ClientChunkStorageMixin",
-		"client.render.GlBufferAccessor"
+		"client.render.GlBufferAccessor",
+		"spatial.VoxelShapeAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1
