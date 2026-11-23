@@ -118,10 +118,10 @@ public final class FastSavedData<T> {
     private void save(boolean wait) {
         long revision = changes.revision();
         if (changes.isDirty() && (submitted != revision || pending.isCompletedExceptionally())) {
-            T snapshot = type.snapshot().apply(value);
+            T valueToWrite = type.copyForWrite().apply(value);
             submitted = revision;
             pending = executor.submit(() -> {
-                BinaryFiles.writeAtomically(path, snapshot, type.writer());
+                BinaryFiles.writeAtomically(path, valueToWrite, type.writer());
                 changes.persisted(revision);
                 return null;
             });
@@ -149,14 +149,14 @@ public final class FastSavedData<T> {
         if (!level.getServer().isSameThread()) throw new IllegalStateException("存档须在所属服务器线程访问");
     }
 
-    /** snapshot 应当返回可由写盘线程独立读取的值。读取失败时保留原有的存档文件。 */
-    public record Type<T>(Identifier id, Supplier<T> factory, UnaryOperator<T> snapshot,
+    /** copyForWrite 由世界线程调用，返回写盘线程可以独立读取的值。 */
+    public record Type<T>(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                           BinaryFiles.Reader<T> reader, BinaryFiles.Writer<T> writer,
                           @Nullable LegacyFile<T> legacy) {
 
-        public Type(Identifier id, Supplier<T> factory, UnaryOperator<T> snapshot,
+        public Type(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                     BinaryFiles.Reader<T> reader, BinaryFiles.Writer<T> writer) {
-            this(id, factory, snapshot, reader, writer, null);
+            this(id, factory, copyForWrite, reader, writer, null);
         }
     }
 

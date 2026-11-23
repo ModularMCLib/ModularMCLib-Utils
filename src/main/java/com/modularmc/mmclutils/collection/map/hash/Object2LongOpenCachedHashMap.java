@@ -174,6 +174,11 @@ public final class Object2LongOpenCachedHashMap<K> extends Object2LongOpenHashMa
         return defRetValue;
     }
 
+    /** 只清零存储值，保留键、容量及默认返回值。 */
+    public void resetValues() {
+        Arrays.fill(value, 0);
+    }
+
     @Override
     public long removeLong(final Object k) {
         if (k == null) {

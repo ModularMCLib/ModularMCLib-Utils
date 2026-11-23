@@ -291,8 +291,8 @@ public final class TickScheduler {
     }
 
     public void forEachScope(Consumer<? super Scope> action) {
-        Scope[] snapshot = Arrays.copyOf(roots, rootCount);
-        for (Scope root : snapshot) action.accept(root);
+        Scope[] rootsToVisit = Arrays.copyOf(roots, rootCount);
+        for (Scope root : rootsToVisit) action.accept(root);
     }
 
     int linkedCount() {
