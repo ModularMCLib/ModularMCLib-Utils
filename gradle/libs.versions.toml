@@ -9,6 +9,7 @@ modDevGradle = "2.0.148"
 kotlin = "2.4.21"
 jetbrains-annotations = "26.1.0"
 jspecify = "1.0.0"
+fastutil = "8.5.18"
 renderNurse = "0.0.26"
 mixin = "0.8.7"
 
@@ -21,6 +22,7 @@ renderNurse             = { module = "net.neoforged:render-nurse", version.ref =
 mixin                   = { module = "org.spongepowered:mixin", version.ref = "mixin" }
 jetbrains-annotations   = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 jspecify                = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+fastutil                = { module = "it.unimi.dsi:fastutil", version.ref = "fastutil" }
 
 [plugins]
 modDevGradle            = { id = "net.neoforged.moddev", version.ref = "modDevGradle" }
