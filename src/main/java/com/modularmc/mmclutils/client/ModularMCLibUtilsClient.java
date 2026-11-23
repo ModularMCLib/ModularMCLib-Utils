@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.client;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
+import com.modularmc.mmclutils.client.input.ClientKeyBindings;
 import com.modularmc.mmclutils.client.render.effect.EffectRenderer;
 
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ public final class ModularMCLibUtilsClient {
 
     public ModularMCLibUtilsClient(IEventBus modBus) {
         EffectRenderer.init(modBus);
+        ClientKeyBindings.init(modBus);
     }
 
     public static boolean isClientThread() {

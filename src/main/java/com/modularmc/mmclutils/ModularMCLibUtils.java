@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils;
 
 import com.modularmc.mmclutils.client.ModularMCLibUtilsClient;
+import com.modularmc.mmclutils.input.SyncedKeyMappings;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -26,7 +27,9 @@ public class ModularMCLibUtils {
     public static final String MOD_NAME = "ModularMCLib Utils";
     public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
-    public ModularMCLibUtils(IEventBus bus) {}
+    public ModularMCLibUtils(IEventBus modBus) {
+        SyncedKeyMappings.init(modBus);
+    }
 
     public static Identifier id(String path) {
         return Identifier.fromNamespaceAndPath(MOD_ID, path);
