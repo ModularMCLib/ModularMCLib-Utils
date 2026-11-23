@@ -346,7 +346,7 @@ public final class Object2CharOpenCustomCachedHashMap<K> extends Object2CharOpen
             pos = find(k, h);
         }
         if (pos >= 0) return value[pos];
-        if (!mappingFunction.containsKey(key)) return defRetValue;
+        if (!mappingFunction.containsKey(k)) return defRetValue;
         final char newValue = mappingFunction.getChar(k);
         insert(-pos - 1, k, newValue, h);
         return newValue;

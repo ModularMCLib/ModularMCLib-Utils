@@ -346,7 +346,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
             pos = find(k, h);
         }
         if (pos >= 0) return value[pos];
-        if (!mappingFunction.containsKey(key)) return defRetValue;
+        if (!mappingFunction.containsKey(k)) return defRetValue;
         final double newValue = mappingFunction.getDouble(k);
         insert(-pos - 1, k, newValue, h);
         return newValue;

@@ -309,7 +309,7 @@ public final class Object2BooleanOpenCachedHashMap<K> extends Object2BooleanOpen
             pos = find(k, h);
         }
         if (pos >= 0) return value[pos];
-        if (!mappingFunction.containsKey(key)) return defRetValue;
+        if (!mappingFunction.containsKey(k)) return defRetValue;
         final boolean newValue = mappingFunction.getBoolean(k);
         insert(-pos - 1, k, newValue, h);
         return newValue;

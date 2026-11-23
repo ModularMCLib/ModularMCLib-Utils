@@ -346,7 +346,7 @@ public final class Object2LongOpenCustomCachedHashMap<K> extends Object2LongOpen
             pos = find(k, h);
         }
         if (pos >= 0) return value[pos];
-        if (!mappingFunction.containsKey(key)) return defRetValue;
+        if (!mappingFunction.containsKey(k)) return defRetValue;
         final long newValue = mappingFunction.applyAsLong(k);
         insert(-pos - 1, k, newValue, h);
         return newValue;

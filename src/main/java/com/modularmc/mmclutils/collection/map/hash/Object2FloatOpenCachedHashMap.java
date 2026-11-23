@@ -342,7 +342,7 @@ public final class Object2FloatOpenCachedHashMap<K> extends Object2FloatOpenHash
             pos = find(k, h);
         }
         if (pos >= 0) return value[pos];
-        if (!mappingFunction.containsKey(key)) return defRetValue;
+        if (!mappingFunction.containsKey(k)) return defRetValue;
         final float newValue = mappingFunction.getFloat(k);
         insert(-pos - 1, k, newValue, h);
         return newValue;

@@ -346,7 +346,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
             pos = find(k, h);
         }
         if (pos >= 0) return value[pos];
-        if (!mappingFunction.containsKey(key)) return defRetValue;
+        if (!mappingFunction.containsKey(k)) return defRetValue;
         final byte newValue = mappingFunction.getByte(k);
         insert(-pos - 1, k, newValue, h);
         return newValue;
