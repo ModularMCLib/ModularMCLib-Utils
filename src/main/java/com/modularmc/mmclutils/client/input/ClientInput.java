@@ -17,6 +17,7 @@ public final class ClientInput {
     public static final int SHIFT = 2;
     public static final int ALT = 4;
     public static final int COMMAND = 8;
+    public static final int ALL_MODIFIERS = CONTROL | SHIFT | ALT | COMMAND;
 
     private ClientInput() {}
 
@@ -32,6 +33,14 @@ public final class ClientInput {
             case ALT -> ALT;
             case NONE -> 0;
         };
+    }
+
+    public static int keyModifierBit(InputConstants.Key key) {
+        int code = key.getValue();
+        if (key.getType() == InputConstants.Type.KEYSYM && (code == GLFW.GLFW_KEY_LEFT_SUPER || code == GLFW.GLFW_KEY_RIGHT_SUPER)) {
+            return InputQuirks.REPLACE_CTRL_KEY_WITH_CMD_KEY ? COMMAND : 0;
+        }
+        return modifierBit(KeyModifier.getKeyModifier(key));
     }
 
     /** 直接读取主键。扫描码使用原版记录的状态，当前输入事件可以提供更早的状态变化。 */

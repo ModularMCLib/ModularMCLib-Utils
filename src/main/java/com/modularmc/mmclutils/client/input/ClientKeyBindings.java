@@ -6,6 +6,8 @@ import com.modularmc.mmclutils.input.SyncedKeyMappings.Key;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
@@ -16,7 +18,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.settings.KeyModifier;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import it.unimi.dsi.fastutil.objects.Object2BooleanLinkedOpenHashMap;
@@ -82,6 +84,36 @@ public final class ClientKeyBindings {
         sample(InputConstants.Type.MOUSE.getOrCreate(event.getButton()), event.getAction() == GLFW.GLFW_PRESS);
     }
 
+    @SubscribeEvent
+    private static void onScreenKey(ScreenEvent.KeyPressed.Pre event) {
+        Minecraft client = Minecraft.getInstance();
+        double x = client.mouseHandler.xpos() * event.getScreen().width / client.getWindow().getScreenWidth();
+        double y = client.mouseHandler.ypos() * event.getScreen().height / client.getWindow().getScreenHeight();
+        if (dispatchScreen(event.getScreen(), InputConstants.getKey(event.getKeyEvent()), x, y)) event.setCanceled(true);
+    }
+
+    @SubscribeEvent
+    private static void onScreenMouse(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (dispatchScreen(event.getScreen(), InputConstants.Type.MOUSE.getOrCreate(event.getButton()),
+                event.getMouseX(), event.getMouseY()))
+            event.setCanceled(true);
+    }
+
+    private static boolean dispatchScreen(Screen screen, InputConstants.Key key, double x, double y) {
+        if (screen instanceof KeyBindsScreen) return false;
+        int modifiers = ClientInput.modifiers();
+        for (Binding binding : BINDINGS.values()) {
+            if (binding.screenListeners.isEmpty()) continue;
+            KeyMapping mapping = binding.mapping();
+            if (mapping.isUnbound() || !mapping.getKey().equals(key) || !binding.matches(mapping, modifiers)) continue;
+            binding.waitingForRelease = true;
+            for (ScreenListener listener : binding.screenListeners) {
+                if (listener.pressed(screen, binding, x, y)) return true;
+            }
+        }
+        return false;
+    }
+
     private static void sample(InputConstants.@Nullable Key changed, boolean down) {
         if (BINDINGS.isEmpty()) return;
         Minecraft client = Minecraft.getInstance();
@@ -144,6 +176,7 @@ public final class ClientKeyBindings {
         private final Supplier<KeyMapping> factory;
         private final boolean configurable;
         private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
+        private final CopyOnWriteArrayList<ScreenListener> screenListeners = new CopyOnWriteArrayList<>();
         private @Nullable KeyMapping mapping;
         private int extraModifiers;
         private boolean down;
@@ -165,7 +198,7 @@ public final class ClientKeyBindings {
 
         /** 增加组合键条件。控制设置中的主键和原版修饰键仍由原版存储。 */
         public Binding withModifiers(int modifiers) {
-            if ((modifiers & ~(ClientInput.CONTROL | ClientInput.SHIFT | ClientInput.ALT | ClientInput.COMMAND)) != 0) {
+            if ((modifiers & ~ClientInput.ALL_MODIFIERS) != 0) {
                 throw new IllegalArgumentException("不支持的修饰键组合 " + modifiers);
             }
             extraModifiers = modifiers;
@@ -180,15 +213,24 @@ public final class ClientKeyBindings {
             listeners.remove(listener);
         }
 
-        private KeyMapping mapping() {
+        public void addScreenListener(ScreenListener listener) {
+            screenListeners.addIfAbsent(listener);
+        }
+
+        public void removeScreenListener(ScreenListener listener) {
+            screenListeners.remove(listener);
+        }
+
+        public KeyMapping mapping() {
             if (mapping == null) mapping = factory.get();
             return mapping;
         }
 
         private boolean matches(KeyMapping mapping, int modifiers) {
             if (extraModifiers == 0) return mapping.isConflictContextAndModifierActive();
-            int mainModifier = ClientInput.modifierBit(KeyModifier.getKeyModifier(mapping.getKey()));
-            int expected = (extraModifiers | ClientInput.modifierBit(mapping.getKeyModifier())) & ~mainModifier;
+            int mainModifier = ClientInput.keyModifierBit(mapping.getKey());
+            int mappingModifiers = mapping instanceof KeyChordMapping chord ? chord.modifiers() : ClientInput.modifierBit(mapping.getKeyModifier());
+            int expected = (extraModifiers | mappingModifiers) & ~mainModifier;
             return mapping.getKeyConflictContext().isActive() && (modifiers & ~mainModifier) == expected;
         }
 
@@ -203,5 +245,13 @@ public final class ClientKeyBindings {
 
         /** 在本地绑定状态已经更新时调用。失焦与断开连接都会产生释放。 */
         void changed(Binding binding, boolean down);
+    }
+
+    /** 在客户端线程处理屏幕按键。只向当前屏幕派发，且不会发送游戏内按键状态。 */
+    @FunctionalInterface
+    public interface ScreenListener {
+
+        /** 鼠标位置使用屏幕坐标。返回真时消费这次输入。 */
+        boolean pressed(Screen screen, Binding binding, double mouseX, double mouseY);
     }
 }

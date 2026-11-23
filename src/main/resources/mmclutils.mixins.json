@@ -12,6 +12,8 @@
 		"spatial.LevelChunkMixin"
 	],
 	"client": [
+		"client.input.KeyBindsScreenMixin",
+		"client.input.OptionsMixin",
 		"client.level.ClientChunkCacheMixin",
 		"client.level.ClientChunkStorageMixin",
 		"client.render.GlBufferAccessor",
