@@ -1,7 +1,12 @@
 package com.modularmc.mmclutils.client.model;
 
+import net.minecraft.client.renderer.block.dispatch.Variant;
+import net.minecraft.client.renderer.block.dispatch.Variant.SimpleModelState;
 import net.minecraft.core.Direction;
 
+import com.mojang.math.OctahedralGroup;
+import com.mojang.math.Quadrant;
+import com.mojang.math.Transformation;
 import lombok.Getter;
 
 /**
@@ -47,6 +52,7 @@ public enum BlockModelRotation {
 
     /** 按原版方向编号和水平旋转编号索引的旋转表。调用方应将数组视为只读。 */
     public static final BlockModelRotation[] VALUES = values();
+    private static final SimpleModelState[] VARIANT_STATES = createVariantStates();
 
     /** 模型绕 X 轴旋转的角度，以度为单位。 */
     @Getter
@@ -73,5 +79,78 @@ public enum BlockModelRotation {
      */
     public static BlockModelRotation get(Direction frontFacing, Direction upwardsFacing) {
         return VALUES[frontFacing.get3DDataValue() * 4 + upwardsFacing.get2DDataValue()];
+    }
+
+    /** 返回此朝向的原版坐标变换。 */
+    public Transformation transformation() {
+        return transformation(angleX, angleY, angleZ);
+    }
+
+    /**
+     * 应用此朝向，保留变体的模型位置和 UV 锁定设置。
+     *
+     * @param variant 原版模型变体
+     * @return 旋转后的模型变体
+     */
+    public Variant rotate(Variant variant) {
+        return rotate(variant, angleX, angleY, angleZ);
+    }
+
+    /**
+     * 返回正交模型变换。先应用模型局部 Z 轴滚转，再依次应用 X 轴俯仰与 Y 轴偏航。
+     * 各角度使用原版方块模型的方向约定。
+     *
+     * @param x 绕 X 轴的角度
+     * @param y 绕 Y 轴的角度
+     * @param z 绕 Z 轴的角度
+     * @return 与给定角度对应的原版变换
+     * @throws IllegalArgumentException 任一轴的角度不是 0、90、180 或 270 度
+     */
+    public static Transformation transformation(int x, int y, int z) {
+        return rotationState(x, y, z).asModelState().transformation();
+    }
+
+    /**
+     * 以指定变换替换变体的旋转，保留模型位置与 UV 锁定。变换顺序与 {@link #transformation(int, int, int)} 一致。
+     *
+     * @param variant 原版模型变体
+     * @param x       绕 X 轴的角度
+     * @param y       绕 Y 轴的角度
+     * @param z       绕 Z 轴的角度
+     * @return 旋转后的模型变体
+     * @throws IllegalArgumentException 任一轴的角度不是 0、90、180 或 270 度
+     */
+    public static Variant rotate(Variant variant, int x, int y, int z) {
+        return variant.withState(rotationState(x, y, z).withUvLock(variant.modelState().uvLock()));
+    }
+
+    private static SimpleModelState rotationState(int x, int y, int z) {
+        OctahedralGroup group = Quadrant.fromXYAngles(quadrant(x), quadrant(y)).compose(quadrant(z).rotationZ);
+        return VARIANT_STATES[group.ordinal()];
+    }
+
+    private static SimpleModelState[] createVariantStates() {
+        var states = new SimpleModelState[OctahedralGroup.values().length];
+        Quadrant[] angles = Quadrant.values();
+        // 原版变体最后绕世界 Z 轴旋转，按变换结果查出等价的原版角度以沿用 UV 锁定和序列化。
+        for (Quadrant z : angles) {
+            for (Quadrant y : angles) {
+                for (Quadrant x : angles) {
+                    int index = Quadrant.fromXYZAngles(x, y, z).ordinal();
+                    if (states[index] == null) states[index] = new SimpleModelState(x, y, z, false);
+                }
+            }
+        }
+        return states;
+    }
+
+    private static Quadrant quadrant(int angle) {
+        return switch (angle) {
+            case 0 -> Quadrant.R0;
+            case 90 -> Quadrant.R90;
+            case 180 -> Quadrant.R180;
+            case 270 -> Quadrant.R270;
+            default -> throw new IllegalArgumentException("模型旋转角度无效 " + angle);
+        };
     }
 }
