@@ -31,10 +31,10 @@ public final class IngredientMatching {
      * @return 匹配成功时返回分配结果。双方均为空时返回空列表，匹配失败时返回 {@code null}
      */
     public static @Nullable ObjectList<Assignment> match(
-                                                         Iterable<? extends CountedItemRequirement> requirements,
+                                                         Iterable<? extends CountedRequirement> requirements,
                                                          ObjectList<ItemStack> inputs) {
-        ObjectList<CountedItemRequirement> normalized = new ObjectArrayList<>();
-        for (CountedItemRequirement requirement : requirements) {
+        ObjectList<CountedRequirement> normalized = new ObjectArrayList<>();
+        for (CountedRequirement requirement : requirements) {
             normalized.add(requirement);
         }
         ObjectList<AggregatedInput> aggregatedInputs = aggregate(inputs);
@@ -58,7 +58,7 @@ public final class IngredientMatching {
         FlowNetwork network = new FlowNetwork(sink + 1);
         int requiredAmount = 0;
         for (int requirementIndex = 0; requirementIndex < normalized.size(); requirementIndex++) {
-            CountedItemRequirement requirement = normalized.get(requirementIndex);
+            CountedRequirement requirement = normalized.get(requirementIndex);
             requiredAmount = Math.addExact(requiredAmount, requirement.count());
             network.addEdge(source, requirementStart + requirementIndex, requirement.count());
             for (int inputIndex = 0; inputIndex < aggregatedInputs.size(); inputIndex++) {
@@ -129,8 +129,8 @@ public final class IngredientMatching {
         return ObjectLists.unmodifiable(mapped);
     }
 
-    private static boolean acceptsAny(ObjectList<CountedItemRequirement> requirements, ItemStack stack) {
-        for (CountedItemRequirement requirement : requirements) {
+    private static boolean acceptsAny(ObjectList<CountedRequirement> requirements, ItemStack stack) {
+        for (CountedRequirement requirement : requirements) {
             if (requirement.ingredient().test(stack)) {
                 return true;
             }
@@ -138,10 +138,18 @@ public final class IngredientMatching {
         return false;
     }
 
-    /**
-     * 一项物品谓词及其需求总数。
-     */
-    public record Requirement(Ingredient ingredient, int count) implements CountedItemRequirement {
+    /** 匹配器用物品条件与正数消耗量计算各槽位的分配。实现方负责校验输入。 */
+    public interface CountedRequirement {
+
+        /** 提供对归并后物品栈生效的匹配条件。 */
+        Ingredient ingredient();
+
+        /** 返回消耗的物品数量。 */
+        int count();
+    }
+
+    /** 一项物品谓词及其需求总数。 */
+    public record Requirement(Ingredient ingredient, int count) implements CountedRequirement {
 
         public Requirement {
             if (ingredient.isEmpty()) {
