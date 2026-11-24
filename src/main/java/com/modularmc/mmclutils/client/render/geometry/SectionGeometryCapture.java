@@ -33,7 +33,7 @@ public final class SectionGeometryCapture {
     private final BlockPos.MutableBlockPos neighbor = new BlockPos.MutableBlockPos();
     private final LevelChunk[] chunks = new LevelChunk[9];
     private @Nullable ClientLevel world;
-    private @Nullable SectionGeometryData result;
+    private @Nullable Geometry result;
     private @Nullable PendingBlock pending;
     private int queriedChunks;
     private int cursor;
@@ -46,7 +46,7 @@ public final class SectionGeometryCapture {
     }
 
     /** 在同一客户端世界线程恢复采集，时限使用 System.nanoTime 计时。 */
-    public @Nullable SectionGeometryData advance(ClientLevel level, VoxelShapeCache cache, long deadline) {
+    public @Nullable Geometry advance(ClientLevel level, VoxelShapeCache cache, long deadline) {
         if (world == null) world = level;
         else if (world != level) throw new IllegalArgumentException("区段采集已经绑定到另一世界");
         if (result != null) return result;
@@ -83,11 +83,11 @@ public final class SectionGeometryCapture {
             if (x < 0 || y < 0 || z < 0 || x > 15 || y > 15 || z > 15) continue;
             int index = (y * 16 + z) * 16 + x;
             visible[index] = exposedFaces(level, position, state);
-            if ((modes & SectionGeometryData.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelShapeGeometry.BLOCK)) temperatures[index] = TemperatureUtils.temperature(state, level, position);
+            if ((modes & Geometry.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelShapeGeometry.BLOCK)) temperatures[index] = TemperatureUtils.temperature(state, level, position);
         }
         if (cursor != shapes.length) return null;
         Arrays.fill(chunks, null);
-        result = new SectionGeometryData(origin, modes, shapes, temperatures, visible);
+        result = new Geometry(origin, modes, shapes, temperatures, visible);
         return result;
     }
 
@@ -135,4 +135,18 @@ public final class SectionGeometryCapture {
     }
 
     private record PendingBlock(BlockState state, VoxelShape shape) {}
+
+    /** 区段和一格邻接范围的几何数据。构造时接管各数组，交付后调用方和后台线程均只读。 */
+    public record Geometry(long origin, int modes, VoxelShapeGeometry[] shapes, int[] temperatures, int[] visibleFaces) {
+
+        public static final int INCLUDE_TEMPERATURE = 1;
+
+        public VoxelShapeGeometry shape(int x, int y, int z) {
+            return x < -1 || y < -1 || z < -1 || x > 16 || y > 16 || z > 16 ? VoxelShapeGeometry.EMPTY : shapes[index(x, y, z)];
+        }
+
+        public static int index(int x, int y, int z) {
+            return ((y + 1) * 18 + z + 1) * 18 + x + 1;
+        }
+    }
 }

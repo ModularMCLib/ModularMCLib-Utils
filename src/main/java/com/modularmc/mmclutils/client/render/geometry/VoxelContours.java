@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.client.render.geometry;
 
 import com.modularmc.mmclutils.api.shape.VoxelShapeGeometry;
+import com.modularmc.mmclutils.client.render.geometry.SectionGeometryCapture.Geometry;
 
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
@@ -19,7 +20,7 @@ import java.util.function.Consumer;
 public final class VoxelContours {
 
     private static final double EPSILON = 1.0e-5;
-    private final SectionGeometryData geometry;
+    private final Geometry geometry;
     private final BooleanSupplier cancelled;
     private final ObjectOpenHashSet<Edge> edges = new ObjectOpenHashSet<>();
     private final DoubleArrayList cuts = new DoubleArrayList();

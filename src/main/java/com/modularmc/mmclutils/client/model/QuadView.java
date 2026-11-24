@@ -45,6 +45,40 @@ public interface QuadView {
 
     /** 包装原版烘焙四边形。传入该面所在的剔除分组，通用面传空值。 */
     static QuadView of(BakedQuad quad, @Nullable Direction cullFace) {
-        return new BakedQuadView(quad, cullFace);
+        return new Baked(quad, cullFace);
+    }
+
+    /** 提供原版烘焙面的只读视图，保留调用者指定的剔除分组。 */
+    record Baked(BakedQuad quad, @Nullable Direction cullFace) implements QuadView {
+
+        @Override
+        public Vector3fc position(int vertex) {
+            return quad.position(vertex);
+        }
+
+        @Override
+        public long packedUv(int vertex) {
+            return quad.packedUV(vertex);
+        }
+
+        @Override
+        public int packedNormal(int vertex) {
+            return quad.bakedNormals().normal(vertex);
+        }
+
+        @Override
+        public int color(int vertex) {
+            return quad.bakedColors().color(vertex);
+        }
+
+        @Override
+        public Direction lightFace() {
+            return quad.direction();
+        }
+
+        @Override
+        public MaterialInfo material() {
+            return quad.materialInfo();
+        }
     }
 }

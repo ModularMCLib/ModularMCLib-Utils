@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.client.render.geometry;
 
 import com.modularmc.mmclutils.api.shape.VoxelShapeCache;
+import com.modularmc.mmclutils.client.render.geometry.SectionGeometryCapture.Geometry;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -25,13 +26,13 @@ public final class SectionGeometryCache {
         this.capacity = capacity;
     }
 
-    public @Nullable SectionGeometryData get(long section, int modes) {
+    public @Nullable Geometry get(long section, int modes) {
         Entry entry = sections.getAndMoveToLast(section);
         return entry != null && entry.modes == modes ? entry.geometry : null;
     }
 
     /** 推进采集至指定时限。采集完成时转交可在后台读取的数据。 */
-    public @Nullable SectionGeometryData advance(long section, int modes, long deadline) {
+    public @Nullable Geometry advance(long section, int modes, long deadline) {
         Entry entry = sections.getAndMoveToLast(section);
         if (entry == null || entry.modes != modes) {
             if (System.nanoTime() >= deadline) return null;
@@ -87,7 +88,7 @@ public final class SectionGeometryCache {
 
         private final int modes;
         private @Nullable SectionGeometryCapture capture;
-        private @Nullable SectionGeometryData geometry;
+        private @Nullable Geometry geometry;
 
         private Entry(long section, int modes) {
             this.modes = modes;

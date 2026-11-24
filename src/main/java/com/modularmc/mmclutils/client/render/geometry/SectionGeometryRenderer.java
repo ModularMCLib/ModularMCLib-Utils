@@ -2,6 +2,7 @@ package com.modularmc.mmclutils.client.render.geometry;
 
 import com.modularmc.mmclutils.api.schedule.BoundedVirtualTaskQueue;
 import com.modularmc.mmclutils.api.shape.VoxelShapeGeometry;
+import com.modularmc.mmclutils.client.render.geometry.SectionGeometryCapture.Geometry;
 
 import net.minecraft.core.Direction;
 
@@ -29,12 +30,12 @@ public final class SectionGeometryRenderer {
     }
 
     /** 在队列所属线程提交。键可用原版区段坐标；同一个键的旧任务由调用方作废。 */
-    public static void submit(BoundedVirtualTaskQueue<Batch> queue, long key, SectionGeometryData data, Style style) {
+    public static void submit(BoundedVirtualTaskQueue<Batch> queue, long key, Geometry data, Style style) {
         queue.submit(key, work -> build(data, style, work::cancelled, work::emit));
     }
 
     /** 每个已交付批次的关闭责任转交给回调。色值的透明分量为零时跳过对应图元。 */
-    public static void build(SectionGeometryData data, Style style, BooleanSupplier cancelled, Consumer<Batch> output) {
+    public static void build(Geometry data, Style style, BooleanSupplier cancelled, Consumer<Batch> output) {
         VoxelContours contours = (style.outlineColor() >>> 24) == 0 ? null : new VoxelContours(data, cancelled);
         try (var surfaces = new Buffer(data.origin(), VertexFormat.Mode.QUADS, output)) {
             for (int cell = 0; cell < 4096; cell++) {
