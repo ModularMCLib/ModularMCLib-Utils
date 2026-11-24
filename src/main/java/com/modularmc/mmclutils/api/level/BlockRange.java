@@ -47,63 +47,75 @@ public final class BlockRange {
         this.radiusSq = radiusSq;
     }
 
+    /** 以方块为单位创建闭球范围。负半径表示空范围。 */
     public static BlockRange sphere(int radius) {
         if (radius < 0) return EMPTY_SPHERE;
         if (radius <= CACHED) return SPHERES[radius];
         return sphereSq((long) radius * radius);
     }
 
+    /** 直接使用平方半径，便于表示严格距离条件。负值表示空范围，各轴外包半径最多为 {@link Integer#MAX_VALUE}。 */
     public static BlockRange sphereSq(long radiusSq) {
         if (radiusSq < 0) return EMPTY_SPHERE;
         int r = (int) Math.sqrt((double) radiusSq);
         while ((long) r * r > radiusSq) r--;
-        while ((long) (r + 1) * (r + 1) <= radiusSq) r++;
+        while (r < Integer.MAX_VALUE && (r + 1L) * (r + 1L) <= radiusSq) r++;
         return new BlockRange(Shape.SPHERE, r, r, r, radiusSq);
     }
 
+    /** 创建三轴半径相同的闭立方体。负半径表示空范围。 */
     public static BlockRange box(int radius) {
         return box(radius, radius, radius);
     }
 
+    /** 分别指定三轴半径，任一轴为负时返回空范围。 */
     public static BlockRange box(int rx, int ry, int rz) {
         if (rx < 0 || ry < 0 || rz < 0) return EMPTY_BOX;
         if (rx == ry && ry == rz && rx <= CACHED) return BOXES[rx];
         return new BlockRange(Shape.BOX, rx, ry, rz, -1);
     }
 
+    /** 返回相交测试所使用的形状。 */
     public Shape shape() {
         return shape;
     }
 
+    /** 返回外包范围在 X 轴的半径，空范围时返回负值。 */
     public int radiusX() {
         return rx;
     }
 
+    /** 返回外包范围在 Y 轴的半径，空范围时返回负值。 */
     public int radiusY() {
         return ry;
     }
 
+    /** 返回外包范围在 Z 轴的半径，空范围时返回负值。 */
     public int radiusZ() {
         return rz;
     }
 
+    /** 返回球形范围的平方半径。盒形或空范围返回 {@code -1}。 */
     public long radiusSq() {
         return radiusSq;
     }
 
+    /** 判断范围是否排除所有位置，零半径仍包含中心。 */
     public boolean isEmpty() {
         return rx < 0;
     }
 
+    /** 判断带符号的三轴坐标差是否落在范围内，边界计入。 */
     public boolean contains(int dx, int dy, int dz) {
         return reaches(Math.abs((long) dx), Math.abs((long) dy), Math.abs((long) dz));
     }
 
+    /** 用三个非负的轴向最小距离判断范围是否与区域相交。 */
     public boolean reaches(long ax, long ay, long az) {
         if (rx < 0) return false;
         if (shape == Shape.BOX) return ax <= rx && ay <= ry && az <= rz;
         if (ax > rx || ay > ry || az > rz) return false;
-        return ax * ax + ay * ay + az * az <= radiusSq;
+        return az * az <= radiusSq - ax * ax - ay * ay;
     }
 
     @Override
