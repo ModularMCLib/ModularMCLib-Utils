@@ -4,6 +4,7 @@ import com.modularmc.mmclutils.api.inventory.FluidStackStrategy;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenCustomHashMap;
@@ -19,7 +20,29 @@ public final class FluidUtils {
     private FluidUtils() {}
 
     public static Identifier id(FluidStack stack) {
-        return BuiltInRegistries.FLUID.getKey(stack.getFluid());
+        return id(stack.getFluid());
+    }
+
+    public static Identifier id(Fluid fluid) {
+        return BuiltInRegistries.FLUID.getKey(fluid);
+    }
+
+    /** 显示以毫桶计量的容量，按大小使用 mB、B 或带 SI 前缀的桶数。 */
+    public static String formatAmount(long amount) {
+        return NumberUtils.formatSi(amount, true, "B");
+    }
+
+    /** 生成包含毫桶数量和流体标识的调试文本。 */
+    public static String formatStack(FluidStack stack) {
+        Identifier id = id(stack);
+        return stack.getAmount() + "x_" + id.getNamespace() + "_" + id.getPath();
+    }
+
+    /** 判断流体栈能否均分成指定数量的非空份。 */
+    public static boolean isAmountDivisible(FluidStack stack, int divisor) {
+        if (divisor <= 0) throw new IllegalArgumentException("流体份数须为正数");
+        int amount = stack.getAmount();
+        return amount >= divisor && amount % divisor == 0;
     }
 
     public static List<FluidStack> split(FluidStack stack, long amount) {

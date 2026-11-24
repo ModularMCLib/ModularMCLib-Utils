@@ -4,7 +4,9 @@ import com.modularmc.mmclutils.api.inventory.ItemStackStrategy;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
@@ -19,7 +21,45 @@ public final class ItemUtils {
     private ItemUtils() {}
 
     public static Identifier id(ItemStack stack) {
-        return BuiltInRegistries.ITEM.getKey(stack.getItem());
+        return id(stack.getItem());
+    }
+
+    public static Identifier id(Item item) {
+        return BuiltInRegistries.ITEM.getKey(item);
+    }
+
+    /** 返回方块对应的物品标识。 */
+    public static Identifier id(Block block) {
+        return id(block.asItem());
+    }
+
+    /** 生成包含数量和标识的调试文本，标识使用原版文件名格式。 */
+    public static String formatStack(ItemStack stack) {
+        return stack.getCount() + "x_" + id(stack).toDebugFileName();
+    }
+
+    /** 取得第一个非空栈本身，所有候选栈为空时返回 ItemStack.EMPTY。 */
+    public static ItemStack firstNonEmpty(ItemStack... stacks) {
+        if (stacks.length == 0) throw new IllegalArgumentException("至少需要一个候选物品栈");
+        for (ItemStack stack : stacks) {
+            if (!stack.isEmpty()) return stack;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    public static ItemStack copyFirst(ItemStack... stacks) {
+        return firstNonEmpty(stacks).copy();
+    }
+
+    public static ItemStack copyFirst(int count, ItemStack... stacks) {
+        return firstNonEmpty(stacks).copyWithCount(count);
+    }
+
+    /** 判断物品栈能否均分成指定数量的非空份。 */
+    public static boolean isCountDivisible(ItemStack stack, int divisor) {
+        if (divisor <= 0) throw new IllegalArgumentException("物品份数须为正数");
+        int count = stack.getCount();
+        return count >= divisor && count % divisor == 0;
     }
 
     /** 按该物品的正常堆叠上限拆分，保留数据组件。 */
