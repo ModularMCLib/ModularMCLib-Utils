@@ -41,7 +41,8 @@ public final class FastSavedData<T> {
     private final Path path;
     private final T value;
     private final SerialTaskExecutor executor;
-    private final ChangeTracker changes = new ChangeTracker();
+    private volatile long revision;
+    private volatile long savedRevision;
     private CompletableFuture<Void> pending = CompletableFuture.completedFuture(null);
     private long submitted;
 
@@ -92,11 +93,11 @@ public final class FastSavedData<T> {
 
     /** 修改 value 后调用。已经在写盘的快照仍可完成，此次修改会进入下一次保存。 */
     public void setDirty() {
-        changes.markChanged();
+        revision++;
     }
 
     public boolean isDirty() {
-        return changes.isDirty();
+        return revision != savedRevision;
     }
 
     @SubscribeEvent
@@ -116,13 +117,14 @@ public final class FastSavedData<T> {
     }
 
     private void save(boolean wait) {
-        long revision = changes.revision();
-        if (changes.isDirty() && (submitted != revision || pending.isCompletedExceptionally())) {
+        long writingRevision = revision;
+        if (writingRevision != savedRevision && (submitted != writingRevision || pending.isCompletedExceptionally())) {
             T valueToWrite = type.copyForWrite().apply(value);
-            submitted = revision;
+            submitted = writingRevision;
             pending = executor.submit(() -> {
                 FileUtils.writeAtomically(path, valueToWrite, type.writer());
-                changes.persisted(revision);
+                // 写盘期间发生的修改留给下一次保存。
+                savedRevision = writingRevision;
                 return null;
             });
             pending.whenComplete((ignored, failure) -> {

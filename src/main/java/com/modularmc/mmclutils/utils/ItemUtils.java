@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.utils;
 
 import com.modularmc.mmclutils.api.inventory.ItemStackStrategy;
+import com.modularmc.mmclutils.utils.FileUtils.Serializer;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -13,12 +14,34 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenCustomHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.util.List;
 
 /** 查询标识、比较、拆分和计数物品栈，保留物品组件。 */
 public final class ItemUtils {
 
+    /** 旧文件格式依次写入命名空间、路径和数量。读取时也接受单个 UTF 字段的完整标识。 */
+    public static final Serializer<ItemStack> SERIALIZER = new Serializer<>(input -> {
+        Identifier id = readLegacyItemId(input);
+        int count = input.readInt();
+        if (count < 0) throw new IOException("无效的物品数量：" + count);
+        if (count == 0) return ItemStack.EMPTY;
+        var item = BuiltInRegistries.ITEM.getOptional(id).orElseThrow(() -> new IOException("找不到物品：" + id));
+        return new ItemStack(item, count);
+    }, (output, stack) -> {
+        Serializer.IDENTIFIER_PARTS.write(output, id(stack));
+        output.writeInt(stack.getCount());
+    });
+
     private ItemUtils() {}
+
+    private static Identifier readLegacyItemId(DataInputStream input) throws IOException {
+        String first = input.readUTF();
+        Identifier id = first.indexOf(':') >= 0 ? Identifier.tryParse(first) : Identifier.tryBuild(first, input.readUTF());
+        if (id == null) throw new IOException("无效的物品标识，以 " + first + " 开头");
+        return id;
+    }
 
     public static Identifier id(ItemStack stack) {
         return id(stack.getItem());
