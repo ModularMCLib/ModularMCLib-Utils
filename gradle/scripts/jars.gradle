@@ -1,0 +1,39 @@
+jar {
+    exclude "**/.cache"
+}
+
+tasks.register('slimJar', Jar) {
+    dependsOn("classes")
+    archiveClassifier = "slim"
+    from sourceSets.main.output
+}
+
+java {
+    withSourcesJar()
+}
+
+// 将 Lombok 生成的成员一并纳入源码包。
+sourcesJar {
+    exclude {
+        sourceSets.main.allSource.contains it.file
+    }
+    from delombok
+}
+
+base {
+    archivesName = "${project.name}-${libs.versions.minecraft.get()}"
+}
+
+afterEvaluate {
+    tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
+        destinationDirectory = file('build/libs/')
+        manifest.attributes([
+                'Specification-Title': project.name,
+                'Specification-Version': mod_version,
+                'Specification-Vendor': 'ModularMCLib Team',
+                'Implementation-Title': base.archivesName,
+                'Implementation-Version': version,
+                'Implementation-Vendor': 'ModularMCLib Team',
+        ])
+    }
+}

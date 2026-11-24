@@ -1,0 +1,25 @@
+dependencies {
+    compileOnly(libs.jetbrains.annotations)
+    compileOnly(libs.jspecify)
+
+    // 与 Minecraft 共用运行库，供使用原始类型集合的公共接口声明依赖。
+    api(libs.fastutil)
+
+    jarJar(api(libs.kotlin.stdlib.get())) {
+        exclude group: 'org.jetbrains', module: 'annotations'
+    }
+
+
+    // Runtime Recipe Viewers - uncomment whichever one you want to use //
+
+    // Client-only runtime mods //
+
+    renderNurseCfg(libs.renderNurse)
+
+    //////////////////////////////////////////////////////
+    // Runtime mods for dev testing with unclean client //
+    //////////////////////////////////////////////////////
+
+    //////////////////////////
+
+}
