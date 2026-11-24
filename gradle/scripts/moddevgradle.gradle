@@ -48,6 +48,16 @@ neoForge {
             programArguments.addAll('--nogui', '--world', 'world-extra')
         }
 
+        // 让持续集成使用原版自带用例启动服务器、推进 Tick 并退出。
+        gameTestServer {
+            type = "gameTestServer"
+            sourceSet = sourceSets.extra
+            ideName = "Game Tests"
+
+            gameDirectory.set(file('run/gametest/server'))
+            programArguments.addAll('--tests', 'minecraft:always_pass')
+        }
+
         // applies to all the run configs above
         configureEach {
             systemProperty 'forge.logging.markers', 'REGISTRIES'
