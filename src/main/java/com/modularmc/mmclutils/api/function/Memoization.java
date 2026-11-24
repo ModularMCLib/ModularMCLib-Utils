@@ -7,9 +7,11 @@ import lombok.Getter;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
+import org.jspecify.annotations.Nullable;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -57,8 +59,12 @@ public class Memoization {
     }
 
     /**
-     * 用弱身份键记忆化二元函数。两个参数分别作为弱身份键，短暂创建的 Pair 不会成为缓存键。
+     * 用弱身份键记忆化二元函数。两个参数分别以引用身份比较，任一参数被回收后对应的值就不再可访问。
+     * 缓存强持有结果，结果若引用参数会延长该参数的生命周期。
      *
+     * @param <T>            第一个参数类型
+     * @param <U>            第二个参数类型
+     * @param <R>            结果类型
      * @param memoBiFunction 负责计算结果的函数，返回空值时不缓存该结果
      * @return 按两个参数对象身份查找的记忆化函数
      */
@@ -116,7 +122,7 @@ public class Memoization {
 
         private final ConcurrentWeakIdentityHashMap<T, ConcurrentWeakIdentityHashMap<U, R>> values = new ConcurrentWeakIdentityHashMap<>();
 
-        R computeIfAbsent(T first, U second, Supplier<? extends R> factory) {
+        private R computeIfAbsent(T first, U second, Supplier<? extends R> factory) {
             ConcurrentWeakIdentityHashMap<U, R> entries = values.computeIfAbsent(first, ignored -> new ConcurrentWeakIdentityHashMap<>());
             return entries.computeIfAbsent(second, ignored -> factory.get());
         }
@@ -170,17 +176,15 @@ public class Memoization {
                     return new Iterator<>() {
 
                         private T first;
-                        private ConcurrentWeakIdentityHashMap<U, R> entries;
-                        private Iterator<Map.Entry<U, R>> inner = Map.<U, R>of().entrySet().iterator();
-                        private Map.Entry<U, R> current;
+                        private Iterator<Map.Entry<U, R>> inner = Collections.emptyIterator();
+                        private @Nullable Pair<T, U> lastKey;
 
                         @Override
                         public boolean hasNext() {
                             while (!inner.hasNext() && outer.hasNext()) {
                                 Map.Entry<T, ConcurrentWeakIdentityHashMap<U, R>> entry = outer.next();
                                 first = entry.getKey();
-                                entries = entry.getValue();
-                                inner = entries.entrySet().iterator();
+                                inner = entry.getValue().entrySet().iterator();
                             }
                             return inner.hasNext();
                         }
@@ -188,8 +192,9 @@ public class Memoization {
                         @Override
                         public Map.Entry<Pair<T, U>, R> next() {
                             if (!hasNext()) throw new NoSuchElementException();
-                            current = inner.next();
+                            Map.Entry<U, R> current = inner.next();
                             Pair<T, U> key = Pair.of(first, current.getKey());
+                            lastKey = key;
                             return new SimpleEntry<>(key, current.getValue()) {
 
                                 @Override
@@ -203,9 +208,9 @@ public class Memoization {
 
                         @Override
                         public void remove() {
-                            if (current == null) throw new IllegalStateException();
-                            entries.remove(current.getKey());
-                            current = null;
+                            if (lastKey == null) throw new IllegalStateException();
+                            WeakIdentityPairCache.this.remove(lastKey);
+                            lastKey = null;
                         }
                     };
                 }
