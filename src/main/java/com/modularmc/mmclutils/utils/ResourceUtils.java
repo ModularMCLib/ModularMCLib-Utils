@@ -10,6 +10,7 @@ import net.minecraft.util.FileUtil;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 /** 在原版资源包和生成目录上定位和查询资源。文件系统由调用方拥有。 */
 public final class ResourceUtils {
@@ -33,12 +34,45 @@ public final class ResourceUtils {
     }
 
     public static Path resolve(Path root, PackType type, Identifier id) {
-        return FileUtil.decomposePath(id.getPath())
-                .map(parts -> FileUtil.resolvePath(root.resolve(type.getDirectory()).resolve(id.getNamespace()), parts))
-                .getOrThrow();
+        return resolve(root.resolve(type.getDirectory()), id);
     }
 
     public static Path resolve(Path root, Identifier id) {
-        return id.resolveAgainst(root);
+        return FileUtil.resolvePath(root.resolve(id.getNamespace()), resourcePath(id));
+    }
+
+    /** 将标识拆为命名空间和路径片段，可用于资源索引。 */
+    public static String[] pathSegments(Identifier id) {
+        return pathSegments(id, 1);
+    }
+
+    /** 在命名空间前附加资源包类型对应的目录。 */
+    public static String[] pathSegments(PackType type, Identifier id) {
+        String[] segments = pathSegments(id, 2);
+        segments[0] = type.getDirectory();
+        return segments;
+    }
+
+    /** 校验可用作资源索引的相对路径及其每个文件名。 */
+    public static boolean isValidResourcePath(Path path) {
+        if (path.getRoot() != null || path.getNameCount() == 0) return false;
+        for (Path segment : path) {
+            String name = segment.toString();
+            if (name.isEmpty() || !FileUtil.isValidPathSegment(name)) return false;
+        }
+        return true;
+    }
+
+    private static String[] pathSegments(Identifier id, int prefixLength) {
+        List<String> parts = resourcePath(id);
+        String[] result = new String[prefixLength + parts.size()];
+        result[prefixLength - 1] = id.getNamespace();
+        for (int index = 0; index < parts.size(); index++) result[prefixLength + index] = parts.get(index);
+        return result;
+    }
+
+    private static List<String> resourcePath(Identifier id) {
+        FileUtil.validatePath(id.getNamespace());
+        return FileUtil.decomposePath(id.getPath()).getOrThrow();
     }
 }

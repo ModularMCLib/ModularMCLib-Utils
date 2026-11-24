@@ -32,8 +32,24 @@ public final class BinaryCodecs {
     public static final BinaryCodec<Boolean> BOOLEAN = new BinaryCodec<>(DataInputStream::readBoolean, DataOutputStream::writeBoolean);
     public static final BinaryCodec<UUID> UUID_TEXT = new BinaryCodec<>(input -> UUID.fromString(input.readUTF()),
             (output, value) -> output.writeUTF(value.toString()));
-    public static final BinaryCodec<Identifier> IDENTIFIER = new BinaryCodec<>(input -> Identifier.parse(input.readUTF()),
-            (output, value) -> output.writeUTF(value.toString()));
+    /** 将完整标识作为一个 UTF 字段写入。 */
+    public static final BinaryCodec<Identifier> IDENTIFIER = new BinaryCodec<>(input -> {
+        String text = input.readUTF();
+        Identifier id = Identifier.tryParse(text);
+        if (id == null) throw new IOException("无效的资源标识：" + text);
+        return id;
+    }, (output, value) -> output.writeUTF(value.toString()));
+    /** 兼容先写命名空间、再写路径的双 UTF 布局。 */
+    public static final BinaryCodec<Identifier> IDENTIFIER_PARTS = new BinaryCodec<>(input -> {
+        String namespace = input.readUTF();
+        String path = input.readUTF();
+        Identifier id = Identifier.tryBuild(namespace, path);
+        if (id == null) throw new IOException("无效的资源标识：" + namespace + ":" + path);
+        return id;
+    }, (output, id) -> {
+        output.writeUTF(id.getNamespace());
+        output.writeUTF(id.getPath());
+    });
 
     private BinaryCodecs() {}
 
@@ -113,12 +129,22 @@ public final class BinaryCodecs {
 
     /** 读取有序元素序列，返回可修改的列表。 */
     public static <E> Reader<List<E>> listReader(int maximumEntries, Reader<E> elements) {
-        return collectionReader(maximumEntries, elements, ObjectArrayList::new);
+        return listReader(maximumEntries, elements, ObjectArrayList::new);
+    }
+
+    /** 由调用方选择列表类型。工厂接收长度校验后的元素数。 */
+    public static <E, L extends List<E>> Reader<L> listReader(int maximumEntries, Reader<E> elements, IntFunction<L> create) {
+        return collectionReader(maximumEntries, elements, create);
     }
 
     /** 读取集合，元素按引用比较。 */
     public static <E> Reader<Set<E>> setReader(int maximumEntries, Reader<E> elements) {
-        return collectionReader(maximumEntries, elements, ReferenceOpenHashSet::new);
+        return setReader(maximumEntries, elements, ReferenceOpenHashSet::new);
+    }
+
+    /** 由调用方选择集合类型及其元素比较策略。 */
+    public static <E, S extends Set<E>> Reader<S> setReader(int maximumEntries, Reader<E> elements, IntFunction<S> create) {
+        return collectionReader(maximumEntries, elements, create);
     }
 
     /** 读取带长度的数组。工厂按入参长度创建元素数组。 */
@@ -153,6 +179,16 @@ public final class BinaryCodecs {
                 elements.write(output, value);
             }
         };
+    }
+
+    /** 以列表顺序逐项编码。可作为内层的列表写入器使用。 */
+    public static <E> Writer<List<E>> listWriter(Writer<? super E> elements) {
+        return BinaryCodecs.<E>collectionWriter(elements)::write;
+    }
+
+    /** 以集合的迭代顺序逐项编码。 */
+    public static <E> Writer<Set<E>> setWriter(Writer<? super E> elements) {
+        return BinaryCodecs.<E>collectionWriter(elements)::write;
     }
 
     /** 将数组长度和数组元素写入二进制流。 */

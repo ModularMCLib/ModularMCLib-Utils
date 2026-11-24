@@ -21,8 +21,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -36,6 +38,21 @@ public final class FileUtils {
 
     private FileUtils() {}
 
+    /** 按根路径所属的文件系统组合路径片段。 */
+    public static Path resolve(Path root, String... parts) {
+        return resolve(root, 0, parts);
+    }
+
+    /** 从指定片段开始组合路径，允许从末尾开始以直接返回根路径。 */
+    public static Path resolve(Path root, int firstPart, String... parts) {
+        Objects.checkFromToIndex(firstPart, parts.length, parts.length);
+        return switch (parts.length - firstPart) {
+            case 0 -> root;
+            case 1 -> root.resolve(parts[firstPart]);
+            default -> root.resolve(root.getFileSystem().getPath(parts[firstPart], Arrays.copyOfRange(parts, firstPart + 1, parts.length)));
+        };
+    }
+
     /** 读取存在的文件。回调返回后流由本方法关闭。 */
     public static <T> T read(Path path, Reader<T> reader) throws IOException {
         return read(Files.newInputStream(path), reader);
@@ -46,6 +63,24 @@ public final class FileUtils {
         try (var input = new DataInputStream(new BufferedInputStream(stream))) {
             return reader.read(input);
         }
+    }
+
+    /** 文件存在时读取。仅在文件成功读取时返回 true。 */
+    public static boolean loadFile(Path path, StreamAction<DataInputStream> action) throws IOException {
+        return readIfPresent(path, input -> {
+            action.accept(input);
+            return Boolean.TRUE;
+        }) != null;
+    }
+
+    /** 直接创建或覆盖文件，并创建尚不存在的父目录。适用于可重建的数据。 */
+    public static <T> void write(Path path, T value, Writer<? super T> writer) throws IOException {
+        write(Files.newOutputStream(prepareWriteTarget(path)), value, writer);
+    }
+
+    /** 在写入回调中直接填充文件。回调结束后关闭输出流。 */
+    public static void saveFile(Path path, StreamAction<DataOutputStream> action) throws IOException {
+        write(path, action, (output, write) -> write.accept(output));
     }
 
     /** 将一个值写入输出流并关闭输出流。 */
@@ -68,11 +103,8 @@ public final class FileUtils {
 
     /** 仅在输出流关闭成功后替换目标。读取方始终看到一份完整的文件。 */
     public static <T> void writeAtomically(Path path, T value, Writer<? super T> writer) throws IOException {
-        Path target = path.toAbsolutePath().normalize();
-        Path directory = target.getParent();
-        if (directory == null) throw new IOException("目标路径没有文件名：" + path);
-        Files.createDirectories(directory);
-        Path temporary = Files.createTempFile(directory, ".mmclutils-", ".tmp");
+        Path target = prepareWriteTarget(path);
+        Path temporary = Files.createTempFile(target.getParent(), ".mmclutils-", ".tmp");
         try {
             write(Files.newOutputStream(temporary), value, writer);
             Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
@@ -84,6 +116,19 @@ public final class FileUtils {
             }
             throw failure;
         }
+    }
+
+    /** 通过回调填充临时文件，写入成功后原子替换目标。 */
+    public static void writeAtomically(Path path, StreamAction<DataOutputStream> action) throws IOException {
+        writeAtomically(path, action, (output, write) -> write.accept(output));
+    }
+
+    private static Path prepareWriteTarget(Path path) throws IOException {
+        Path target = path.toAbsolutePath().normalize();
+        Path directory = target.getParent();
+        if (directory == null) throw new IOException("目标路径没有文件名：" + path);
+        Files.createDirectories(directory);
+        return target;
     }
 
     /** 列出目录中名称以 {@code .ser} 结尾的普通文件。目录缺失时返回空流，调用方负责关闭返回的流。 */
@@ -164,5 +209,13 @@ public final class FileUtils {
 
         /** 从当前流位置写入值，输出失败时抛出 IOException。 */
         void write(DataOutputStream output, T value) throws IOException;
+    }
+
+    /** 在调用线程处理由外层打开的流，读写失败时由调用方接收 IOException。 */
+    @FunctionalInterface
+    public interface StreamAction<S> {
+
+        /** 在流开放期间处理数据，流的关闭由调用本回调的方法负责。 */
+        void accept(S stream) throws IOException;
     }
 }
