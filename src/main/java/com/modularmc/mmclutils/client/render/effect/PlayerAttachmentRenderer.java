@@ -1,11 +1,12 @@
 package com.modularmc.mmclutils.client.render.effect;
 
-import net.minecraft.client.model.player.PlayerModel;
-import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
-import net.minecraft.client.renderer.entity.state.AvatarRenderState;
-import net.minecraft.util.ARGB;
+import net.minecraft.client.renderer.entity.player.PlayerRenderer;
+import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -31,6 +32,7 @@ public final class PlayerAttachmentRenderer {
     private static final ObjectArrayList<Draw> PENDING = new ObjectArrayList<>();
     private static final ReferenceOpenHashSet<PixelSheet> UPLOADED_SHEETS = new ReferenceOpenHashSet<>();
     private static final Vector3f TRANSFORMED_POSITION = new Vector3f();
+    private static final Matrix4f DRAW_MATRIX = new Matrix4f();
     private static @Nullable Vec3 cameraOrigin;
     private static int count;
 
@@ -56,7 +58,7 @@ public final class PlayerAttachmentRenderer {
 
     static void initLayers(EntityRenderersEvent.AddLayers event) {
         for (var skin : event.getSkins()) {
-            var renderer = event.getPlayerRenderer(skin);
+            PlayerRenderer renderer = event.getSkin(skin);
             if (renderer != null) renderer.addLayer(new Layer(renderer));
         }
     }
@@ -81,7 +83,7 @@ public final class PlayerAttachmentRenderer {
         try {
             for (int i = 0; i < count; i++) {
                 var draw = PENDING.get(i);
-                draw.sheet.draw(draw.transform, draw.tint);
+                draw.sheet.draw(DRAW_MATRIX.set(EffectRenderer.modelView()).mul(draw.transform), draw.tint);
             }
         } finally {
             clearFrame();
@@ -156,24 +158,24 @@ public final class PlayerAttachmentRenderer {
         /**
          * 采集单个玩家的附着效果。
          *
-         * @param state 原版提取的玩家渲染状态
-         * @param model 已应用动画的玩家模型
-         * @param pose  实体相对相机的姿态栈
+         * @param player 当前正在渲染的客户端玩家
+         * @param model  已应用动画的玩家模型
+         * @param pose   实体相对相机的姿态栈
          */
-        void collect(AvatarRenderState state, PlayerModel model, PoseStack pose);
+        void collect(AbstractClientPlayer player, PlayerModel<AbstractClientPlayer> model, PoseStack pose);
     }
 
-    private static final class Layer extends RenderLayer<AvatarRenderState, PlayerModel> {
+    private static final class Layer extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
 
-        private Layer(RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
+        private Layer(RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
             super(parent);
         }
 
         @Override
-        public void submit(PoseStack pose, SubmitNodeCollector collector, int light, AvatarRenderState state,
-                           float yaw, float pitch) {
+        public void render(PoseStack pose, MultiBufferSource buffers, int light, AbstractClientPlayer player,
+                           float limbSwing, float limbSwingAmount, float partialTick, float ageInTicks, float yaw, float pitch) {
             if (!inLevel()) return;
-            for (int i = 0; i < LISTENERS.size(); i++) LISTENERS.get(i).collect(state, getParentModel(), pose);
+            for (int i = 0; i < LISTENERS.size(); i++) LISTENERS.get(i).collect(player, getParentModel(), pose);
         }
     }
 
@@ -290,9 +292,9 @@ public final class PlayerAttachmentRenderer {
                 int color = Float.floatToRawIntBits(pixels[i + 2]);
                 float alpha = pixels[i + 3];
                 // 加法混合直接累加 RGB，由顶点颜色携带像素亮度。
-                float r = Mth.lerp(whiten, ARGB.redFloat(color), 1) * alpha;
-                float g = Mth.lerp(whiten, ARGB.greenFloat(color), 1) * alpha;
-                float b = Mth.lerp(whiten, ARGB.blueFloat(color), 1) * alpha;
+                float r = Mth.lerp(whiten, ARGB32.red(color) / 255f, 1) * alpha;
+                float g = Mth.lerp(whiten, ARGB32.green(color) / 255f, 1) * alpha;
+                float b = Mth.lerp(whiten, ARGB32.blue(color) / 255f, 1) * alpha;
                 vertices.writeVertex(x - half, y - half, 0, r, g, b, alpha, 0, 0);
                 vertices.writeVertex(x - half, y + half, 0, r, g, b, alpha, 0, 1);
                 vertices.writeVertex(x + half, y + half, 0, r, g, b, alpha, 1, 1);

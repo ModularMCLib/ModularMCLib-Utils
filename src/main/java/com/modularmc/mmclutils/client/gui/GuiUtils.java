@@ -1,16 +1,9 @@
 package com.modularmc.mmclutils.client.gui;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.TextureSetup;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.renderer.state.gui.GuiElementRenderState;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import org.joml.Matrix3x2f;
-import org.joml.Matrix3x2fc;
-import org.jspecify.annotations.Nullable;
 
 /** 绘制原版界面中的渐变矩形并计算列表行和滚动条布局。 */
 public final class GuiUtils {
@@ -19,47 +12,29 @@ public final class GuiUtils {
 
     private GuiUtils() {}
 
-    /** 用原版 GUI 管线提交从左到右的 ARGB 渐变。矩形使用当前姿态和裁剪范围。 */
-    public static void fillHorizontalGradient(GuiGraphicsExtractor graphics, int left, int top, int right, int bottom,
+    /** 用原版 GUI 渲染类型绘制从左到右的 ARGB 渐变，沿用当前姿态和裁剪范围。 */
+    public static void fillHorizontalGradient(GuiGraphics graphics, int left, int top, int right, int bottom,
                                               int leftColor, int rightColor) {
-        fillGradient(graphics, RenderPipelines.GUI, left, top, right, bottom, leftColor, leftColor, rightColor, rightColor);
+        fillGradient(graphics, RenderType.gui(), left, top, right, bottom, leftColor, leftColor, rightColor, rightColor);
     }
 
-    /** 使用指定的位置和颜色管线提交水平渐变。调用方传入两侧的 ARGB 颜色。 */
-    public static void fillHorizontalGradient(GuiGraphicsExtractor graphics, RenderPipeline pipeline, int left, int top,
+    /** 使用指定的位置和颜色渲染类型绘制水平渐变。调用方传入两侧的 ARGB 颜色。 */
+    public static void fillHorizontalGradient(GuiGraphics graphics, RenderType layer, int left, int top,
                                               int right, int bottom, int leftColor, int rightColor) {
-        fillGradient(graphics, pipeline, left, top, right, bottom, leftColor, leftColor, rightColor, rightColor);
+        fillGradient(graphics, layer, left, top, right, bottom, leftColor, leftColor, rightColor, rightColor);
     }
 
-    /** 管线须使用位置和颜色顶点格式。颜色依次对应左上、左下、右下和右上。 */
-    public static void fillGradient(GuiGraphicsExtractor graphics, RenderPipeline pipeline, int left, int top, int right, int bottom,
+    /** 渲染类型须使用位置和颜色顶点格式。颜色依次对应左上、左下、右下和右上。 */
+    public static void fillGradient(GuiGraphics graphics, RenderType layer, int left, int top, int right, int bottom,
                                     int topLeft, int bottomLeft, int bottomRight, int topRight) {
         if (left >= right || top >= bottom) return;
-        var pose = new Matrix3x2f(graphics.pose());
-        ScreenRectangle scissor = graphics.peekScissorStack();
-        ScreenRectangle bounds = new ScreenRectangle(left, top, right - left, bottom - top).transformMaxBounds(pose);
-        if (scissor != null) bounds = bounds.intersection(scissor);
-        if (bounds == null) return;
-        graphics.submitGuiElementRenderState(
-                new Gradient(pipeline, pose, scissor, bounds, left, top, right, bottom, topLeft, bottomLeft, bottomRight, topRight));
-    }
-
-    private record Gradient(RenderPipeline pipeline, Matrix3x2fc pose, @Nullable ScreenRectangle scissorArea, ScreenRectangle bounds,
-                            int left, int top, int right, int bottom, int topLeft, int bottomLeft, int bottomRight, int topRight)
-            implements GuiElementRenderState {
-
-        @Override
-        public TextureSetup textureSetup() {
-            return TextureSetup.noTexture();
-        }
-
-        @Override
-        public void buildVertices(VertexConsumer vertices) {
-            vertices.addVertexWith2DPose(pose, left, top).setColor(topLeft);
-            vertices.addVertexWith2DPose(pose, left, bottom).setColor(bottomLeft);
-            vertices.addVertexWith2DPose(pose, right, bottom).setColor(bottomRight);
-            vertices.addVertexWith2DPose(pose, right, top).setColor(topRight);
-        }
+        var pose = graphics.pose().last().pose();
+        VertexConsumer vertices = graphics.bufferSource().getBuffer(layer);
+        vertices.addVertex(pose, left, top, 0).setColor(topLeft);
+        vertices.addVertex(pose, left, bottom, 0).setColor(bottomLeft);
+        vertices.addVertex(pose, right, bottom, 0).setColor(bottomRight);
+        vertices.addVertex(pose, right, top, 0).setColor(topRight);
+        graphics.flush();
     }
 
     /** 把零到一的列表进度换算成整像素宽度，最大值比行宽少一像素以保留行边界。 */

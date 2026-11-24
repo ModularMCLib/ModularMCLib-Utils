@@ -3,8 +3,8 @@ package com.modularmc.mmclutils.utils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -151,7 +151,7 @@ public final class BlockPosUtils {
     }
 
     /** 用维度标识和原版打包坐标构建全局位置。坐标为零时表示该维度的原点。 */
-    public static GlobalPos globalPos(Identifier dimension, long packedPos) {
+    public static GlobalPos globalPos(ResourceLocation dimension, long packedPos) {
         return GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dimension), BlockPos.of(packedPos));
     }
 }

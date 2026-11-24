@@ -2,7 +2,7 @@ package com.modularmc.mmclutils.client.texture;
 
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -22,7 +22,7 @@ public final class ImageTextures implements AutoCloseable {
 
     private final TextureManager textures;
     private final int capacity;
-    private final Object2ObjectLinkedOpenHashMap<Identifier, DynamicTexture> entries = new Object2ObjectLinkedOpenHashMap<>();
+    private final Object2ObjectLinkedOpenHashMap<ResourceLocation, DynamicTexture> entries = new Object2ObjectLinkedOpenHashMap<>();
 
     /** 创建渲染线程使用的动态贴图缓存。容量为同时保留的贴图数，须为正数。缓存占有登记的标识。 */
     public ImageTextures(TextureManager textures, int capacity) {
@@ -32,33 +32,33 @@ public final class ImageTextures implements AutoCloseable {
     }
 
     /** 查询缓存并更新最近使用顺序。缺失时返回空值，返回的贴图由缓存持有。 */
-    public @Nullable DynamicTexture get(Identifier id) {
+    public @Nullable DynamicTexture get(ResourceLocation id) {
         RenderSystem.assertOnRenderThread();
         return entries.getAndMoveToLast(id);
     }
 
     /** 在渲染线程从文件解码并登记 PNG，方法返回或抛出异常时关闭文件流。 */
-    public DynamicTexture load(Identifier id, Path path, Limits limits) throws IOException {
+    public DynamicTexture load(ResourceLocation id, Path path, Limits limits) throws IOException {
         try (InputStream input = Files.newInputStream(path)) {
             return load(id, input, limits);
         }
     }
 
     /** 在渲染线程读取和上传。输入流由调用方关闭。 */
-    public DynamicTexture load(Identifier id, InputStream input, Limits limits) throws IOException {
+    public DynamicTexture load(ResourceLocation id, InputStream input, Limits limits) throws IOException {
         RenderSystem.assertOnRenderThread();
         return load(id, input.readNBytes(limits.bytes() + 1), limits);
     }
 
     /** 读取 PNG 数据。解码前限制文件大小和像素数。 */
-    public DynamicTexture load(Identifier id, byte[] bytes, Limits limits) throws IOException {
+    public DynamicTexture load(ResourceLocation id, byte[] bytes, Limits limits) throws IOException {
         RenderSystem.assertOnRenderThread();
         if (bytes.length > limits.bytes()) throw new IOException("贴图数据超出字节上限 " + id);
         checkHeader(id, bytes, limits);
         NativeImage image = NativeImage.read(bytes);
         DynamicTexture texture;
         try {
-            texture = new DynamicTexture(id::toString, image);
+            texture = new DynamicTexture(image);
         } catch (RuntimeException | Error failure) {
             image.close();
             throw failure;
@@ -75,7 +75,7 @@ public final class ImageTextures implements AutoCloseable {
     }
 
     /** 释放匹配标识的 GPU 贴图，并将其从缓存移除。 */
-    public void invalidate(Identifier id) {
+    public void invalidate(ResourceLocation id) {
         RenderSystem.assertOnRenderThread();
         if (entries.remove(id) != null) textures.release(id);
     }
@@ -92,7 +92,7 @@ public final class ImageTextures implements AutoCloseable {
         clear();
     }
 
-    private static void checkHeader(Identifier id, byte[] bytes, Limits limits) throws IOException {
+    private static void checkHeader(ResourceLocation id, byte[] bytes, Limits limits) throws IOException {
         if (bytes.length < 33 || readInt(bytes, 0) != 0x89504e47 || readInt(bytes, 4) != 0x0d0a1a0a || readInt(bytes, 8) != 13 || readInt(bytes, 12) != 0x49484452) {
             throw new IOException("贴图缺少有效的 PNG 标头 " + id);
         }

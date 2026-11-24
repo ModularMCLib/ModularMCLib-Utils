@@ -101,7 +101,7 @@ public final class SectionGeometryCapture {
             if (chunk == null) faces |= DirectionUtils.mask(direction);
             else {
                 BlockState adjacent = chunk.getBlockState(neighbor);
-                if ((fluid.isEmpty() || !fluid.getType().isSame(adjacent.getFluidState().getType())) && Block.shouldRenderFace(level, position, state, adjacent, direction)) faces |= DirectionUtils.mask(direction);
+                if ((fluid.isEmpty() || !fluid.getType().isSame(adjacent.getFluidState().getType())) && Block.shouldRenderFace(state, level, position, direction, neighbor)) faces |= DirectionUtils.mask(direction);
             }
         }
         return faces;

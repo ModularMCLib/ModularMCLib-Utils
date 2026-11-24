@@ -26,8 +26,8 @@ public final class AreaBlockActions {
 
     /** 两角按区块坐标传入，覆盖其间所有区块的完整高度。 */
     public static long chunks(ServerLevel level, int firstX, int firstZ, int secondX, int secondZ, Action action) {
-        return visit(level, Math.multiplyExact(Math.min(firstX, secondX), 16), level.getMinY(), Math.multiplyExact(Math.min(firstZ, secondZ), 16),
-                Math.multiplyExact(Math.max(firstX, secondX), 16) + 15, level.getMaxY(), Math.multiplyExact(Math.max(firstZ, secondZ), 16) + 15, pos -> true, action);
+        return visit(level, Math.multiplyExact(Math.min(firstX, secondX), 16), level.getMinBuildHeight(), Math.multiplyExact(Math.min(firstZ, secondZ), 16),
+                Math.multiplyExact(Math.max(firstX, secondX), 16) + 15, level.getMaxBuildHeight() - 1, Math.multiplyExact(Math.max(firstZ, secondZ), 16) + 15, pos -> true, action);
     }
 
     /** 按水平方向的圆形距离筛选指定高度区间的方块。负半径将被拒绝。 */
@@ -90,8 +90,8 @@ public final class AreaBlockActions {
     private static long visit(ServerLevel level, int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
                               LongPredicate contains, Action action) {
         checkThread(level);
-        minY = Math.max(minY, level.getMinY());
-        maxY = Math.min(maxY, level.getMaxY());
+        minY = Math.max(minY, level.getMinBuildHeight());
+        maxY = Math.min(maxY, level.getMaxBuildHeight() - 1);
         if (minY > maxY) return 0;
         if (BlockPos.getX(BlockPos.asLong(minX, 0, 0)) != minX || BlockPos.getX(BlockPos.asLong(maxX, 0, 0)) != maxX || BlockPos.getZ(BlockPos.asLong(0, 0, minZ)) != minZ || BlockPos.getZ(BlockPos.asLong(0, 0, maxZ)) != maxZ) {
             throw new IllegalArgumentException("区域超出可编码的方块坐标");

@@ -3,6 +3,7 @@ package com.modularmc.mmclutils.client.input;
 import com.modularmc.mmclutils.ModularMCLibUtils;
 
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.settings.IKeyConflictContext;
@@ -18,8 +19,7 @@ import org.jspecify.annotations.Nullable;
 /** 可在控制设置中编辑和保存的组合键。只在客户端线程读写。 */
 public final class KeyChordMapping extends KeyMapping {
 
-    private static final KeyModifier[] DISPLAY_ORDER = { KeyModifier.ALT, KeyModifier.SHIFT, KeyModifier.CONTROL,
-            KeyModifier.CONTROL_OR_COMMAND };
+    private static final KeyModifier[] DISPLAY_ORDER = { KeyModifier.ALT, KeyModifier.SHIFT, KeyModifier.CONTROL };
     private final int defaultModifiers;
     /** 当前组合要求的完整修饰键掩码。 */
     @Getter
@@ -28,14 +28,14 @@ public final class KeyChordMapping extends KeyMapping {
     private @Nullable LegacyOptions legacyOptions;
 
     /** 用主键和修饰掩码创建绑定，自动去掉掩码中与主键重复的修饰位。 */
-    public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Key key, int modifiers) {
+    public KeyChordMapping(String name, String category, IKeyConflictContext context, InputConstants.Key key, int modifiers) {
         super(name, context, primary(normalize(key, modifiers)), key, category);
         defaultModifiers = normalize(key, modifiers);
         this.modifiers = defaultModifiers;
     }
 
     /** 用输入类型和按键编号创建组合。编号的解释遵循对应的原版输入类型。 */
-    public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Type type, int key, int modifiers) {
+    public KeyChordMapping(String name, String category, IKeyConflictContext context, InputConstants.Type type, int key, int modifiers) {
         this(name, category, context, type.getOrCreate(key), modifiers);
     }
 
@@ -91,12 +91,12 @@ public final class KeyChordMapping extends KeyMapping {
     public Component getTranslatedKeyMessage() {
         Component result = getKey().getDisplayName();
         for (KeyModifier modifier : DISPLAY_ORDER) {
-            if (modifier == KeyModifier.CONTROL_OR_COMMAND && ClientInput.modifierBit(modifier) != ClientInput.COMMAND) continue;
             if ((modifiers & ClientInput.modifierBit(modifier)) == 0) continue;
             Component suffix = result;
             result = modifier.getCombinedName(getKey(), () -> suffix);
         }
-        return result;
+        return Minecraft.ON_OSX && (modifiers & ClientInput.CONTROL) != 0 ?
+                Component.translatable("neoforge.controlsgui.control", result) : result;
     }
 
     @Override
@@ -151,7 +151,9 @@ public final class KeyChordMapping extends KeyMapping {
 
     private void readModifiers(String saved) {
         String prefix = optionPrefix();
-        if (!saved.startsWith(prefix) || saved.equals(prefix + modifiers)) return;
+        String legacyPrefix = getKey().getName() + ":CONTROL_OR_COMMAND:";
+        if (saved.startsWith(legacyPrefix)) prefix = legacyPrefix;
+        if (!saved.startsWith(prefix) || saved.equals(optionPrefix() + modifiers)) return;
         try {
             setChord(getKey(), Integer.parseInt(saved.substring(prefix.length())));
         } catch (IllegalArgumentException failure) {
@@ -169,8 +171,7 @@ public final class KeyChordMapping extends KeyMapping {
     }
 
     private static KeyModifier primary(int modifiers) {
-        if ((modifiers & ClientInput.CONTROL) != 0) return KeyModifier.CONTROL;
-        if ((modifiers & ClientInput.COMMAND) != 0) return KeyModifier.CONTROL_OR_COMMAND;
+        if ((modifiers & (Minecraft.ON_OSX ? ClientInput.COMMAND : ClientInput.CONTROL)) != 0) return KeyModifier.CONTROL;
         if ((modifiers & ClientInput.SHIFT) != 0) return KeyModifier.SHIFT;
         return (modifiers & ClientInput.ALT) != 0 ? KeyModifier.ALT : KeyModifier.NONE;
     }

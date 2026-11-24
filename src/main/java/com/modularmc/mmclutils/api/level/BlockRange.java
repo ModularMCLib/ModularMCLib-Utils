@@ -202,8 +202,8 @@ public final class BlockRange {
         /** 将包围盒裁切到世界的建造高度。完全落在世界外时，返回贴在相邻边界的零高包围盒。 */
         public AABB bounds(LevelHeightAccessor height) {
             int y = BlockPos.getY(center);
-            int minY = height.getMinY();
-            double endY = (double) height.getMaxY() + 1;
+            int minY = height.getMinBuildHeight();
+            double endY = height.getMaxBuildHeight();
             return bounds(Math.clamp((double) y - below, minY, endY), Math.clamp((double) y + above + 1, minY, endY));
         }
 

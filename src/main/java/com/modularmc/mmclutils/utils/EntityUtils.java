@@ -8,7 +8,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.portal.TeleportTransition;
+import net.minecraft.world.level.portal.DimensionTransition;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -54,7 +54,7 @@ public final class EntityUtils {
      * @throws IllegalArgumentException 指定类型与索引组合不存在
      */
     public static EquipmentSlot equipmentSlotByTypeAndIndex(EquipmentSlot.Type type, int index) {
-        for (EquipmentSlot slot : EquipmentSlot.VALUES) {
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
             if (slot.getType() == type && slot.getIndex() == index) return slot;
         }
         throw new IllegalArgumentException("无对应装备槽 " + type + " " + index);
@@ -82,8 +82,8 @@ public final class EntityUtils {
 
     /** 在服务端线程传送实体，保留既有速度。返回原版传送后的实体，失败时返回空值。 */
     public static @Nullable Entity teleport(Entity entity, ServerLevel level, Vec3 position, float yaw, float pitch) {
-        return entity.teleport(new TeleportTransition(level, position, entity.getDeltaMovement(), yaw,
-                pitch, TeleportTransition.DO_NOTHING));
+        return entity.changeDimension(new DimensionTransition(level, position, entity.getDeltaMovement(), yaw,
+                pitch, DimensionTransition.DO_NOTHING));
     }
 
     /** 按维度键定位目标维度。维度尚未加载时返回空值。 */

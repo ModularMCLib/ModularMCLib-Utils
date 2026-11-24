@@ -1,8 +1,8 @@
 package com.modularmc.mmclutils.client.model;
 
-import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.CardinalLighting;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -21,8 +21,8 @@ public record BlockTintView(BlockAndTintGetter parent, long position, BlockState
     }
 
     @Override
-    public CardinalLighting cardinalLighting() {
-        return parent.cardinalLighting();
+    public float getShade(Direction direction, boolean shade) {
+        return parent.getShade(direction, shade);
     }
 
     @Override
@@ -56,7 +56,7 @@ public record BlockTintView(BlockAndTintGetter parent, long position, BlockState
     }
 
     @Override
-    public int getMinY() {
-        return parent.getMinY();
+    public int getMinBuildHeight() {
+        return parent.getMinBuildHeight();
     }
 }

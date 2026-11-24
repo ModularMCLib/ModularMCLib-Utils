@@ -1,13 +1,12 @@
 package com.modularmc.mmclutils.client.model;
 
+import com.modularmc.mmclutils.client.model.QuadView.MaterialInfo;
+
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.model.geometry.BakedQuad;
-import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
-import net.minecraft.client.resources.model.geometry.QuadCollection;
 import net.minecraft.core.Direction;
-import net.minecraft.util.ARGB;
+import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.client.model.quad.BakedNormals;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectImmutableList;
@@ -15,6 +14,8 @@ import it.unimi.dsi.fastutil.objects.ObjectList;
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
+
+import java.util.EnumMap;
 
 /** 构造和变换原版四边形，处理顶点法线、光照方向、颜色插值和图集 UV。 */
 public final class QuadUtils {
@@ -45,14 +46,7 @@ public final class QuadUtils {
 
     /** 将烘焙面按剔除方向收集为可交给原版模型的四边形集合。各组内保持输入顺序。 */
     public static QuadCollection collect(Iterable<Face> faces) {
-        var output = new QuadCollection.Builder();
-        for (Face face : faces) add(output, face.quad(), face.cullFace());
-        return output.build();
-    }
-
-    private static void add(QuadCollection.Builder output, BakedQuad quad, @Nullable Direction cullFace) {
-        if (cullFace == null) output.addUnculledFace(quad);
-        else output.addCulledFace(cullFace, quad);
+        return new QuadCollection(faces);
     }
 
     /** 以方块单位构造盒子一面。盒子内侧的面不参与邻方块剔除。 */
@@ -104,7 +98,7 @@ public final class QuadUtils {
     public static final class Builder {
 
         private final MutableQuadView editor;
-        private final QuadCollection.Builder faces = new QuadCollection.Builder();
+        private final ObjectList<Face> faces = new ObjectArrayList<>();
 
         /** 创建构建器并指定首个面的材质。 */
         public Builder(MaterialInfo material) {
@@ -128,27 +122,62 @@ public final class QuadUtils {
 
         /** 烘焙当前视图并追加到相应剔除组。 */
         public Builder emit() {
-            QuadUtils.add(faces, editor.bake(), editor.cullFace());
+            faces.add(new Face(editor.bake(), editor.cullFace()));
             return this;
         }
 
         /** 追加已经烘焙的面，保留剔除分组。 */
         public Builder add(Face face) {
-            QuadUtils.add(faces, face.quad(), face.cullFace());
+            faces.add(face);
             return this;
         }
 
         /** 返回已提交的原版四边形集合。当前视图须先经 {@link #emit()} 提交。 */
         public QuadCollection build() {
-            return faces.build();
+            return collect(faces);
         }
+    }
+
+    /** 按相邻面遮挡方向索引的不可变四边形列表。 */
+    public static final class QuadCollection {
+
+        private final ObjectList<BakedQuad> unculled;
+        private final EnumMap<Direction, ObjectList<BakedQuad>> culled = new EnumMap<>(Direction.class);
+
+        private QuadCollection(Iterable<Face> faces) {
+            var unculled = new ObjectArrayList<BakedQuad>();
+            for (Face face : faces) {
+                Direction direction = face.cullFace();
+                if (direction == null) unculled.add(face.quad());
+                else culled.computeIfAbsent(direction, ignored -> new ObjectArrayList<>()).add(face.quad());
+            }
+            this.unculled = new ObjectImmutableList<>(unculled);
+            culled.replaceAll((direction, group) -> new ObjectImmutableList<>(group));
+        }
+
+        /** 返回指定方向的剔除组。空值选择通用面。 */
+        public ObjectList<BakedQuad> getQuads(@Nullable Direction direction) {
+            return direction == null ? unculled : culled.getOrDefault(direction, ObjectList.of());
+        }
+    }
+
+    static int packNormal(Vector3fc normal) {
+        return normalByte(normal.x()) | normalByte(normal.y()) << 8 | normalByte(normal.z()) << 16;
+    }
+
+    private static int normalByte(float value) {
+        return Math.round(Math.clamp(value, -1, 1) * 127) & 255;
+    }
+
+    static void unpackNormal(int packed, Vector3f output) {
+        output.set((byte) packed / 127f, (byte) (packed >>> 8) / 127f, (byte) (packed >>> 16) / 127f);
     }
 
     /** 将顶点法线写入调用方的向量。缺少独立法线时使用光照朝向。 */
     public static Vector3f vertexNormal(QuadView quad, int vertex, Vector3f output) {
         int packed = quad.packedNormal(vertex);
         if (packed != 0) {
-            BakedNormals.unpack(packed, output);
+            unpackNormal(packed, output);
             return output;
         }
         Direction face = quad.lightFace();
@@ -209,9 +238,12 @@ public final class QuadUtils {
         target.uv(index, w0 * source.u(0) + w1 * source.u(b) + w2 * source.u(c),
                 w0 * source.v(0) + w1 * source.v(b) + w2 * source.v(c));
         int aColor = source.color(0), bColor = source.color(b), cColor = source.color(c);
-        target.color(index, ARGB.color(channel(aColor, bColor, cColor, 24, w0, w1, w2),
+        target.color(index, ARGB32.color(channel(aColor, bColor, cColor, 24, w0, w1, w2),
                 channel(aColor, bColor, cColor, 16, w0, w1, w2), channel(aColor, bColor, cColor, 8, w0, w1, w2),
                 channel(aColor, bColor, cColor, 0, w0, w1, w2)));
+        int aLight = source.packedLight(0), bLight = source.packedLight(b), cLight = source.packedLight(c);
+        target.packedLight(index, channel(aLight, bLight, cLight, 0, w0, w1, w2) |
+                channel(aLight, bLight, cLight, 16, w0, w1, w2) << 16);
         if (normal != null) {
             vertexNormal(source, 0, normal).mul(w0);
             float nx = normal.x, ny = normal.y, nz = normal.z;

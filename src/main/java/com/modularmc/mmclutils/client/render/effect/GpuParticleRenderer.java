@@ -6,7 +6,7 @@ import com.modularmc.mmclutils.client.render.effect.ParticleEffects.MoteLook;
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.platform.GlStateManager;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
@@ -350,7 +350,7 @@ final class GpuParticleRenderer {
             }
             return;
         }
-        var cam = camera.position();
+        var cam = camera.getPosition();
         double hx = Math.floor(cam.x / 1024) * 1024, hy = Math.floor(cam.y / 1024) * 1024, hz = Math.floor(cam.z / 1024) * 1024;
         var left = new Vector3f(-1, 0, 0).rotate(camera.rotation());
         var up = new Vector3f(0, 1, 0).rotate(camera.rotation());

@@ -25,7 +25,10 @@ public final class ShapedRecipePatterns {
      * @return 按材料首次出现顺序分配字符的图案
      */
     public static Pattern of(ShapedRecipePattern pattern) {
-        return of(pattern.ingredients(), pattern.width(), pattern.height());
+        var ingredients = pattern.ingredients().stream()
+                .map(ingredient -> ingredient.isEmpty() ? Optional.<Ingredient>empty() : Optional.of(ingredient))
+                .toList();
+        return of(ingredients, pattern.width(), pattern.height());
     }
 
     /**

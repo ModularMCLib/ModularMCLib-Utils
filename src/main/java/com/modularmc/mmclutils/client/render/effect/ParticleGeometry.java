@@ -26,7 +26,7 @@ final class ParticleGeometry {
 
     static void generate(GpuParticleRenderer.Pool pool, double now, double epoch, Camera camera, ByteBuffer frames, int frameColumns) {
         int size = pool.stream ? pool.count : pool.highWater;
-        var eye = camera.position();
+        var eye = camera.getPosition();
         LEFT.set(-1, 0, 0).rotate(camera.rotation());
         UP.set(0, 1, 0).rotate(camera.rotation());
         HALOS.begin(size);

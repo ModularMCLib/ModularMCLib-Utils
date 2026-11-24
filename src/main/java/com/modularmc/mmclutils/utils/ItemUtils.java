@@ -4,7 +4,7 @@ import com.modularmc.mmclutils.api.inventory.ItemStackStrategy;
 import com.modularmc.mmclutils.utils.FileUtils.Serializer;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -23,7 +23,7 @@ public final class ItemUtils {
 
     /** 旧文件格式依次写入命名空间、路径和数量。读取时也接受单个 UTF 字段的完整标识。 */
     public static final Serializer<ItemStack> SERIALIZER = new Serializer<>(input -> {
-        Identifier id = readLegacyItemId(input);
+        ResourceLocation id = readLegacyItemId(input);
         int count = input.readInt();
         if (count < 0) throw new IOException("无效的物品数量：" + count);
         if (count == 0) return ItemStack.EMPTY;
@@ -36,25 +36,25 @@ public final class ItemUtils {
 
     private ItemUtils() {}
 
-    private static Identifier readLegacyItemId(DataInputStream input) throws IOException {
+    private static ResourceLocation readLegacyItemId(DataInputStream input) throws IOException {
         String first = input.readUTF();
-        Identifier id = first.indexOf(':') >= 0 ? Identifier.tryParse(first) : Identifier.tryBuild(first, input.readUTF());
+        ResourceLocation id = first.indexOf(':') >= 0 ? ResourceLocation.tryParse(first) : ResourceLocation.tryBuild(first, input.readUTF());
         if (id == null) throw new IOException("无效的物品标识，以 " + first + " 开头");
         return id;
     }
 
     /** 返回栈中物品的注册表标识，空栈使用空气物品的标识。 */
-    public static Identifier id(ItemStack stack) {
+    public static ResourceLocation id(ItemStack stack) {
         return id(stack.getItem());
     }
 
     /** 返回已注册物品的标识。 */
-    public static Identifier id(Item item) {
+    public static ResourceLocation id(Item item) {
         return BuiltInRegistries.ITEM.getKey(item);
     }
 
     /** 返回方块对应的物品标识。 */
-    public static Identifier id(Block block) {
+    public static ResourceLocation id(Block block) {
         return id(block.asItem());
     }
 

@@ -2,6 +2,7 @@ package com.modularmc.mmclutils.client.texture;
 
 import com.modularmc.mmclutils.client.model.QuadView;
 
+import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
@@ -19,7 +20,7 @@ public final class SpriteLookup {
 
     /** 在当前图集上建立查询索引。资源重载后，须使用新图集重新创建。 */
     public SpriteLookup(TextureAtlas atlas) {
-        this(atlas.getTextures().values(), atlas.missingSprite());
+        this(atlas.getTextures().values(), atlas.getSprite(MissingTextureAtlasSprite.getLocation()));
     }
 
     /** 以给定的精灵集合建立索引，未命中时返回指定的缺失纹理。 */

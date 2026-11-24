@@ -1,10 +1,10 @@
 package com.modularmc.mmclutils.client.model;
 
-import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
+import com.modularmc.mmclutils.client.model.QuadView.MaterialInfo;
+
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
-import net.neoforged.neoforge.client.model.quad.BakedNormals;
 
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -45,7 +45,7 @@ public final class QuadTransforms {
                 quad.position(vertex, position);
                 int packed = quad.packedNormal(vertex);
                 if (packed != 0) {
-                    BakedNormals.unpack(packed, normal);
+                    QuadUtils.unpackNormal(packed, normal);
                     normal.mul(normalMatrix).normalize();
                     quad.normal(vertex, normal);
                 }
@@ -85,14 +85,13 @@ public final class QuadTransforms {
             quad.colorAll(argb);
             if (clearTint) {
                 MaterialInfo material = quad.material();
-                quad.material(new MaterialInfo(material.sprite(), material.layer(), material.itemRenderType(), -1,
-                        material.shade(), material.lightEmission(), material.ambientOcclusion()));
+                quad.material(new MaterialInfo(material.sprite(), -1, material.shade(), material.ambientOcclusion()));
             }
             return true;
         };
     }
 
-    /** 重映射图集 UV。新材质同时提供与图集匹配的渲染层。 */
+    /** 将 UV 重映射到新材质精灵。 */
     public static Transform retexture(MaterialInfo replacement) {
         return quad -> {
             QuadUtils.replace(quad, replacement);

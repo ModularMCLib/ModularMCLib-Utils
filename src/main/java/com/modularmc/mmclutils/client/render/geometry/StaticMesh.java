@@ -1,20 +1,28 @@
 package com.modularmc.mmclutils.client.render.geometry;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
-import com.mojang.blaze3d.systems.RenderPass;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ShaderInstance;
+
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import org.jspecify.annotations.Nullable;
+import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
+import org.lwjgl.opengl.GL30;
 
-/** 保存能跨帧使用的 GPU 顶点和索引。上传、提交及释放都在渲染线程完成。 */
+/** 保存能跨帧使用的 GPU 顶点和索引。上传、绘制及释放都在渲染线程完成。 */
 public final class StaticMesh implements AutoCloseable {
 
-    private final GpuBuffer vertices;
-    private final @Nullable GpuBuffer indices;
+    private final int array;
+    private final int vertices;
+    private final int indices;
     private final MeshData.DrawState state;
+    private boolean closed;
 
-    private StaticMesh(GpuBuffer vertices, @Nullable GpuBuffer indices, MeshData.DrawState state) {
+    private StaticMesh(int array, int vertices, int indices, MeshData.DrawState state) {
+        this.array = array;
         this.vertices = vertices;
         this.indices = indices;
         this.state = state;
@@ -23,15 +31,32 @@ public final class StaticMesh implements AutoCloseable {
     /** 复制网格数据。调用方仍负责关闭传入的网格。 */
     public static StaticMesh upload(String label, MeshData mesh) {
         RenderSystem.assertOnRenderThread();
-        var device = RenderSystem.getDevice();
-        GpuBuffer vertices = device.createBuffer(() -> label + " vertices", GpuBuffer.USAGE_VERTEX, mesh.vertexBuffer());
+        int previousArray = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+        int previousBuffer = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+        var indexBytes = mesh.indexBuffer();
+        int array = GL30.glGenVertexArrays();
+        int vertices = GL15.glGenBuffers();
+        int indices = indexBytes == null ? 0 : GL15.glGenBuffers();
+        var output = new StaticMesh(array, vertices, indices, mesh.drawState());
         try {
-            var bytes = mesh.indexBuffer();
-            GpuBuffer indices = bytes == null ? null : device.createBuffer(() -> label + " indices", GpuBuffer.USAGE_INDEX, bytes);
-            return new StaticMesh(vertices, indices, mesh.drawState());
+            if (array == 0 || vertices == 0 || indexBytes != null && indices == 0) {
+                throw new IllegalStateException("无法为网格 " + label + " 分配缓冲");
+            }
+            GlStateManager._glBindVertexArray(array);
+            GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, vertices);
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, mesh.vertexBuffer(), GL15.GL_STATIC_DRAW);
+            output.format().setupBufferState();
+            if (indices != 0) {
+                GlStateManager._glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, indices);
+                GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, indexBytes, GL15.GL_STATIC_DRAW);
+            }
+            return output;
         } catch (RuntimeException | Error failure) {
-            vertices.close();
+            output.close();
             throw failure;
+        } finally {
+            GlStateManager._glBindVertexArray(previousArray);
+            GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, previousBuffer);
         }
     }
 
@@ -40,31 +65,41 @@ public final class StaticMesh implements AutoCloseable {
         return state.format();
     }
 
-    /** 返回网格的图元模式，供调用方选择绘制管线。 */
+    /** 返回网格的图元模式，供调用方配置渲染状态。 */
     public VertexFormat.Mode mode() {
         return state.mode();
     }
 
-    /** 在已设置管线、变换及贴图的 pass 中提交。管线的顶点格式和图元须与网格一致。 */
-    public void draw(RenderPass pass) {
-        pass.setVertexBuffer(0, vertices);
-        if (indices == null) {
-            var sequential = RenderSystem.getSequentialBuffer(state.mode());
-            pass.setIndexBuffer(sequential.getBuffer(state.indexCount()), sequential.type());
-        } else {
-            pass.setIndexBuffer(indices, state.indexType());
+    /** 用匹配的着色器绘制网格。混合、深度和贴图由调用方配置。 */
+    public void draw(Matrix4f modelView, Matrix4f projection, ShaderInstance shader) {
+        RenderSystem.assertOnRenderThread();
+        if (closed) throw new IllegalStateException("网格已关闭");
+        int previousArray = GL11.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
+        try {
+            GlStateManager._glBindVertexArray(array);
+            VertexFormat.IndexType indexType = state.indexType();
+            if (indices == 0) {
+                var sequential = RenderSystem.getSequentialBuffer(state.mode());
+                sequential.bind(state.indexCount());
+                indexType = sequential.type();
+            }
+            shader.setDefaultUniforms(state.mode(), modelView, projection, Minecraft.getInstance().getWindow());
+            shader.apply();
+            RenderSystem.drawElements(state.mode().asGLMode, state.indexCount(), indexType.asGLType);
+        } finally {
+            shader.clear();
+            GlStateManager._glBindVertexArray(previousArray);
         }
-        pass.drawIndexed(0, 0, state.indexCount(), 1);
     }
 
-    /** 在渲染线程释放网格的顶点缓冲和独立索引缓冲。 */
+    /** 在渲染线程释放网格的顶点和索引。 */
     @Override
     public void close() {
         RenderSystem.assertOnRenderThread();
-        try {
-            if (indices != null) indices.close();
-        } finally {
-            vertices.close();
-        }
+        if (closed) return;
+        GlStateManager._glDeleteVertexArrays(array);
+        GlStateManager._glDeleteBuffers(vertices);
+        if (indices != 0) GlStateManager._glDeleteBuffers(indices);
+        closed = true;
     }
 }

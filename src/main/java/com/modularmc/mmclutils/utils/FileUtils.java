@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.utils;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
@@ -468,18 +468,18 @@ public final class FileUtils {
         }, (output, value) -> output.writeUTF(value.toString()));
 
         /** 将完整标识作为一个 UTF 字段写入。 */
-        public static final Serializer<Identifier> IDENTIFIER = new Serializer<>(input -> {
+        public static final Serializer<ResourceLocation> IDENTIFIER = new Serializer<>(input -> {
             String text = input.readUTF();
-            Identifier id = Identifier.tryParse(text);
+            ResourceLocation id = ResourceLocation.tryParse(text);
             if (id == null) throw new IOException("无效的资源标识：" + text);
             return id;
         }, (output, value) -> output.writeUTF(value.toString()));
 
         /** 兼容先写命名空间、再写路径的双 UTF 布局。 */
-        public static final Serializer<Identifier> IDENTIFIER_PARTS = new Serializer<>(input -> {
+        public static final Serializer<ResourceLocation> IDENTIFIER_PARTS = new Serializer<>(input -> {
             String namespace = input.readUTF();
             String path = input.readUTF();
-            Identifier id = Identifier.tryBuild(namespace, path);
+            ResourceLocation id = ResourceLocation.tryBuild(namespace, path);
             if (id == null) throw new IOException("无效的资源标识：" + namespace + ":" + path);
             return id;
         }, (output, id) -> {

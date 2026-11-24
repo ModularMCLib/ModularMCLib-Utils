@@ -2,7 +2,7 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "com.modularmc.mmclutils.mixin",
-	"compatibilityLevel": "JAVA_25",
+	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"mc.VoxelShapeAccessor",
 		"mc.world.BlockEntityMixin",
@@ -12,7 +12,6 @@
 		"mc.world.ServerLevelMixin"
 	],
 	"client": [
-		"mc.client.GlBufferAccessor",
 		"mc.client.KeyBindsScreenMixin",
 		"mc.client.OptionsMixin",
 		"mc.world.ClientChunkCacheMixin",

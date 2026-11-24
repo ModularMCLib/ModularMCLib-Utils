@@ -1,10 +1,13 @@
 package com.modularmc.mmclutils.client.model;
 
-import net.minecraft.client.model.geom.builders.UVPair;
-import net.minecraft.client.resources.model.geometry.BakedQuad;
-import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
-import net.minecraft.core.Direction;
+import com.modularmc.mmclutils.utils.ColorUtils;
 
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
+import net.neoforged.neoforge.client.model.IQuadTransformer;
+
+import org.joml.Vector3f;
 import org.joml.Vector3fc;
 import org.jspecify.annotations.Nullable;
 
@@ -12,12 +15,12 @@ import org.jspecify.annotations.Nullable;
 public interface QuadView {
 
     /** 一个四边形的顶点数。 */
-    int VERTEX_COUNT = BakedQuad.VERTEX_COUNT;
+    int VERTEX_COUNT = 4;
 
     /** 返回只读顶点坐标，索引范围为零至三。 */
     Vector3fc position(int vertex);
 
-    /** 返回使用原版 UVPair 编码的图集坐标。 */
+    /** 返回打包的图集坐标，高位为 U，低位为 V。 */
     long packedUv(int vertex);
 
     /** 返回 NeoForge 编码的法线。零值表示使用面朝向。 */
@@ -25,6 +28,11 @@ public interface QuadView {
 
     /** 返回顶点的 ARGB 调制色。 */
     int color(int vertex);
+
+    /** 返回原版打包的顶点光照。 */
+    default int packedLight(int vertex) {
+        return 0;
+    }
 
     /** 返回用于光照的面朝向。 */
     Direction lightFace();
@@ -38,12 +46,12 @@ public interface QuadView {
 
     /** 返回指定顶点的图集横坐标，范围取决于材质精灵。 */
     default float u(int vertex) {
-        return UVPair.unpackU(packedUv(vertex));
+        return Float.intBitsToFloat((int) (packedUv(vertex) >>> 32));
     }
 
     /** 返回指定顶点的图集纵坐标，范围取决于材质精灵。 */
     default float v(int vertex) {
-        return UVPair.unpackV(packedUv(vertex));
+        return Float.intBitsToFloat((int) packedUv(vertex));
     }
 
     /** 返回显式顶点法线的位掩码，第零位至第三位按顶点顺序排列。 */
@@ -65,37 +73,50 @@ public interface QuadView {
         return new Baked(quad, cullFace);
     }
 
+    /** 1.21.1 中随四边形保存的精灵、染色和光照选项。渲染层由所属模型提供。 */
+    record MaterialInfo(TextureAtlasSprite sprite, int tintIndex, boolean shade, boolean ambientOcclusion) {}
+
     /** 提供原版烘焙面的只读视图，保留调用者指定的剔除分组。 */
     record Baked(BakedQuad quad, @Nullable Direction cullFace) implements QuadView {
 
         @Override
         public Vector3fc position(int vertex) {
-            return quad.position(vertex);
+            int offset = vertex * IQuadTransformer.STRIDE + IQuadTransformer.POSITION;
+            int[] data = quad.getVertices();
+            return new Vector3f(Float.intBitsToFloat(data[offset]), Float.intBitsToFloat(data[offset + 1]),
+                    Float.intBitsToFloat(data[offset + 2]));
         }
 
         @Override
         public long packedUv(int vertex) {
-            return quad.packedUV(vertex);
+            int offset = vertex * IQuadTransformer.STRIDE + IQuadTransformer.UV0;
+            int[] data = quad.getVertices();
+            return (long) data[offset] << 32 | Integer.toUnsignedLong(data[offset + 1]);
         }
 
         @Override
         public int packedNormal(int vertex) {
-            return quad.bakedNormals().normal(vertex);
+            return quad.getVertices()[vertex * IQuadTransformer.STRIDE + IQuadTransformer.NORMAL] & 0xFFFFFF;
         }
 
         @Override
         public int color(int vertex) {
-            return quad.bakedColors().color(vertex);
+            return ColorUtils.swapRedBlue(quad.getVertices()[vertex * IQuadTransformer.STRIDE + IQuadTransformer.COLOR]);
+        }
+
+        @Override
+        public int packedLight(int vertex) {
+            return quad.getVertices()[vertex * IQuadTransformer.STRIDE + IQuadTransformer.UV2];
         }
 
         @Override
         public Direction lightFace() {
-            return quad.direction();
+            return quad.getDirection();
         }
 
         @Override
         public MaterialInfo material() {
-            return quad.materialInfo();
+            return new MaterialInfo(quad.getSprite(), quad.getTintIndex(), quad.isShade(), quad.hasAmbientOcclusion());
         }
     }
 }

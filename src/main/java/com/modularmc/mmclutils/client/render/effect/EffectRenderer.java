@@ -10,17 +10,15 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.Direction;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.util.Mth;
-import net.minecraft.util.context.ContextKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.AddClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.ExtractLevelRenderStateEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
 
@@ -37,12 +35,11 @@ import org.jspecify.annotations.Nullable;
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID, value = Dist.CLIENT)
 public final class EffectRenderer {
 
-    private static final ContextKey<Long> FRAME = new ContextKey<>(ModularMCLibUtils.id("effect_frame"));
     private static final ObjectArrayList<RingCommand> RINGS = new ObjectArrayList<>();
     private static final ObjectArrayList<Source> SOURCES = new ObjectArrayList<>();
     private static final Matrix4f MODEL_VIEW = new Matrix4f();
+    private static final Matrix4f PROJECTION = new Matrix4f();
     private static int ringCount;
-    private static long frame;
     private static @Nullable ClientLevel collectingLevel;
     private static double frameTime;
     private static long clientTicks;
@@ -106,7 +103,7 @@ public final class EffectRenderer {
      */
     public static double now() {
         Minecraft client = Minecraft.getInstance();
-        return client.level == null ? Double.NaN : clientTicks + client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
+        return client.level == null ? Double.NaN : clientTicks + client.getTimer().getGameTimeDeltaPartialTick(false);
     }
 
     /** 返回最近一次世界帧采集使用的效果时间，单位为 Tick。 */
@@ -174,7 +171,7 @@ public final class EffectRenderer {
         if (palette.length < EffectPalette.SIZE) throw new IllegalArgumentException("环的色板长度不足");
         if (ringCount == RINGS.size()) RINGS.add(new RingCommand());
         RingCommand command = RINGS.get(ringCount++);
-        Vec3 eye = camera.position();
+        Vec3 eye = camera.getPosition();
         float scale = intensity * intensity * (3 - 2 * intensity);
         command.ring = ring;
         command.x = (float) (worldX - eye.x);
@@ -193,15 +190,37 @@ public final class EffectRenderer {
     }
 
     @SubscribeEvent
-    private static void collectFrame(ExtractLevelRenderStateEvent event) {
+    private static void renderStage(RenderLevelStageEvent event) {
+        var stage = event.getStage();
+        if (stage == RenderLevelStageEvent.Stage.AFTER_SKY) {
+            collectFrame(event.getCamera());
+        } else if (camera != null && stage == RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
+            EffectRenderPipelines.ensureTextures();
+            MODEL_VIEW.set(event.getModelViewMatrix());
+            PROJECTION.set(event.getProjectionMatrix());
+            if (ringCount != 0) {
+                RingRenderer.draw(RINGS, ringCount, camera);
+                ringCount = 0;
+            }
+            GpuParticleRenderer.flush(frameTime, camera);
+        } else if (camera != null && stage == RenderLevelStageEvent.Stage.AFTER_PARTICLES) {
+            MODEL_VIEW.set(event.getModelViewMatrix());
+            PROJECTION.set(event.getProjectionMatrix());
+            PlayerAttachmentRenderer.drawPending();
+            SphereHighlight.draw(camera.getPosition(), MODEL_VIEW);
+            camera = null;
+        }
+    }
+
+    private static void collectFrame(Camera currentCamera) {
+        ClientLevel level = Minecraft.getInstance().level;
+        if (level == null) return;
         frameTime = now();
-        camera = event.getCamera();
+        camera = currentCamera;
         ringCount = 0;
-        PlayerAttachmentRenderer.beginFrame(event.getRenderState().cameraRenderState.pos);
+        Vec3 eye = camera.getPosition();
+        PlayerAttachmentRenderer.beginFrame(eye);
         GpuParticleRenderer.beginFrame();
-        event.getRenderState().setRenderData(FRAME, ++frame);
-        Vec3 eye = camera.position();
-        ClientLevel level = event.getLevel();
         collectingLevel = level;
         try {
             for (int index = 0; index < SOURCES.size(); index++) {
@@ -212,28 +231,8 @@ public final class EffectRenderer {
         }
     }
 
-    private static boolean matchesFrame(RenderLevelStageEvent event) {
-        Long extracted = event.getLevelRenderState().getRenderData(FRAME);
-        return extracted != null && extracted.longValue() == frame && camera != null;
-    }
-
-    @SubscribeEvent
-    private static void drawWorldEffects(RenderLevelStageEvent.AfterOpaqueFeatures event) {
-        if (!matchesFrame(event)) return;
-        EffectRenderPipelines.ensureTextures();
-        MODEL_VIEW.set(event.getModelViewMatrix());
-        if (ringCount != 0) {
-            RingRenderer.draw(RINGS, ringCount, camera);
-            ringCount = 0;
-        }
-        GpuParticleRenderer.flush(frameTime, camera);
-    }
-
-    @SubscribeEvent
-    private static void drawAttachmentsAndHighlights(RenderLevelStageEvent.AfterTranslucentParticles event) {
-        if (!matchesFrame(event)) return;
-        PlayerAttachmentRenderer.drawPending();
-        SphereHighlight.draw(camera.position(), MODEL_VIEW);
+    static Matrix4f projection() {
+        return PROJECTION;
     }
 
     @SubscribeEvent
@@ -261,16 +260,15 @@ public final class EffectRenderer {
         ringCount = 0;
     }
 
-    /** 将管线、资源重载和玩家模型层接入客户端模组总线。 */
+    /** 将资源重载和玩家模型层接入客户端模组总线。 */
     @ApiStatus.Internal
     public static void init(IEventBus modBus) {
-        modBus.addListener(EffectRenderPipelines::init);
         modBus.addListener(EffectRenderer::initResourceReload);
         modBus.addListener(PlayerAttachmentRenderer::initLayers);
     }
 
-    private static void initResourceReload(AddClientReloadListenersEvent event) {
-        event.addListener(ModularMCLibUtils.id("effects"), (ResourceManagerReloadListener) manager -> releaseRenderBuffers());
+    private static void initResourceReload(RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener((ResourceManagerReloadListener) manager -> releaseRenderBuffers());
     }
 
     private static void releaseRenderBuffers() {
@@ -295,7 +293,7 @@ public final class EffectRenderer {
     }
 
     /**
-     * 在世界状态提取时提交一帧的绘制指令。
+     * 在世界绘制阶段采集一帧的效果指令。
      * 回调在客户端渲染线程执行，可利用世界和相机状态决定要提交的效果。
      */
     @FunctionalInterface

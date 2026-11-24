@@ -31,7 +31,7 @@ public final class DirectionUtils {
 
     /** 以方块中心为起点，用指向世界坐标的向量选择最近世界方向。 */
     public static Direction nearestSide(Vec3 point, BlockPos position) {
-        return Direction.getApproximateNearest(point.x - position.getX() - .5,
+        return Direction.getNearest(point.x - position.getX() - .5,
                 point.y - position.getY() - .5, point.z - position.getZ() - .5);
     }
 
@@ -72,7 +72,7 @@ public final class DirectionUtils {
         int x = BlockPos.getX(neighbor) - BlockPos.getX(source);
         int y = BlockPos.getY(neighbor) - BlockPos.getY(source);
         int z = BlockPos.getZ(neighbor) - BlockPos.getZ(source);
-        return Math.abs(x) + Math.abs(y) + Math.abs(z) == 1 ? Direction.getNearest(x, y, z, null) : null;
+        return Math.abs(x) + Math.abs(y) + Math.abs(z) == 1 ? Direction.getNearest(x, y, z) : null;
     }
 
     /** 取得两个接壤方块之间的方向。两个位置重合或不共享方块面时返回空值。 */
@@ -196,7 +196,7 @@ public final class DirectionUtils {
 
         /** 返回局部左侧在世界坐标中的方向，镜像时交换左右。 */
         public Direction left() {
-            Direction side = Direction.getApproximateNearest(
+            Direction side = Direction.getNearest(
                     up.getStepY() * front.getStepZ() - up.getStepZ() * front.getStepY(),
                     up.getStepZ() * front.getStepX() - up.getStepX() * front.getStepZ(),
                     up.getStepX() * front.getStepY() - up.getStepY() * front.getStepX());

@@ -1,13 +1,12 @@
 package com.modularmc.mmclutils.client.model;
 
-import net.minecraft.client.renderer.block.dispatch.Variant;
-import net.minecraft.client.renderer.block.dispatch.Variant.SimpleModelState;
+import net.minecraft.client.renderer.block.model.Variant;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 
-import com.mojang.math.OctahedralGroup;
-import com.mojang.math.Quadrant;
 import com.mojang.math.Transformation;
 import lombok.Getter;
+import org.joml.Quaternionf;
 
 /**
  * 记录可定向方块的 24 种正交旋转。每个枚举值的前缀是世界前向，后缀是用水平方向编码的滚转。
@@ -52,7 +51,6 @@ public enum BlockModelRotation {
 
     /** 按原版方向编号和水平旋转编号索引的旋转表。调用方应将数组视为只读。 */
     public static final BlockModelRotation[] VALUES = values();
-    private static final SimpleModelState[] VARIANT_STATES = createVariantStates();
 
     /** 模型绕 X 轴旋转的角度，以度为单位。 */
     @Getter
@@ -107,7 +105,11 @@ public enum BlockModelRotation {
      * @throws IllegalArgumentException 任一轴的角度不是 0、90、180 或 270 度
      */
     public static Transformation transformation(int x, int y, int z) {
-        return rotationState(x, y, z).asModelState().transformation();
+        checkAngle(x);
+        checkAngle(y);
+        checkAngle(z);
+        var rotation = new Quaternionf().rotateY(-y * Mth.DEG_TO_RAD).rotateX(-x * Mth.DEG_TO_RAD).rotateZ(-z * Mth.DEG_TO_RAD);
+        return new Transformation(null, rotation, null, null);
     }
 
     /**
@@ -121,36 +123,12 @@ public enum BlockModelRotation {
      * @throws IllegalArgumentException 任一轴的角度不是 0、90、180 或 270 度
      */
     public static Variant rotate(Variant variant, int x, int y, int z) {
-        return variant.withState(rotationState(x, y, z).withUvLock(variant.modelState().uvLock()));
+        return new Variant(variant.getModelLocation(), transformation(x, y, z), variant.isUvLocked(), variant.getWeight());
     }
 
-    private static SimpleModelState rotationState(int x, int y, int z) {
-        OctahedralGroup group = Quadrant.fromXYAngles(quadrant(x), quadrant(y)).compose(quadrant(z).rotationZ);
-        return VARIANT_STATES[group.ordinal()];
-    }
-
-    private static SimpleModelState[] createVariantStates() {
-        var states = new SimpleModelState[OctahedralGroup.values().length];
-        Quadrant[] angles = Quadrant.values();
-        // 原版变体最后绕世界 Z 轴旋转，按变换结果查出等价的原版角度以沿用 UV 锁定和序列化。
-        for (Quadrant z : angles) {
-            for (Quadrant y : angles) {
-                for (Quadrant x : angles) {
-                    int index = Quadrant.fromXYZAngles(x, y, z).ordinal();
-                    if (states[index] == null) states[index] = new SimpleModelState(x, y, z, false);
-                }
-            }
+    private static void checkAngle(int angle) {
+        if (angle != 0 && angle != 90 && angle != 180 && angle != 270) {
+            throw new IllegalArgumentException("模型旋转角度无效 " + angle);
         }
-        return states;
-    }
-
-    private static Quadrant quadrant(int angle) {
-        return switch (angle) {
-            case 0 -> Quadrant.R0;
-            case 90 -> Quadrant.R90;
-            case 180 -> Quadrant.R180;
-            case 270 -> Quadrant.R270;
-            default -> throw new IllegalArgumentException("模型旋转角度无效 " + angle);
-        };
     }
 }
