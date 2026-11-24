@@ -2,8 +2,6 @@ package com.modularmc.mmclutils.client.render.geometry;
 
 import com.modularmc.mmclutils.api.schedule.BoundedVirtualTaskQueue;
 import com.modularmc.mmclutils.api.shape.VoxelShapeGeometry;
-import com.modularmc.mmclutils.client.level.SectionGeometryData;
-import com.modularmc.mmclutils.spatial.VoxelContours;
 
 import net.minecraft.core.Direction;
 

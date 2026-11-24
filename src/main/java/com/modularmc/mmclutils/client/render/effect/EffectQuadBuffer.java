@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.client.render.effect;
 
-import com.modularmc.mmclutils.mixin.client.render.GlBufferAccessor;
+import com.modularmc.mmclutils.mixin.mc.client.GlBufferAccessor;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;

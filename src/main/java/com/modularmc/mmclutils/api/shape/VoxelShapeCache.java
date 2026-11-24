@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.api.shape;
 
-import com.modularmc.mmclutils.mixin.spatial.VoxelShapeAccessor;
+import com.modularmc.mmclutils.mixin.mc.VoxelShapeAccessor;
 
 import net.minecraft.core.Direction;
 import net.minecraft.world.phys.shapes.DiscreteVoxelShape;

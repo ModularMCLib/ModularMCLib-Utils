@@ -4,19 +4,19 @@
 	"package": "com.modularmc.mmclutils.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
-		"level.LevelMixin",
-		"level.ServerLevelSaveMixin",
-		"level.ServerChunkCacheMixin",
-		"spatial.BlockEntityMixin",
-		"spatial.LevelChunkMixin",
-		"spatial.VoxelShapeAccessor"
+		"mc.VoxelShapeAccessor",
+		"mc.world.BlockEntityMixin",
+		"mc.world.LevelChunkMixin",
+		"mc.world.LevelMixin",
+		"mc.world.ServerChunkCacheMixin",
+		"mc.world.ServerLevelMixin"
 	],
 	"client": [
-		"client.input.KeyBindsScreenMixin",
-		"client.input.OptionsMixin",
-		"client.level.ClientChunkCacheMixin",
-		"client.level.ClientChunkStorageMixin",
-		"client.render.GlBufferAccessor"
+		"mc.client.GlBufferAccessor",
+		"mc.client.KeyBindsScreenMixin",
+		"mc.client.OptionsMixin",
+		"mc.world.ClientChunkCacheMixin",
+		"mc.world.ClientChunkStorageMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

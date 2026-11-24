@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.client.render.geometry;
 
-import com.modularmc.mmclutils.client.render.quad.QuadGeometry;
-import com.modularmc.mmclutils.client.render.quad.QuadView;
+import com.modularmc.mmclutils.client.model.QuadUtils;
+import com.modularmc.mmclutils.client.model.QuadView;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -28,7 +28,7 @@ public final class VertexWriters {
         var normal = new Vector3f();
         for (int index = 0; index < QuadView.VERTEX_COUNT; index++) {
             vertex(vertices, pose, quad.position(index), quad.color(index), quad.u(index), quad.v(index), overlay,
-                    light.applyAsInt(index), QuadGeometry.vertexNormal(quad, index, normal));
+                    light.applyAsInt(index), QuadUtils.vertexNormal(quad, index, normal));
         }
     }
 }
