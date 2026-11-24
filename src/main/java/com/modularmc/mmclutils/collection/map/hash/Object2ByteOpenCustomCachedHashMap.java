@@ -127,7 +127,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte put(final K k, final byte v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -151,7 +151,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte addTo(final K k, final byte incr) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             if (containsNullKey) return addToValue(n, incr);
             pos = n;
             containsNullKey = true;
@@ -175,7 +175,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
 
     @Override
     public byte removeByte(final Object k) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey) return removeNullEntry();
             return defRetValue;
         }
@@ -196,7 +196,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
 
     @Override
     public byte getByte(final Object k) {
-        if (k == null) return containsNullKey ? value[n] : defRetValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defRetValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -214,7 +214,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
 
     @Override
     public boolean containsKey(final Object k) {
-        if (k == null) return containsNullKey;
+        if (strategy.equals((K) k, null)) return containsNullKey;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -232,7 +232,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
 
     @Override
     public byte getOrDefault(final Object k, final byte defaultValue) {
-        if (k == null) return containsNullKey ? value[n] : defaultValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defaultValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -251,7 +251,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte putIfAbsent(final K k, final byte v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -264,7 +264,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
 
     @Override
     public boolean remove(final Object k, final byte v) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey && v == value[n]) {
                 removeNullEntry();
                 return true;
@@ -295,7 +295,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public boolean replace(final K k, final byte oldValue, final byte v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -309,7 +309,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte replace(final K k, final byte v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -324,7 +324,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte computeIfAbsent(final K k, final ToIntFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -339,7 +339,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte computeIfAbsent(final K k, final Object2ByteFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -355,7 +355,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte computeByteIfPresent(final K k, final BiFunction<? super K, ? super Byte, ? extends Byte> remappingFunction) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -364,7 +364,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
         if (pos < 0) return defRetValue;
         final Byte newValue = remappingFunction.apply((k), Byte.valueOf(value[pos]));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -374,7 +374,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte computeByte(final K k, final BiFunction<? super K, ? super Byte, ? extends Byte> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -383,7 +383,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
         final Byte newValue = remappingFunction.apply((k), pos >= 0 ? Byte.valueOf(value[pos]) : null);
         if (newValue == null) {
             if (pos >= 0) {
-                if (k == null) removeNullEntry();
+                if (strategy.equals(k, null)) removeNullEntry();
                 else removeEntry(pos);
             }
             return defRetValue;
@@ -399,7 +399,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte mergeByte(final K k, final byte v, ByteBinaryOperator remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -416,7 +416,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
     @Override
     public byte merge(final K k, final byte v, final BiFunction<? super Byte, ? super Byte, ? extends Byte> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -428,7 +428,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
         }
         final Byte newValue = remappingFunction.apply(Byte.valueOf(value[pos]), Byte.valueOf(v));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -814,7 +814,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
             if (e.getValue() == null || !(e.getValue() instanceof Byte)) return false;
             final K k = ((K) e.getKey());
             final byte v = ((Byte) (e.getValue())).byteValue();
-            if (((k) == null)) return Object2ByteOpenCustomCachedHashMap.this.containsNullKey && ((value[n]) == (v));
+            if (strategy.equals(k, null)) return Object2ByteOpenCustomCachedHashMap.this.containsNullKey && ((value[n]) == (v));
             K curr;
             final K[] key = Object2ByteOpenCustomCachedHashMap.this.key;
             final int mask = Object2ByteOpenCustomCachedHashMap.this.mask;
@@ -834,7 +834,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
             if (e.getValue() == null || !(e.getValue() instanceof Byte)) return false;
             final K k = ((K) e.getKey());
             final byte v = ((Byte) (e.getValue())).byteValue();
-            if (((k) == null)) {
+            if (strategy.equals(k, null)) {
                 if (containsNullKey && ((value[n]) == (v))) {
                     removeNullEntry();
                     return true;
@@ -1099,6 +1099,7 @@ public final class Object2ByteOpenCustomCachedHashMap<K> extends Object2ByteOpen
             newValue[pos] = value[i];
             newHash[pos] = h;
         }
+        newKey[newN] = key[n];
         newValue[newN] = value[n];
         n = newN;
         this.mask = mask;

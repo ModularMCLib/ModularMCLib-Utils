@@ -38,6 +38,7 @@ function Transform($content, $t, $isCustom) {
     $wrapper = $t.Wrapper; $prim = $t.Prim; $consumer = $t.Consumer; $op = $t.Operator
     $className = "Object2${name}Open$(if ($isCustom) { 'Custom' })CachedHashMap"
     $hashLine = if ($isCustom) { '            h = strategy.hashCode(k);' } else { '            h = k.hashCode();' }
+    $nullKeyCheck = if ($isCustom) { 'strategy.equals(k, null)' } else { 'k == null' }
 
     # 改写基本类型的映射接口、参数和返回值。
 
@@ -46,7 +47,7 @@ function Transform($content, $t, $isCustom) {
     @Override
     public int computeIfAbsent(final K k, final ToIntFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if ($nullKeyCheck) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
 $hashLine
@@ -64,7 +65,7 @@ $hashLine
     @Override
     public boolean computeIfAbsent(final K k, final Predicate<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if ($nullKeyCheck) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
 $hashLine

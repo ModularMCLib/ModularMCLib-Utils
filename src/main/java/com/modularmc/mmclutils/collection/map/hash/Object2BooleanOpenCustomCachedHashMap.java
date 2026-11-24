@@ -125,7 +125,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean put(final K k, final boolean v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -142,7 +142,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
 
     @Override
     public boolean removeBoolean(final Object k) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey) return removeNullEntry();
             return defRetValue;
         }
@@ -163,7 +163,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
 
     @Override
     public boolean getBoolean(final Object k) {
-        if (k == null) return containsNullKey ? value[n] : defRetValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defRetValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -181,7 +181,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
 
     @Override
     public boolean containsKey(final Object k) {
-        if (k == null) return containsNullKey;
+        if (strategy.equals((K) k, null)) return containsNullKey;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -199,7 +199,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
 
     @Override
     public boolean getOrDefault(final Object k, final boolean defaultValue) {
-        if (k == null) return containsNullKey ? value[n] : defaultValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defaultValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -218,7 +218,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean putIfAbsent(final K k, final boolean v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -231,7 +231,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
 
     @Override
     public boolean remove(final Object k, final boolean v) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey && v == value[n]) {
                 removeNullEntry();
                 return true;
@@ -262,7 +262,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean replace(final K k, final boolean oldValue, final boolean v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -276,7 +276,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean replace(final K k, final boolean v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -291,7 +291,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean computeIfAbsent(final K k, final Predicate<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -306,7 +306,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean computeIfAbsent(final K k, final Object2BooleanFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -322,7 +322,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean computeBooleanIfPresent(final K k, final BiFunction<? super K, ? super Boolean, ? extends Boolean> remappingFunction) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -331,7 +331,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
         if (pos < 0) return defRetValue;
         final Boolean newValue = remappingFunction.apply((k), Boolean.valueOf(value[pos]));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -341,7 +341,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean computeBoolean(final K k, final BiFunction<? super K, ? super Boolean, ? extends Boolean> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -350,7 +350,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
         final Boolean newValue = remappingFunction.apply((k), pos >= 0 ? Boolean.valueOf(value[pos]) : null);
         if (newValue == null) {
             if (pos >= 0) {
-                if (k == null) removeNullEntry();
+                if (strategy.equals(k, null)) removeNullEntry();
                 else removeEntry(pos);
             }
             return defRetValue;
@@ -366,7 +366,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
     @Override
     public boolean merge(final K k, final boolean v, final BiFunction<? super Boolean, ? super Boolean, ? extends Boolean> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -378,7 +378,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
         }
         final Boolean newValue = remappingFunction.apply(Boolean.valueOf(value[pos]), Boolean.valueOf(v));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -764,7 +764,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
             if (e.getValue() == null || !(e.getValue() instanceof Boolean)) return false;
             final K k = ((K) e.getKey());
             final boolean v = ((Boolean) (e.getValue())).booleanValue();
-            if (((k) == null)) return Object2BooleanOpenCustomCachedHashMap.this.containsNullKey && ((value[n]) == (v));
+            if (strategy.equals(k, null)) return Object2BooleanOpenCustomCachedHashMap.this.containsNullKey && ((value[n]) == (v));
             K curr;
             final K[] key = Object2BooleanOpenCustomCachedHashMap.this.key;
             final int mask = Object2BooleanOpenCustomCachedHashMap.this.mask;
@@ -784,7 +784,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
             if (e.getValue() == null || !(e.getValue() instanceof Boolean)) return false;
             final K k = ((K) e.getKey());
             final boolean v = ((Boolean) (e.getValue())).booleanValue();
-            if (((k) == null)) {
+            if (strategy.equals(k, null)) {
                 if (containsNullKey && ((value[n]) == (v))) {
                     removeNullEntry();
                     return true;
@@ -1049,6 +1049,7 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
             newValue[pos] = value[i];
             newHash[pos] = h;
         }
+        newKey[newN] = key[n];
         newValue[newN] = value[n];
         n = newN;
         this.mask = mask;

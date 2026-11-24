@@ -85,9 +85,10 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
 
     @Override
     public boolean add(final K k) {
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             if (containsNull) return false;
             containsNull = true;
+            key[n] = k;
         } else {
             final int h = strategy.hashCode(k);
             K curr;
@@ -108,9 +109,10 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
 
     @Override
     public K addOrGet(final K k) {
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             if (containsNull) return key[n];
             containsNull = true;
+            key[n] = k;
         } else {
             final int h = strategy.hashCode(k);
             K curr;
@@ -167,7 +169,7 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
 
     @Override
     public boolean remove(final Object k) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNull) return removeNullEntry();
             return false;
         }
@@ -188,7 +190,7 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
 
     @Override
     public boolean contains(final Object k) {
-        if (k == null) return containsNull;
+        if (strategy.equals((K) k, null)) return containsNull;
         @SuppressWarnings("unchecked")
         final K kk = (K) k;
         final int h = strategy.hashCode(kk);
@@ -206,7 +208,7 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
 
     @Override
     public K get(final Object k) {
-        if (k == null) return key[n];
+        if (strategy.equals((K) k, null)) return key[n];
         @SuppressWarnings("unchecked")
         final K kk = (K) k;
         final int h = strategy.hashCode(kk);
@@ -259,6 +261,7 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
             newKey[pos] = k;
             newHash[pos] = h;
         }
+        newKey[newN] = key[n];
         n = newN;
         this.mask = mask;
         maxFill = HashCommon.maxFill(n, f);

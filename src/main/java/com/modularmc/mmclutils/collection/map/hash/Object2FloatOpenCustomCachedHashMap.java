@@ -127,7 +127,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float put(final K k, final float v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -151,7 +151,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float addTo(final K k, final float incr) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             if (containsNullKey) return addToValue(n, incr);
             pos = n;
             containsNullKey = true;
@@ -175,7 +175,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
 
     @Override
     public float removeFloat(final Object k) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey) return removeNullEntry();
             return defRetValue;
         }
@@ -196,7 +196,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
 
     @Override
     public float getFloat(final Object k) {
-        if (k == null) return containsNullKey ? value[n] : defRetValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defRetValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -214,7 +214,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
 
     @Override
     public boolean containsKey(final Object k) {
-        if (k == null) return containsNullKey;
+        if (strategy.equals((K) k, null)) return containsNullKey;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -232,7 +232,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
 
     @Override
     public float getOrDefault(final Object k, final float defaultValue) {
-        if (k == null) return containsNullKey ? value[n] : defaultValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defaultValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -251,7 +251,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float putIfAbsent(final K k, final float v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -264,7 +264,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
 
     @Override
     public boolean remove(final Object k, final float v) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey && v == value[n]) {
                 removeNullEntry();
                 return true;
@@ -295,7 +295,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public boolean replace(final K k, final float oldValue, final float v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -309,7 +309,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float replace(final K k, final float v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -324,7 +324,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float computeIfAbsent(final K k, final ToDoubleFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -339,7 +339,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float computeIfAbsent(final K k, final Object2FloatFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -355,7 +355,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float computeFloatIfPresent(final K k, final BiFunction<? super K, ? super Float, ? extends Float> remappingFunction) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -364,7 +364,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
         if (pos < 0) return defRetValue;
         final Float newValue = remappingFunction.apply((k), Float.valueOf(value[pos]));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -374,7 +374,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float computeFloat(final K k, final BiFunction<? super K, ? super Float, ? extends Float> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -383,7 +383,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
         final Float newValue = remappingFunction.apply((k), pos >= 0 ? Float.valueOf(value[pos]) : null);
         if (newValue == null) {
             if (pos >= 0) {
-                if (k == null) removeNullEntry();
+                if (strategy.equals(k, null)) removeNullEntry();
                 else removeEntry(pos);
             }
             return defRetValue;
@@ -399,7 +399,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float mergeFloat(final K k, final float v, FloatBinaryOperator remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -416,7 +416,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
     @Override
     public float merge(final K k, final float v, final BiFunction<? super Float, ? super Float, ? extends Float> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -428,7 +428,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
         }
         final Float newValue = remappingFunction.apply(Float.valueOf(value[pos]), Float.valueOf(v));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -814,7 +814,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
             if (e.getValue() == null || !(e.getValue() instanceof Float)) return false;
             final K k = ((K) e.getKey());
             final float v = ((Float) (e.getValue())).floatValue();
-            if (((k) == null))
+            if (strategy.equals(k, null))
                 return Object2FloatOpenCustomCachedHashMap.this.containsNullKey && (Float.floatToRawIntBits(value[n]) == Float.floatToRawIntBits(v));
             K curr;
             final K[] key = Object2FloatOpenCustomCachedHashMap.this.key;
@@ -836,7 +836,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
             if (e.getValue() == null || !(e.getValue() instanceof Float)) return false;
             final K k = ((K) e.getKey());
             final float v = ((Float) (e.getValue())).floatValue();
-            if (((k) == null)) {
+            if (strategy.equals(k, null)) {
                 if (containsNullKey && (Float.floatToRawIntBits(value[n]) == Float.floatToRawIntBits(v))) {
                     removeNullEntry();
                     return true;
@@ -1101,6 +1101,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
             newValue[pos] = value[i];
             newHash[pos] = h;
         }
+        newKey[newN] = key[n];
         newValue[newN] = value[n];
         n = newN;
         this.mask = mask;

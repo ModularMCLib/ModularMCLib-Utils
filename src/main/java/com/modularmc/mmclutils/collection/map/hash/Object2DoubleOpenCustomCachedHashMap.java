@@ -127,7 +127,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double put(final K k, final double v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -151,7 +151,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double addTo(final K k, final double incr) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             if (containsNullKey) return addToValue(n, incr);
             pos = n;
             containsNullKey = true;
@@ -175,7 +175,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
 
     @Override
     public double removeDouble(final Object k) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey) return removeNullEntry();
             return defRetValue;
         }
@@ -196,7 +196,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
 
     @Override
     public double getDouble(final Object k) {
-        if (k == null) return containsNullKey ? value[n] : defRetValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defRetValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -214,7 +214,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
 
     @Override
     public boolean containsKey(final Object k) {
-        if (k == null) return containsNullKey;
+        if (strategy.equals((K) k, null)) return containsNullKey;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -232,7 +232,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
 
     @Override
     public double getOrDefault(final Object k, final double defaultValue) {
-        if (k == null) return containsNullKey ? value[n] : defaultValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defaultValue;
         K fk = (K) k;
         K curr;
         final K[] key = this.key;
@@ -251,7 +251,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double putIfAbsent(final K k, final double v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -264,7 +264,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
 
     @Override
     public boolean remove(final Object k, final double v) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey && v == value[n]) {
                 removeNullEntry();
                 return true;
@@ -295,7 +295,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public boolean replace(final K k, final double oldValue, final double v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -309,7 +309,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double replace(final K k, final double v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -324,7 +324,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double computeIfAbsent(final K k, final ToDoubleFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -339,7 +339,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double computeIfAbsent(final K k, final Object2DoubleFunction<? super K> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -355,7 +355,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double computeDoubleIfPresent(final K k, final BiFunction<? super K, ? super Double, ? extends Double> remappingFunction) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -364,7 +364,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
         if (pos < 0) return defRetValue;
         final Double newValue = remappingFunction.apply((k), Double.valueOf(value[pos]));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -374,7 +374,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double computeDouble(final K k, final BiFunction<? super K, ? super Double, ? extends Double> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -383,7 +383,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
         final Double newValue = remappingFunction.apply((k), pos >= 0 ? Double.valueOf(value[pos]) : null);
         if (newValue == null) {
             if (pos >= 0) {
-                if (k == null) removeNullEntry();
+                if (strategy.equals(k, null)) removeNullEntry();
                 else removeEntry(pos);
             }
             return defRetValue;
@@ -399,7 +399,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double mergeDouble(final K k, final double v, DoubleBinaryOperator remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -416,7 +416,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
     @Override
     public double merge(final K k, final double v, final BiFunction<? super Double, ? super Double, ? extends Double> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -428,7 +428,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
         }
         final Double newValue = remappingFunction.apply(Double.valueOf(value[pos]), Double.valueOf(v));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -814,7 +814,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
             if (e.getValue() == null || !(e.getValue() instanceof Double)) return false;
             final K k = ((K) e.getKey());
             final double v = ((Double) (e.getValue())).doubleValue();
-            if (((k) == null))
+            if (strategy.equals(k, null))
                 return Object2DoubleOpenCustomCachedHashMap.this.containsNullKey && (Double.doubleToRawLongBits(value[n]) == Double.doubleToRawLongBits(v));
             K curr;
             final K[] key = Object2DoubleOpenCustomCachedHashMap.this.key;
@@ -837,7 +837,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
             if (e.getValue() == null || !(e.getValue() instanceof Double)) return false;
             final K k = ((K) e.getKey());
             final double v = ((Double) (e.getValue())).doubleValue();
-            if (((k) == null)) {
+            if (strategy.equals(k, null)) {
                 if (containsNullKey && (Double.doubleToRawLongBits(value[n]) == Double.doubleToRawLongBits(v))) {
                     removeNullEntry();
                     return true;
@@ -1102,6 +1102,7 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
             newValue[pos] = value[i];
             newHash[pos] = h;
         }
+        newKey[newN] = key[n];
         newValue[newN] = value[n];
         n = newN;
         this.mask = mask;

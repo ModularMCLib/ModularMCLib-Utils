@@ -128,7 +128,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V put(final K k, final V v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -146,7 +146,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     @SuppressWarnings("unchecked")
     public V remove(final Object k) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey) return removeNullEntry();
             return defRetValue;
         }
@@ -167,7 +167,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
 
     @Override
     public V get(final Object k) {
-        if (k == null) return containsNullKey ? value[n] : defRetValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defRetValue;
         K curr;
         K fk = (K) k;
         final K[] key = this.key;
@@ -185,7 +185,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
 
     @Override
     public boolean containsKey(final Object k) {
-        if (k == null) return containsNullKey;
+        if (strategy.equals((K) k, null)) return containsNullKey;
         K curr;
         K fk = (K) k;
         final K[] key = this.key;
@@ -203,7 +203,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
 
     @Override
     public V getOrDefault(final Object k, final V defaultValue) {
-        if (k == null) return containsNullKey ? value[n] : defaultValue;
+        if (strategy.equals((K) k, null)) return containsNullKey ? value[n] : defaultValue;
         K curr;
         K fk = (K) k;
         final K[] key = this.key;
@@ -222,7 +222,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V putIfAbsent(final K k, final V v) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -235,7 +235,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
 
     @Override
     public boolean remove(final Object k, final Object v) {
-        if (k == null) {
+        if (strategy.equals((K) k, null)) {
             if (containsNullKey && Objects.equals(v, value[n])) {
                 removeNullEntry();
                 return true;
@@ -266,7 +266,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public boolean replace(final K k, final V oldValue, final V v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -280,7 +280,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V replace(final K k, final V v) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -295,7 +295,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V computeIfAbsent(K k, Function<? super K, ? extends V> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -310,7 +310,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V computeIfAbsent(final K k, final Object2ObjectFunction<? super K, ? extends V> mappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -326,7 +326,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V computeIfPresent(final K k, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         int pos;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             int h = strategy.hashCode(k);
@@ -336,7 +336,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
         if (value[pos] == null) return defRetValue;
         final V newValue = remappingFunction.apply((k), (value[pos]));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -346,7 +346,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V compute(final K k, final BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -355,7 +355,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
         final V newValue = remappingFunction.apply((k), pos >= 0 ? (value[pos]) : null);
         if (newValue == null) {
             if (pos >= 0) {
-                if (k == null) removeNullEntry();
+                if (strategy.equals(k, null)) removeNullEntry();
                 else removeEntry(pos);
             }
             return defRetValue;
@@ -370,7 +370,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
     @Override
     public V merge(final K k, final V v, final BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
         int pos, h = 0;
-        if (k == null) {
+        if (strategy.equals(k, null)) {
             pos = containsNullKey ? n : -(n + 1);
         } else {
             h = strategy.hashCode(k);
@@ -383,7 +383,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
         }
         final V newValue = remappingFunction.apply((value[pos]), (v));
         if (newValue == null) {
-            if (k == null) removeNullEntry();
+            if (strategy.equals(k, null)) removeNullEntry();
             else removeEntry(pos);
             return defRetValue;
         }
@@ -759,7 +759,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
             if (!(o instanceof Map.Entry<?, ?> e)) return false;
             final K k = ((K) e.getKey());
             final V v = ((V) e.getValue());
-            if (((k) == null)) return Object2ObjectOpenCustomCachedHashMap.this.containsNullKey && Objects.equals(value[n], v);
+            if (strategy.equals(k, null)) return Object2ObjectOpenCustomCachedHashMap.this.containsNullKey && Objects.equals(value[n], v);
             K curr;
             final K[] key = Object2ObjectOpenCustomCachedHashMap.this.key;
             final int mask = Object2ObjectOpenCustomCachedHashMap.this.mask;
@@ -778,7 +778,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
             if (!(o instanceof Map.Entry<?, ?> e)) return false;
             final K k = ((K) e.getKey());
             final V v = ((V) e.getValue());
-            if (((k) == null)) {
+            if (strategy.equals(k, null)) {
                 if (containsNullKey && Objects.equals(value[n], v)) {
                     removeNullEntry();
                     return true;
@@ -1042,6 +1042,7 @@ public final class Object2ObjectOpenCustomCachedHashMap<K, V> extends Object2Obj
             newValue[pos] = value[i];
             newHash[pos] = h;
         }
+        newKey[newN] = key[n];
         newValue[newN] = value[n];
         n = newN;
         this.mask = mask;
