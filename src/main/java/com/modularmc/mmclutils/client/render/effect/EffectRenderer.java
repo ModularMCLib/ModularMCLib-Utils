@@ -139,7 +139,7 @@ public final class EffectRenderer {
         frameTime = now();
         camera = event.getCamera();
         ringCount = 0;
-        PlayerAttachmentRenderer.beginFrame();
+        PlayerAttachmentRenderer.beginFrame(event.getRenderState().cameraRenderState.pos);
         GpuParticleRenderer.beginFrame();
         event.getRenderState().setRenderData(FRAME, ++frame);
         Vec3 eye = camera.position();
@@ -195,6 +195,7 @@ public final class EffectRenderer {
         GpuParticleRenderer.clear();
         ParticleEmitters.clear();
         PlayerAttachmentRenderer.clearFrame();
+        PlayerAttachmentRenderer.releaseBuffers();
         SphereHighlight.clear();
         RINGS.clear();
         camera = null;
@@ -216,6 +217,7 @@ public final class EffectRenderer {
         MoteSprite.generation++;
         GpuParticleRenderer.reload();
         RingRenderer.reload();
+        PlayerAttachmentRenderer.releaseBuffers();
         SphereHighlight.release();
     }
 

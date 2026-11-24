@@ -37,9 +37,12 @@ final class EffectVertices {
     }
 
     void writeVertex(float x, float y, float z, int rgb, float alpha, float u, float v) {
+        writeVertex(x, y, z, (rgb >> 16 & 255) / 255f, (rgb >> 8 & 255) / 255f, (rgb & 255) / 255f, alpha, u, v);
+    }
+
+    void writeVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v) {
         bytes.putFloat(x).putFloat(y).putFloat(z);
-        bytes.putFloat((rgb >> 16 & 255) / 255f).putFloat((rgb >> 8 & 255) / 255f).putFloat((rgb & 255) / 255f)
-                .putFloat(alpha).putFloat(u).putFloat(v);
+        bytes.putFloat(red).putFloat(green).putFloat(blue).putFloat(alpha).putFloat(u).putFloat(v);
     }
 
     void upload(EffectQuadBuffer output) {
