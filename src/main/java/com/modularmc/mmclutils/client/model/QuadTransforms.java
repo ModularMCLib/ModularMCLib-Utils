@@ -2,6 +2,7 @@ package com.modularmc.mmclutils.client.model;
 
 import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.client.model.quad.BakedNormals;
 
@@ -16,6 +17,8 @@ import java.util.function.Predicate;
 
 /** 可组合的四边形变换。返回假表示终止处理并丢弃该面。 */
 public final class QuadTransforms {
+
+    private static final Direction[] DIRECTIONS = Direction.values();
 
     private QuadTransforms() {}
 
@@ -105,7 +108,7 @@ public final class QuadTransforms {
         };
     }
 
-    /** 在裁切前记录轴对齐面的属性，随后按裁切后的顶点重算 UV 和颜色。 */
+    /** 在裁切前记录轴对齐面的属性，随后按裁切后的顶点重算 UV、颜色和显式法线。 */
     public static Transform clampInterpolated(AABB bounds) {
         Transform clamp = clamp(bounds);
         return quad -> {
@@ -115,6 +118,56 @@ public final class QuadTransforms {
             clamp.apply(quad);
             QuadUtils.interpolate(source, quad, axis);
             return true;
+        };
+    }
+
+    /**
+     * 将薄片内侧边面与相邻薄片重合的角点往内移动，用于消除重叠面的闪烁。
+     * 角部避让算法源自 CodeChickenLib，版权所有 (c) 2018 covers1624，采用 LGPL 2.1 或更新版本。
+     *
+     * @param side         薄片所贴的方块外侧方向
+     * @param adjacentMask 相邻薄片的位置，每个方向使用原版三维方向编号对应的位
+     * @param bounds       整块薄片的模型局部包围盒
+     * @param thickness    避让距离，使用模型局部单位
+     * @return 可复用的原地变换，保留剔除分组和其他顶点属性
+     * @throws IllegalArgumentException 距离为负或非有限值
+     */
+    public static Transform insetCorners(Direction side, int adjacentMask, AABB bounds, float thickness) {
+        if (!Float.isFinite(thickness) || thickness < 0) throw new IllegalArgumentException("避让距离须为有限非负值");
+        Direction innerSide = side.getOpposite();
+        Direction.Axis depthAxis = side.getAxis();
+        float inner = bound(bounds, innerSide);
+        return quad -> {
+            Direction face = quad.lightFace();
+            Direction.Axis faceAxis = face.getAxis();
+            if (faceAxis == depthAxis) return true;
+            float edge = bound(bounds, face);
+            for (Direction neighbor : DIRECTIONS) {
+                Direction.Axis axis = neighbor.getAxis();
+                if (axis == depthAxis || axis == faceAxis || (adjacentMask & (1 << neighbor.get3DDataValue())) == 0) continue;
+                float corner = bound(bounds, neighbor);
+                for (int i = 0; i < QuadView.VERTEX_COUNT; i++) {
+                    Vector3fc pos = quad.position(i);
+                    float x = pos.x(), y = pos.y(), z = pos.z();
+                    if (Mth.equal(depthAxis.choose(x, y, z), inner) && Mth.equal(faceAxis.choose(x, y, z), edge) &&
+                            Mth.equal(axis.choose(x, y, z), corner)) {
+                        quad.position(i, x - neighbor.getStepX() * thickness, y - neighbor.getStepY() * thickness,
+                                z - neighbor.getStepZ() * thickness);
+                    }
+                }
+            }
+            return true;
+        };
+    }
+
+    private static float bound(AABB bounds, Direction side) {
+        return (float) switch (side) {
+            case DOWN -> bounds.minY;
+            case UP -> bounds.maxY;
+            case NORTH -> bounds.minZ;
+            case SOUTH -> bounds.maxZ;
+            case WEST -> bounds.minX;
+            case EAST -> bounds.maxX;
         };
     }
 

@@ -3,6 +3,7 @@ package com.modularmc.mmclutils.client.model;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
+import net.minecraft.client.resources.model.geometry.QuadCollection;
 import net.minecraft.core.Direction;
 import net.minecraft.util.ARGB;
 import net.minecraft.world.phys.AABB;
@@ -40,6 +41,18 @@ public final class QuadUtils {
             if (face.cullFace() == cullFace) output.add(face.quad());
         }
         return new ObjectImmutableList<>(output);
+    }
+
+    /** 将烘焙面按剔除方向收集为可交给原版模型的四边形集合。各组内保持输入顺序。 */
+    public static QuadCollection collect(Iterable<Face> faces) {
+        var output = new QuadCollection.Builder();
+        for (Face face : faces) add(output, face.quad(), face.cullFace());
+        return output.build();
+    }
+
+    private static void add(QuadCollection.Builder output, BakedQuad quad, @Nullable Direction cullFace) {
+        if (cullFace == null) output.addUnculledFace(quad);
+        else output.addCulledFace(cullFace, quad);
     }
 
     /** 以方块单位构造盒子一面。盒子内侧的面不参与邻方块剔除。 */
@@ -87,6 +100,50 @@ public final class QuadUtils {
     /** 烘焙四边形及其剔除分组。空方向表示通用面。 */
     public record Face(BakedQuad quad, @Nullable Direction cullFace) {}
 
+    /** 使用单个可写视图收集四边形。构建过程由同一线程操作，烘焙后的顶点与编辑器独立。 */
+    public static final class Builder {
+
+        private final MutableQuadView editor;
+        private final QuadCollection.Builder faces = new QuadCollection.Builder();
+
+        /** 创建构建器并指定首个面的材质。 */
+        public Builder(MaterialInfo material) {
+            editor = new MutableQuadView(material);
+        }
+
+        /** 返回当前可写视图，调用 {@link #emit()} 后可继续构造下一面。 */
+        public MutableQuadView editor() {
+            return editor;
+        }
+
+        /** 清空视图并为下一面指定材质。 */
+        public MutableQuadView begin(MaterialInfo material) {
+            return editor.clear(material);
+        }
+
+        /** 从源面复制顶点、材质和剔除方向，返回当前可写视图。 */
+        public MutableQuadView begin(QuadView source) {
+            return editor.copyFrom(source);
+        }
+
+        /** 烘焙当前视图并追加到相应剔除组。 */
+        public Builder emit() {
+            QuadUtils.add(faces, editor.bake(), editor.cullFace());
+            return this;
+        }
+
+        /** 追加已经烘焙的面，保留剔除分组。 */
+        public Builder add(Face face) {
+            QuadUtils.add(faces, face.quad(), face.cullFace());
+            return this;
+        }
+
+        /** 返回已提交的原版四边形集合。当前视图须先经 {@link #emit()} 提交。 */
+        public QuadCollection build() {
+            return faces.build();
+        }
+    }
+
     /** 将顶点法线写入调用方的向量。缺少独立法线时使用光照朝向。 */
     public static Vector3f vertexNormal(QuadView quad, int vertex, Vector3f output) {
         int packed = quad.packedNormal(vertex);
@@ -125,20 +182,21 @@ public final class QuadUtils {
         return true;
     }
 
-    /** 用源四边形的两个三角形重算目标顶点的颜色与 UV。两个视图须来自同一平面。 */
+    /** 以源四边形的两个三角形插值颜色、UV 和显式顶点法线。两视图须来自同一平面且相互独立。 */
     public static void interpolate(QuadView source, MutableQuadView target, Direction.Axis droppedAxis) {
         int x = droppedAxis == Direction.Axis.X ? 1 : 0;
         int y = droppedAxis == Direction.Axis.Z ? 1 : 2;
+        Vector3f normal = source.hasVertexNormals() ? new Vector3f() : null;
         for (int i = 0; i < QuadView.VERTEX_COUNT; i++) {
             Vector3fc point = target.position(i);
-            if (!sample(source, target, i, point.get(x), point.get(y), x, y, 1, 2, false)) {
-                sample(source, target, i, point.get(x), point.get(y), x, y, 2, 3, true);
+            if (!sample(source, target, i, point.get(x), point.get(y), x, y, 1, 2, false, normal)) {
+                sample(source, target, i, point.get(x), point.get(y), x, y, 2, 3, true, normal);
             }
         }
     }
 
     private static boolean sample(QuadView source, MutableQuadView target, int index, float px, float py,
-                                  int axisX, int axisY, int b, int c, boolean extend) {
+                                  int axisX, int axisY, int b, int c, boolean extend, @Nullable Vector3f normal) {
         Vector3fc origin = source.position(0), v1 = source.position(b), v2 = source.position(c);
         float x1 = v1.get(axisX) - origin.get(axisX), y1 = v1.get(axisY) - origin.get(axisY);
         float x2 = v2.get(axisX) - origin.get(axisX), y2 = v2.get(axisY) - origin.get(axisY);
@@ -154,6 +212,17 @@ public final class QuadUtils {
         target.color(index, ARGB.color(channel(aColor, bColor, cColor, 24, w0, w1, w2),
                 channel(aColor, bColor, cColor, 16, w0, w1, w2), channel(aColor, bColor, cColor, 8, w0, w1, w2),
                 channel(aColor, bColor, cColor, 0, w0, w1, w2)));
+        if (normal != null) {
+            vertexNormal(source, 0, normal).mul(w0);
+            float nx = normal.x, ny = normal.y, nz = normal.z;
+            vertexNormal(source, b, normal).mul(w1).add(nx, ny, nz);
+            nx = normal.x;
+            ny = normal.y;
+            nz = normal.z;
+            vertexNormal(source, c, normal).mul(w2).add(nx, ny, nz);
+            if (normal.lengthSquared() == 0) target.packedNormal(index, 0);
+            else target.normal(index, normal.normalize());
+        }
         return true;
     }
 

@@ -26,8 +26,7 @@ public final class MutableQuadView implements QuadView {
 
     /** 创建一个编辑器，顶点初始在原点，调制色为白色。 */
     public MutableQuadView(MaterialInfo material) {
-        this.material = material;
-        Arrays.fill(colors, -1);
+        clear(material);
     }
 
     /** 复制源四边形的顶点和属性，后续编辑与源视图相互独立。 */
@@ -47,6 +46,18 @@ public final class MutableQuadView implements QuadView {
         lightFace = source.lightFace();
         cullFace = source.cullFace();
         material = source.material();
+        return this;
+    }
+
+    /** 重置编辑器以构造另一个面。位置、UV 和法线清零，颜色恢复为白色。 */
+    public MutableQuadView clear(MaterialInfo material) {
+        for (Vector3f position : positions) position.zero();
+        Arrays.fill(uv, 0);
+        Arrays.fill(normals, 0);
+        Arrays.fill(colors, -1);
+        lightFace = Direction.UP;
+        cullFace = null;
+        this.material = material;
         return this;
     }
 
@@ -97,6 +108,19 @@ public final class MutableQuadView implements QuadView {
     /** 将单位向量打包为指定顶点的法线。 */
     public MutableQuadView normal(int vertex, Vector3fc normal) {
         return packedNormal(vertex, BakedNormals.pack(normal));
+    }
+
+    /** 用几何面法线填充未设置的顶点法线。退化面沿用光照方向。 */
+    public MutableQuadView populateMissingNormals() {
+        int flags = normalFlags();
+        if (flags == (1 << VERTEX_COUNT) - 1) return this;
+        var normal = QuadUtils.normal(this, new Vector3f());
+        if (normal.lengthSquared() == 0) normal.set(lightFace.getStepX(), lightFace.getStepY(), lightFace.getStepZ());
+        int packed = BakedNormals.pack(normal);
+        for (int vertex = 0; vertex < VERTEX_COUNT; vertex++) {
+            if ((flags & (1 << vertex)) == 0) normals[vertex] = packed;
+        }
+        return this;
     }
 
     @Override

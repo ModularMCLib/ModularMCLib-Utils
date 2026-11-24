@@ -46,6 +46,20 @@ public interface QuadView {
         return UVPair.unpackV(packedUv(vertex));
     }
 
+    /** 返回显式顶点法线的位掩码，第零位至第三位按顶点顺序排列。 */
+    default int normalFlags() {
+        int flags = 0;
+        for (int vertex = 0; vertex < VERTEX_COUNT; vertex++) {
+            if (packedNormal(vertex) != 0) flags |= 1 << vertex;
+        }
+        return flags;
+    }
+
+    /** 判断是否存在至少一个显式顶点法线。 */
+    default boolean hasVertexNormals() {
+        return (packedNormal(0) | packedNormal(1) | packedNormal(2) | packedNormal(3)) != 0;
+    }
+
     /** 包装原版烘焙四边形。传入该面所在的剔除分组，通用面传空值。 */
     static QuadView of(BakedQuad quad, @Nullable Direction cullFace) {
         return new Baked(quad, cullFace);
