@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.mixin.mc.world;
 
-import com.modularmc.mmclutils.api.level.LevelSlotHolder;
+import com.modularmc.mmclutils.api.level.LevelStore.SlotHolder;
 
 import net.minecraft.world.level.Level;
 
@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(Level.class)
-public abstract class LevelMixin implements LevelSlotHolder {
+public abstract class LevelMixin implements SlotHolder {
 
     @Unique
     private volatile @Nullable Object[] mmclutils$levelSlots;

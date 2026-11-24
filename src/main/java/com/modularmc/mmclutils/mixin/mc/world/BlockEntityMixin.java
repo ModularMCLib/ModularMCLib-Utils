@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.mixin.mc.world;
 
-import com.modularmc.mmclutils.api.blockentity.TrackedBlockEntity;
+import com.modularmc.mmclutils.api.blockentity.BlockEntityTracking.TrackedBlockEntity;
 
 import net.minecraft.world.level.block.entity.BlockEntity;
 

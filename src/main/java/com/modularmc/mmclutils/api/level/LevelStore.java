@@ -76,23 +76,23 @@ public final class LevelStore<T> {
     }
 
     public T get(Level level) {
-        return forHolder((LevelSlotHolder) level);
+        return forHolder((SlotHolder) level);
     }
 
     public @Nullable T getIfPresent(Level level) {
-        return forHolderIfPresent((LevelSlotHolder) level);
+        return forHolderIfPresent((SlotHolder) level);
     }
 
     public void set(Level level, @Nullable T value) {
-        setHolder((LevelSlotHolder) level, value);
+        setHolder((SlotHolder) level, value);
     }
 
     public void release(Level level) {
-        releaseHolder((LevelSlotHolder) level);
+        releaseHolder((SlotHolder) level);
     }
 
     public static void releaseAll(Level level) {
-        releaseAllHolder((LevelSlotHolder) level);
+        releaseAllHolder((SlotHolder) level);
     }
 
     @SubscribeEvent
@@ -101,12 +101,12 @@ public final class LevelStore<T> {
     }
 
     public static boolean isReleased(Level level) {
-        return ((LevelSlotHolder) level).mmclutils$released();
+        return ((SlotHolder) level).mmclutils$released();
     }
 
     @ApiStatus.Internal
     @SuppressWarnings("unchecked")
-    public T forHolder(LevelSlotHolder holder) {
+    public T forHolder(SlotHolder holder) {
         Object[] slots = holder.mmclutils$slots();
         if (slots != null && slot < slots.length) {
             Object value = SLOT.getAcquire(slots, slot);
@@ -117,13 +117,13 @@ public final class LevelStore<T> {
 
     @ApiStatus.Internal
     @SuppressWarnings("unchecked")
-    public @Nullable T forHolderIfPresent(LevelSlotHolder holder) {
+    public @Nullable T forHolderIfPresent(SlotHolder holder) {
         Object[] slots = holder.mmclutils$slots();
         return slots != null && slot < slots.length ? (T) SLOT.getAcquire(slots, slot) : null;
     }
 
     @ApiStatus.Internal
-    public void setHolder(LevelSlotHolder holder, @Nullable T value) {
+    public void setHolder(SlotHolder holder, @Nullable T value) {
         synchronized (holder) {
             if (value == null) {
                 Object[] slots = holder.mmclutils$slots();
@@ -136,7 +136,7 @@ public final class LevelStore<T> {
 
     @ApiStatus.Internal
     @SuppressWarnings("unchecked")
-    public void releaseHolder(LevelSlotHolder holder) {
+    public void releaseHolder(SlotHolder holder) {
         Object value;
         synchronized (holder) {
             Object[] slots = holder.mmclutils$slots();
@@ -148,7 +148,7 @@ public final class LevelStore<T> {
     }
 
     @ApiStatus.Internal
-    public static void releaseAllHolder(LevelSlotHolder holder) {
+    public static void releaseAllHolder(SlotHolder holder) {
         Object[] slots;
         synchronized (holder) {
             slots = holder.mmclutils$slots();
@@ -164,7 +164,7 @@ public final class LevelStore<T> {
     }
 
     @SuppressWarnings("unchecked")
-    private T createIn(LevelSlotHolder holder) {
+    private T createIn(SlotHolder holder) {
         synchronized (holder) {
             Object[] slots = capacity(holder);
             Object value = SLOT.getAcquire(slots, slot);
@@ -175,7 +175,7 @@ public final class LevelStore<T> {
         }
     }
 
-    private Object[] capacity(LevelSlotHolder holder) {
+    private Object[] capacity(SlotHolder holder) {
         Object[] slots = holder.mmclutils$slots();
         if (slots != null && slot < slots.length) return slots;
         Object[] grown = new Object[Math.max(slot + 1, SLOTS.get())];
@@ -196,5 +196,23 @@ public final class LevelStore<T> {
         } catch (Throwable t) {
             LOGGER.error("维度存储的释放回调失败", t);
         }
+    }
+
+    /** 由维度实例持有的存储槽及卸载状态。写入由 LevelStore 负责。 */
+    @ApiStatus.Internal
+    public interface SlotHolder {
+
+        /** 初次分配前返回空值。 */
+        @Nullable
+        Object[] mmclutils$slots();
+
+        /** 分配、扩容或释放时发布槽数组。 */
+        void mmclutils$setSlots(@Nullable Object[] slots);
+
+        /** 查询该维度实例是否已经释放。 */
+        boolean mmclutils$released();
+
+        /** 在卸载时发布该维度实例的释放状态。 */
+        void mmclutils$setReleased(boolean released);
     }
 }

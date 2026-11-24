@@ -2,8 +2,8 @@ package com.modularmc.mmclutils.api.blockentity;
 
 import com.modularmc.mmclutils.api.level.BlockIndex;
 import com.modularmc.mmclutils.api.level.BlockRange;
-import com.modularmc.mmclutils.api.level.LevelSlotHolder;
 import com.modularmc.mmclutils.api.level.LevelStore;
+import com.modularmc.mmclutils.api.level.LevelStore.SlotHolder;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -74,7 +74,7 @@ final class ProbedSink<E> extends Tracker.Sink<E> {
     }
 
     @Override
-    void added(LevelSlotHolder holder, E e, BlockPos pos) {
+    void added(SlotHolder holder, E e, BlockPos pos) {
         if (kinds.get(e.getClass()) == ProbedBlockEntityIndex.Kind.CANDIDATE) {
             if (admit != null && !admit.test(e)) return;
             store.forHolder(holder).candidates.put(pos, e);
@@ -85,7 +85,7 @@ final class ProbedSink<E> extends Tracker.Sink<E> {
     }
 
     @Override
-    void removed(LevelSlotHolder holder, E e, BlockPos pos) {
+    void removed(SlotHolder holder, E e, BlockPos pos) {
         int mask = access.probedMask(e);
         if ((mask & bit) != 0) access.setProbedMask(e, mask & ~bit);
         State<E> state = store.forHolderIfPresent(holder);
@@ -94,39 +94,39 @@ final class ProbedSink<E> extends Tracker.Sink<E> {
         state.fresh.remove(pos, e);
     }
 
-    void forEach(LevelSlotHolder holder, int x, int y, int z, BlockRange range, @Nullable Predicate<? super E> filter, Consumer<? super E> action) {
+    void forEach(SlotHolder holder, int x, int y, int z, BlockRange range, @Nullable Predicate<? super E> filter, Consumer<? super E> action) {
         State<E> state = prepare(holder, x, y, z, range);
         if (state != null && !state.candidates.isEmpty()) state.candidates.query(x, y, z, range, filter, action);
     }
 
-    int query(LevelSlotHolder holder, int x, int y, int z, BlockRange range, @Nullable Predicate<? super E> filter, Collection<? super E> out) {
+    int query(SlotHolder holder, int x, int y, int z, BlockRange range, @Nullable Predicate<? super E> filter, Collection<? super E> out) {
         State<E> state = prepare(holder, x, y, z, range);
         return state == null || state.candidates.isEmpty() ? 0 : state.candidates.query(x, y, z, range, filter, out);
     }
 
     @Nullable
-    E findAny(LevelSlotHolder holder, int x, int y, int z, BlockRange range, @Nullable Predicate<? super E> filter) {
+    E findAny(SlotHolder holder, int x, int y, int z, BlockRange range, @Nullable Predicate<? super E> filter) {
         State<E> state = prepare(holder, x, y, z, range);
         return state == null || state.candidates.isEmpty() ? null : state.candidates.findAny(x, y, z, range, filter);
     }
 
-    int candidateCount(LevelSlotHolder holder) {
+    int candidateCount(SlotHolder holder) {
         State<E> state = store.forHolderIfPresent(holder);
         return state == null ? 0 : state.candidates.size();
     }
 
-    int sweptSectionCount(LevelSlotHolder holder) {
+    int sweptSectionCount(SlotHolder holder) {
         State<E> state = store.forHolderIfPresent(holder);
         return state == null ? 0 : state.swept.size();
     }
 
-    int freshCount(LevelSlotHolder holder) {
+    int freshCount(SlotHolder holder) {
         State<E> state = store.forHolderIfPresent(holder);
         return state == null ? 0 : state.fresh.size();
     }
 
     @Nullable
-    private State<E> prepare(LevelSlotHolder holder, int x, int y, int z, BlockRange range) {
+    private State<E> prepare(SlotHolder holder, int x, int y, int z, BlockRange range) {
         BlockIndex<E> source = all.index(holder);
         if (source == null || source.isEmpty() || range.isEmpty()) return store.forHolderIfPresent(holder);
         State<E> state = store.forHolder(holder);

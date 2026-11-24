@@ -2,7 +2,7 @@ package com.modularmc.mmclutils.api.blockentity;
 
 import com.modularmc.mmclutils.api.level.BlockIndex;
 import com.modularmc.mmclutils.api.level.BlockRange;
-import com.modularmc.mmclutils.api.level.LevelSlotHolder;
+import com.modularmc.mmclutils.api.level.LevelStore.SlotHolder;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -57,7 +57,7 @@ public final class BlockEntityIndex<T> {
     }
 
     private @Nullable BlockIndex<T> index(Level level) {
-        return sink.index((LevelSlotHolder) level);
+        return sink.index((SlotHolder) level);
     }
 
     public int query(Level level, int x, int y, int z, BlockRange range, @Nullable Predicate<? super T> filter, Collection<? super T> out) {

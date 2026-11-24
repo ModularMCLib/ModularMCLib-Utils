@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.api.blockentity;
 
-import com.modularmc.mmclutils.api.level.LevelSlotHolder;
+import com.modularmc.mmclutils.api.level.LevelStore.SlotHolder;
 
 import net.minecraft.core.BlockPos;
 
@@ -23,7 +23,7 @@ final class Tracker<E> {
     interface Access<E> {
 
         @Nullable
-        LevelSlotHolder holder(E e);
+        SlotHolder holder(E e);
 
         BlockPos pos(E e);
 
@@ -38,9 +38,9 @@ final class Tracker<E> {
 
         abstract boolean accepts(Class<?> type);
 
-        abstract void added(LevelSlotHolder holder, E e, BlockPos pos);
+        abstract void added(SlotHolder holder, E e, BlockPos pos);
 
-        abstract void removed(LevelSlotHolder holder, E e, BlockPos pos);
+        abstract void removed(SlotHolder holder, E e, BlockPos pos);
     }
 
     private final Access<E> access;
@@ -95,7 +95,7 @@ final class Tracker<E> {
         if (!started) start();
         Sink<E>[] targets = byClass.get(e.getClass());
         if (targets.length == 0) return;
-        LevelSlotHolder holder = access.holder(e);
+        SlotHolder holder = access.holder(e);
         if (holder == null) return;
         BlockPos pos = access.pos(e);
         for (Sink<E> sink : targets) sink.added(holder, e, pos);
@@ -105,7 +105,7 @@ final class Tracker<E> {
         if (!started) start();
         Sink<E>[] targets = byClass.get(e.getClass());
         if (targets.length == 0) return;
-        LevelSlotHolder holder = access.holder(e);
+        SlotHolder holder = access.holder(e);
         if (holder == null) return;
         BlockPos pos = access.pos(e);
         for (Sink<E> sink : targets) sink.removed(holder, e, pos);

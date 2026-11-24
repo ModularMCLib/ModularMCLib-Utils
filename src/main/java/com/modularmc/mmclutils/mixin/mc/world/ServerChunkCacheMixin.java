@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.mixin.mc.world;
 
-import com.modularmc.mmclutils.api.level.LoadedChunkSource;
-import com.modularmc.mmclutils.api.level.RecentChunks;
+import com.modularmc.mmclutils.api.level.LoadedChunks.RecentChunks;
+import com.modularmc.mmclutils.api.level.LoadedChunks.Source;
 
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkResult;
@@ -20,7 +20,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ServerChunkCache.class)
-public abstract class ServerChunkCacheMixin implements LoadedChunkSource {
+public abstract class ServerChunkCacheMixin implements Source {
 
     @Shadow
     @Final

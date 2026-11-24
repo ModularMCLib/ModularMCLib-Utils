@@ -1,8 +1,8 @@
 package com.modularmc.mmclutils.api.blockentity;
 
 import com.modularmc.mmclutils.api.level.BlockIndex;
-import com.modularmc.mmclutils.api.level.LevelSlotHolder;
 import com.modularmc.mmclutils.api.level.LevelStore;
+import com.modularmc.mmclutils.api.level.LevelStore.SlotHolder;
 
 import net.minecraft.core.BlockPos;
 
@@ -36,20 +36,20 @@ final class TypedSink<E, T> extends Tracker.Sink<E> {
     }
 
     @Override
-    void added(LevelSlotHolder holder, E e, BlockPos pos) {
+    void added(SlotHolder holder, E e, BlockPos pos) {
         T t = type.cast(e);
         if (admit != null && !admit.test(t)) return;
         store.forHolder(holder).put(pos, t);
     }
 
     @Override
-    void removed(LevelSlotHolder holder, E e, BlockPos pos) {
+    void removed(SlotHolder holder, E e, BlockPos pos) {
         BlockIndex<T> index = store.forHolderIfPresent(holder);
         if (index != null) index.remove(pos, type.cast(e));
     }
 
     @Nullable
-    BlockIndex<T> index(LevelSlotHolder holder) {
+    BlockIndex<T> index(SlotHolder holder) {
         return store.forHolderIfPresent(holder);
     }
 }
