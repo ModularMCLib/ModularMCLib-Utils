@@ -3,7 +3,6 @@ package com.modularmc.mmclutils.collection;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.Nullable;
 
-import java.lang.reflect.Array;
 import java.util.Objects;
 
 import static org.apache.commons.lang3.ArrayUtils.*;
@@ -12,17 +11,15 @@ import static org.apache.commons.lang3.ArrayUtils.*;
 public class ArrayOperations {
 
     /**
-     * Returns a copy of the specified array object, deeply copying multidimensional arrays.
-     * If the specified object is null, the return value is null.
+     * 复制数组，并递归复制多维数组的各级子数组。
+     * 输入为空时返回空值。
      *
      * <p>
-     * Note: if the array object has an element type which is a reference type that is not an array type,
-     * the elements themselves are not deeply copied. This method only copies array objects.
+     * 非数组的引用元素沿用原引用。
      *
-     * @param array the array object to deep copy
-     * @param <T>   the type of the array to deep copy
-     * @return a copy of the specified array object, deeply copying multidimensional arrays, or null if the object is
-     *         null
+     * @param array 待复制数组
+     * @param <T>   数组类型
+     * @return 复制后的数组，输入为空时返回空值
      */
     @Contract(value = "!null -> !null; _ -> null", pure = true)
     public static <T> T @Nullable [] deepCopy(T @Nullable [] array) {
@@ -30,20 +27,32 @@ public class ArrayOperations {
             return null;
         }
 
-        Class<?> componentType = array.getClass().getComponentType();
-
-        @SuppressWarnings("unchecked")
-        T[] copy = (T[]) Array.newInstance(componentType, array.length);
-
-        if (componentType.isArray()) {
+        T[] copy = array.clone();
+        if (array.getClass().getComponentType().isArray()) {
             for (int i = 0; i < array.length; ++i) {
-                // noinspection unchecked
-                Array.set(copy, i, deepCopy((T[]) array[i]));
+                copy[i] = copySubarray(array[i]);
             }
-        } else {
-            System.arraycopy(array, 0, copy, 0, array.length);
         }
 
+        return copy;
+    }
+
+    private static <T> @Nullable T copySubarray(@Nullable T value) {
+        // clone 保留每个子数组的实际类型，与传入引用的类型一致。
+        @SuppressWarnings("unchecked")
+        T copy = (T) switch (value) {
+            case null -> null;
+            case Object[] array -> deepCopy(array);
+            case boolean[] array -> array.clone();
+            case byte[] array -> array.clone();
+            case char[] array -> array.clone();
+            case short[] array -> array.clone();
+            case int[] array -> array.clone();
+            case long[] array -> array.clone();
+            case float[] array -> array.clone();
+            case double[] array -> array.clone();
+            default -> throw new IllegalArgumentException("需要数组类型的元素");
+        };
         return copy;
     }
 
