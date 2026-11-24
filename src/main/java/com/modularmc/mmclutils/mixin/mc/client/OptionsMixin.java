@@ -5,6 +5,8 @@ import com.modularmc.mmclutils.client.input.KeyChordMapping;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Options;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -22,6 +24,14 @@ public abstract class OptionsMixin {
     private void mmclutils$processChords(Options.FieldAccess access, CallbackInfo callback) {
         for (KeyMapping mapping : keyMappings) {
             if (mapping instanceof KeyChordMapping chord) chord.processOptions(access);
+        }
+    }
+
+    @WrapOperation(method = "load", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;processOptions(Lnet/minecraft/client/Options$FieldAccess;)V"))
+    private void mmclutils$readLegacyChords(Options options, Options.FieldAccess access, Operation<Void> original) {
+        original.call(options, access);
+        for (KeyMapping mapping : keyMappings) {
+            if (mapping instanceof KeyChordMapping chord) chord.readLegacyOptions(access);
         }
     }
 }

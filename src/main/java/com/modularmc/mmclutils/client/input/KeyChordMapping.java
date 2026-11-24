@@ -12,6 +12,8 @@ import net.neoforged.neoforge.client.settings.KeyModifier;
 import com.mojang.blaze3d.platform.InputConstants;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import org.jetbrains.annotations.ApiStatus;
+import org.jspecify.annotations.Nullable;
 
 /** 可在控制设置中编辑和保存的组合键。只在客户端线程读写。 */
 public final class KeyChordMapping extends KeyMapping {
@@ -23,6 +25,7 @@ public final class KeyChordMapping extends KeyMapping {
     @Getter
     @Accessors(fluent = true)
     private int modifiers;
+    private @Nullable LegacyOptions legacyOptions;
 
     /** 用主键和修饰掩码创建绑定，自动去掉掩码中与主键重复的修饰位。 */
     public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Key key, int modifiers) {
@@ -44,6 +47,23 @@ public final class KeyChordMapping extends KeyMapping {
         while (consumeClick()) {
             // 旧绑定的点击不能触发新的组合键。
         }
+    }
+
+    /** 从此库此前使用的按键名称读取设置。在绑定注册前指定旧名称。 */
+    public KeyChordMapping migrateFrom(String previousName) {
+        return migrateFrom(previousName, "mmclutils_chord_" + previousName);
+    }
+
+    /**
+     * 在注册前指定旧设置的位置。当前设置缺失时才尝试读取对应旧值。
+     *
+     * @param previousName     旧按键名称，省略原版的 {@code key_} 前缀
+     * @param previousChordKey 旧附加选项的完整键名，值为主键、主修饰键和位掩码以冒号分隔的格式。空值代表没有附加选项
+     * @return 当前组合键
+     */
+    public KeyChordMapping migrateFrom(String previousName, @Nullable String previousChordKey) {
+        legacyOptions = new LegacyOptions("key_" + previousName, previousChordKey);
+        return this;
     }
 
     @Override
@@ -94,11 +114,44 @@ public final class KeyChordMapping extends KeyMapping {
     }
 
     /** 只恢复与已加载的主键和 NeoForge 主修饰键匹配的组合。 */
+    @ApiStatus.Internal
     public void processOptions(Options.FieldAccess access) {
-        String prefix = getKey().getName() + ":" + getKeyModifier().name() + ":";
-        String current = prefix + modifiers;
-        String saved = access.process("mmclutils_chord_" + getName(), current);
-        if (!saved.startsWith(prefix) || saved.equals(current)) return;
+        readModifiers(access.process(chordOption(), optionPrefix() + modifiers));
+    }
+
+    /** 在原版读取完成后补入仍缺失的配置。只在载入选项时调用。 */
+    @ApiStatus.Internal
+    public void readLegacyOptions(Options.FieldAccess access) {
+        LegacyOptions legacy = legacyOptions;
+        if (legacy == null) return;
+        if (access.process("key_" + getName(), "").isEmpty()) {
+            String saved = access.process(legacy.mappingKey(), "");
+            if (!saved.isEmpty()) {
+                try {
+                    String[] parts = saved.split(":", 2);
+                    setKeyModifierAndCode(parts.length == 2 ? KeyModifier.valueFromString(parts[1]) : KeyModifier.NONE,
+                            InputConstants.getKey(parts[0]));
+                } catch (IllegalArgumentException failure) {
+                    ModularMCLibUtils.LOGGER.warn("组合键 {} 的旧主键设置无效，旧设置键为 {}", getName(), legacy.mappingKey(), failure);
+                }
+            }
+        }
+        if (legacy.chordKey() != null && access.process(chordOption(), "").isEmpty()) {
+            readModifiers(access.process(legacy.chordKey(), ""));
+        }
+    }
+
+    private String chordOption() {
+        return "mmclutils_chord_" + getName();
+    }
+
+    private String optionPrefix() {
+        return getKey().getName() + ":" + getKeyModifier().name() + ":";
+    }
+
+    private void readModifiers(String saved) {
+        String prefix = optionPrefix();
+        if (!saved.startsWith(prefix) || saved.equals(prefix + modifiers)) return;
         try {
             setChord(getKey(), Integer.parseInt(saved.substring(prefix.length())));
         } catch (IllegalArgumentException failure) {
@@ -121,4 +174,6 @@ public final class KeyChordMapping extends KeyMapping {
         if ((modifiers & ClientInput.SHIFT) != 0) return KeyModifier.SHIFT;
         return (modifiers & ClientInput.ALT) != 0 ? KeyModifier.ALT : KeyModifier.NONE;
     }
+
+    private record LegacyOptions(String mappingKey, @Nullable String chordKey) {}
 }
