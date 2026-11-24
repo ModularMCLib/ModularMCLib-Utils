@@ -1,5 +1,7 @@
 package com.modularmc.mmclutils.function;
 
+import lombok.Getter;
+
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -7,6 +9,7 @@ import java.util.function.Consumer;
 public final class Accumulator<T, U> implements Consumer<U> {
 
     private final BiFunction<? super T, ? super U, ? extends T> accumulate;
+    @Getter
     private T value;
 
     public Accumulator(T initialValue, BiFunction<? super T, ? super U, ? extends T> accumulate) {
@@ -17,9 +20,5 @@ public final class Accumulator<T, U> implements Consumer<U> {
     @Override
     public void accept(U input) {
         value = accumulate.apply(value, input);
-    }
-
-    public T getValue() {
-        return value;
     }
 }

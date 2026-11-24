@@ -10,6 +10,8 @@ import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.neoforge.client.settings.KeyModifier;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import lombok.Getter;
+import lombok.experimental.Accessors;
 
 /** 可在控制设置中编辑和保存的组合键。只在客户端线程读写。 */
 public final class KeyChordMapping extends KeyMapping {
@@ -17,6 +19,8 @@ public final class KeyChordMapping extends KeyMapping {
     private static final KeyModifier[] DISPLAY_ORDER = { KeyModifier.ALT, KeyModifier.SHIFT, KeyModifier.CONTROL,
             KeyModifier.CONTROL_OR_COMMAND };
     private final int defaultModifiers;
+    @Getter
+    @Accessors(fluent = true)
     private int modifiers;
 
     public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Key key, int modifiers) {
@@ -27,10 +31,6 @@ public final class KeyChordMapping extends KeyMapping {
 
     public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Type type, int key, int modifiers) {
         this(name, category, context, type.getOrCreate(key), modifiers);
-    }
-
-    public int modifiers() {
-        return modifiers;
     }
 
     /** 更换主键及完整修饰键。清除旧绑定积累的点击。 */

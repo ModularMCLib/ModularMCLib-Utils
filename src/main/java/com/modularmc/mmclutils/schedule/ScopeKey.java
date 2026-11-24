@@ -1,5 +1,10 @@
 package com.modularmc.mmclutils.schedule;
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
+
 /**
  * 作用域里一项带类型的服务的键。功能：
  * <ul>
@@ -7,20 +12,15 @@ package com.modularmc.mmclutils.schedule;
  * <li>{@link Scope#provide}/{@link Scope#lookup}：在作用域里放入服务、沿父作用域向上查找；在派生里查找即自动依赖经过的实例，实例上放入或撤下服务时重算</li>
  * </ul>
  */
+@RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ScopeKey<V> {
 
+    @Getter
+    @Accessors(fluent = true)
     private final String name;
-
-    private ScopeKey(String name) {
-        this.name = name;
-    }
 
     public static <V> ScopeKey<V> of(String name) {
         return new ScopeKey<>(name);
-    }
-
-    public String name() {
-        return name;
     }
 
     @Override
