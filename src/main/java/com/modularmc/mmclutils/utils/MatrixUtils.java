@@ -12,6 +12,7 @@ import org.joml.*;
 
 import java.lang.Math;
 import java.security.InvalidParameterException;
+import java.text.NumberFormat;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -152,5 +153,25 @@ public class MatrixUtils {
 
     public static Vector3fc getDirectionAxis(Direction dir) {
         return directionAxes.get(dir);
+    }
+
+    /** 按 JOML 的数字格式将矩阵的四行放在同一行。 */
+    public static String formatRows(Matrix4fc matrix) {
+        return formatRows(matrix, (NumberFormat) Options.NUMBER_FORMAT.clone());
+    }
+
+    /** 四行均使用调用方指定的数字格式。 */
+    public static String formatRows(Matrix4fc matrix, NumberFormat format) {
+        StringBuilder result = new StringBuilder("{");
+        Vector4f row = new Vector4f();
+        for (int index = 0; index < 4; index++) {
+            if (index != 0) result.append(", ");
+            matrix.getRow(index, row);
+            result.append('[').append(format.format(row.x)).append(' ')
+                    .append(format.format(row.y)).append(' ')
+                    .append(format.format(row.z)).append(' ')
+                    .append(format.format(row.w)).append(']');
+        }
+        return result.append('}').toString();
     }
 }

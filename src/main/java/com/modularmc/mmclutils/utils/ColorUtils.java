@@ -2,14 +2,25 @@ package com.modularmc.mmclutils.utils;
 
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.DyeColor;
+import net.minecraft.world.level.material.MapColor;
+
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 /** 颜色分量、颜色空间和分段渐变。颜色按 ARGB 打包。 */
 public final class ColorUtils {
+
+    private static final DyeColor[] DYE_COLORS = DyeColor.values();
 
     private ColorUtils() {}
 
     public static int withAlpha(int rgb, int alpha) {
         return ARGB.color(alpha, rgb);
+    }
+
+    /** 输入只含 RGB 分量时补上透明度，已有非零透明度的颜色直接返回。 */
+    public static int withDefaultAlpha(int color, int alpha) {
+        return ARGB.alpha(color) == 0 ? withAlpha(color, alpha) : color;
     }
 
     public static int interpolate(int from, int to, float amount) {
@@ -21,7 +32,59 @@ public final class ColorUtils {
     }
 
     public static int swapRedBlue(int argb) {
-        return ARGB.color(ARGB.alpha(argb), ARGB.blue(argb), ARGB.green(argb), ARGB.red(argb));
+        return ARGB.toABGR(argb);
+    }
+
+    /** 将最高字节的透明度移到最低字节。 */
+    public static int argbToRgba(int argb) {
+        return Integer.rotateLeft(argb, 8);
+    }
+
+    /** 返回归一化到 0～1 的红、绿、蓝三个分量。 */
+    public static float[] rgb(int argb) {
+        return new float[] { ARGB.redFloat(argb), ARGB.greenFloat(argb), ARGB.blueFloat(argb) };
+    }
+
+    /** 两个 RGBA 值中位置相同的分量相乘，结果仍按 RGBA 排列。 */
+    public static int multiplyRgba(int first, int second) {
+        return ARGB.multiply(first, second);
+    }
+
+    /** 以 RGB 分量的平方距离匹配最接近的染料文字颜色。 */
+    public static DyeColor nearestDyeColor(int rgb) {
+        DyeColor nearest = DYE_COLORS[0];
+        int bestDistance = Integer.MAX_VALUE;
+        for (DyeColor color : DYE_COLORS) {
+            int distance = rgbDistanceSquared(rgb, color.getTextColor());
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                nearest = color;
+            }
+        }
+        return nearest;
+    }
+
+    /** 在原版地图的六位色表中匹配最接近的可见色。 */
+    public static MapColor nearestMapColor(int rgb) {
+        MapColor nearest = MapColor.NONE;
+        int bestDistance = Integer.MAX_VALUE;
+        for (int id = 1; id < 64; id++) {
+            MapColor color = MapColor.byId(id);
+            if (color == MapColor.NONE) continue;
+            int distance = rgbDistanceSquared(rgb, color.calculateARGBColor(MapColor.Brightness.NORMAL));
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                nearest = color;
+            }
+        }
+        return nearest;
+    }
+
+    private static int rgbDistanceSquared(int first, int second) {
+        int red = ARGB.red(first) - ARGB.red(second);
+        int green = ARGB.green(first) - ARGB.green(second);
+        int blue = ARGB.blue(first) - ARGB.blue(second);
+        return red * red + green * green + blue * blue;
     }
 
     public static int[] stepGradient(int from, int to, int alpha, int steps) {
@@ -44,6 +107,7 @@ public final class ColorUtils {
         return first == stops.length - 1 ? stops[first] : interpolate(stops[first], stops[first + 1], scaled - first);
     }
 
+    /** 将色相、饱和度和亮度转换成 ARGB。色相以一圈为 1。 */
     public static int fromHsl(float hue, float saturation, float lightness, int alpha) {
         float turn = hue - (float) Math.floor(hue);
         float sat = Mth.clamp(saturation, 0f, 1f);
@@ -53,9 +117,50 @@ public final class ColorUtils {
                 hslChannel(turn, chroma, light, 4));
     }
 
+    public static int fromHsl(Hsl hsl, int alpha) {
+        return fromHsl(hsl.hue(), hsl.saturation(), hsl.lightness(), alpha);
+    }
+
+    /** 取得归一化的 HSL 分量。灰阶的色相与饱和度均为零。 */
+    public static Hsl toHsl(int argb) {
+        int red = ARGB.red(argb);
+        int green = ARGB.green(argb);
+        int blue = ARGB.blue(argb);
+        int maximum = Math.max(red, Math.max(green, blue));
+        int minimum = Math.min(red, Math.min(green, blue));
+        int chroma = maximum - minimum;
+        float lightness = (maximum + minimum) / 510f;
+        if (chroma == 0) return new Hsl(0, 0, lightness);
+
+        float hue;
+        if (maximum == red) {
+            hue = (green - blue) / (float) chroma;
+        } else if (maximum == green) {
+            hue = 2 + (blue - red) / (float) chroma;
+        } else {
+            hue = 4 + (red - green) / (float) chroma;
+        }
+        if (hue < 0) hue += 6;
+        float saturation = chroma / (255f - Math.abs(maximum + minimum - 255));
+        return new Hsl(hue / 6, saturation, lightness);
+    }
+
+    /** 从原色的亮度减去和加上同一偏移量，依次返回暗色和亮色并保留透明度。 */
+    public static IntIntPair lightnessGradient(int argb, float difference) {
+        if (!(difference >= 0)) throw new IllegalArgumentException("亮度偏移量须为非负数");
+        Hsl hsl = toHsl(argb);
+        int alpha = ARGB.alpha(argb);
+        int dark = fromHsl(hsl.hue(), hsl.saturation(), hsl.lightness() - difference, alpha);
+        int light = fromHsl(hsl.hue(), hsl.saturation(), hsl.lightness() + difference, alpha);
+        return IntIntPair.of(dark, light);
+    }
+
     private static int hslChannel(float hue, float chroma, float lightness, int offset) {
         float phase = (offset + 12 * hue) % 12;
         float weight = Math.max(-1, Math.min(Math.min(phase - 3, 9 - phase), 1));
         return Math.round(255 * (lightness - chroma * weight / 2));
     }
+
+    /** 色相以圈为单位，饱和度与亮度使用 0～1。 */
+    public record Hsl(float hue, float saturation, float lightness) {}
 }

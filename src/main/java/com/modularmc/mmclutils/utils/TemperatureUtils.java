@@ -11,7 +11,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
-/** 依据原版材质、光源、生物群系和着火状态估算方块及实体的相对温度。 */
+/** 估算方块与实体的相对温度，并格式化有明确单位的温度。 */
 public final class TemperatureUtils {
 
     private TemperatureUtils() {}
@@ -39,5 +39,10 @@ public final class TemperatureUtils {
     /** 判断实体本身是否作为热源。 */
     public static boolean hasHeat(Entity entity) {
         return entity instanceof LivingEntity || entity.isOnFire();
+    }
+
+    /** 输入以开尔文计量，按调用方选择显示 K 或 °C。 */
+    public static String formatKelvin(double kelvin, boolean celsius) {
+        return celsius ? NumberUtils.formatTwoDecimals(kelvin - 273.15) + " °C" : NumberUtils.formatTwoDecimals(kelvin) + " K";
     }
 }
