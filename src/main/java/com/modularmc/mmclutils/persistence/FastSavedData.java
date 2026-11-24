@@ -2,7 +2,7 @@ package com.modularmc.mmclutils.persistence;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
 import com.modularmc.mmclutils.concurrent.SerialTaskExecutor;
-import com.modularmc.mmclutils.io.BinaryFiles;
+import com.modularmc.mmclutils.io.FileUtils;
 import com.modularmc.mmclutils.level.LevelStore;
 
 import net.minecraft.resources.Identifier;
@@ -72,7 +72,7 @@ public final class FastSavedData<T> {
         boolean imported = false;
         T value;
         if (!Files.notExists(path)) {
-            value = BinaryFiles.read(path, type.reader());
+            value = FileUtils.read(path, type.reader());
         } else {
             LegacyFile<T> legacy = type.legacy();
             Path oldFile = legacy == null ? null : worldRoot.resolve(legacy.relativePath()).normalize();
@@ -121,7 +121,7 @@ public final class FastSavedData<T> {
             T valueToWrite = type.copyForWrite().apply(value);
             submitted = revision;
             pending = executor.submit(() -> {
-                BinaryFiles.writeAtomically(path, valueToWrite, type.writer());
+                FileUtils.writeAtomically(path, valueToWrite, type.writer());
                 changes.persisted(revision);
                 return null;
             });
@@ -151,11 +151,11 @@ public final class FastSavedData<T> {
 
     /** copyForWrite 由世界线程调用，返回写盘线程可以独立读取的值。 */
     public record Type<T>(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
-                          BinaryFiles.Reader<T> reader, BinaryFiles.Writer<T> writer,
+                          FileUtils.Reader<T> reader, FileUtils.Writer<T> writer,
                           @Nullable LegacyFile<T> legacy) {
 
         public Type(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
-                    BinaryFiles.Reader<T> reader, BinaryFiles.Writer<T> writer) {
+                    FileUtils.Reader<T> reader, FileUtils.Writer<T> writer) {
             this(id, factory, copyForWrite, reader, writer, null);
         }
     }
