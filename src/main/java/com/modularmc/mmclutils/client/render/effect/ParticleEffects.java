@@ -1,13 +1,9 @@
 package com.modularmc.mmclutils.client.render.effect;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 /**
  * 在客户端提交带阻力和重力的光点，或提交向指定位置移动的光点。
  * 粒子工厂可以传入自己的精灵，由批量管线统一计算和绘制。
  */
-@OnlyIn(Dist.CLIENT)
 public final class ParticleEffects {
 
     public static final int SHRINK = GpuParticleRenderer.SHRINK, PULSE = GpuParticleRenderer.PULSE_SIZE, CONSTANT = GpuParticleRenderer.CONSTANT;

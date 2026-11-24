@@ -1,12 +1,9 @@
 package com.modularmc.mmclutils.client.render.effect;
 
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.SplittableRandom;
 
-@OnlyIn(Dist.CLIENT)
 public final class BeamEffects {
 
     private static final SplittableRandom RANDOM = new SplittableRandom(0x2545F4914F6CDD1DL);

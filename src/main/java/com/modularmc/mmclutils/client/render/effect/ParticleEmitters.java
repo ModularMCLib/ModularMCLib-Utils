@@ -3,15 +3,12 @@ package com.modularmc.mmclutils.client.render.effect;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.particles.ParticleOptions;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
 
 /**
  * 使用原版粒子工厂发射一次性高斯爆散，或在客户端 Tick 中持续发射粒子。
  */
-@OnlyIn(Dist.CLIENT)
 public final class ParticleEmitters {
 
     static final int MAX_EMITTERS = 1024;

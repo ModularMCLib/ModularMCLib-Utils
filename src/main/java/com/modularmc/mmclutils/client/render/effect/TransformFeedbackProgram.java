@@ -3,8 +3,6 @@ package com.modularmc.mmclutils.client.render.effect;
 import com.modularmc.mmclutils.ModularMCLibUtils;
 
 import net.minecraft.client.Minecraft;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import org.jspecify.annotations.Nullable;
 import org.lwjgl.opengl.GL20;
@@ -13,7 +11,6 @@ import org.lwjgl.opengl.GL30;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-@OnlyIn(Dist.CLIENT)
 final class TransformFeedbackProgram {
 
     private static final String[] VARYINGS = { "tfPosition", "tfColor", "tfUV" };

@@ -4,8 +4,6 @@ import com.modularmc.mmclutils.ModularMCLibUtils;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.texture.TextureAtlas;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import org.joml.Vector3f;
@@ -25,7 +23,6 @@ import java.util.SplittableRandom;
 /**
  * 光点产生时写入槽位池。每帧通过变换反馈批量展开为朝向相机的四边形，再用原版管线绘制。
  */
-@OnlyIn(Dist.CLIENT)
 final class GpuParticleRenderer {
 
     static final int BALLISTIC = 0, SLIDE = 1, PULSE = 2, BURST = 3, FLOW = 4;

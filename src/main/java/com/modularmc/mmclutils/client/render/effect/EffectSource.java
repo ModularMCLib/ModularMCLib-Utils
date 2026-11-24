@@ -1,11 +1,8 @@
 package com.modularmc.mmclutils.client.render.effect;
 
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 /** 在世界渲染状态提取时提交效果，回调在客户端渲染线程执行。 */
-@OnlyIn(Dist.CLIENT)
 @FunctionalInterface
 public interface EffectSource {
 

@@ -1,14 +1,11 @@
 package com.modularmc.mmclutils.client.render.effect;
 
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.util.SplittableRandom;
 
-@OnlyIn(Dist.CLIENT)
 public final class EffectPalette {
 
     public static final int SIZE = 24;

@@ -3,8 +3,6 @@ package com.modularmc.mmclutils.client.render.effect;
 import com.modularmc.mmclutils.ModularMCLibUtils;
 
 import net.minecraft.client.Camera;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -22,7 +20,6 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-@OnlyIn(Dist.CLIENT)
 final class RingRenderer {
 
     static final int RIBBON_SEGMENTS = 192;

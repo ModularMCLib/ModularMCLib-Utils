@@ -1,12 +1,8 @@
 package com.modularmc.mmclutils.client.render.effect;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import java.util.Map;
 import java.util.WeakHashMap;
 
-@OnlyIn(Dist.CLIENT)
 public final class EffectClock {
 
     private static final Map<Object, EffectClock> CLOCKS = new WeakHashMap<>();

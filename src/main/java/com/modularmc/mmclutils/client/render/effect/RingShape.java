@@ -1,9 +1,5 @@
 package com.modularmc.mmclutils.client.render.effect;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
-@OnlyIn(Dist.CLIENT)
 public record RingShape(int strands, float height, float turns, float taper, float fadeIn, float fadeOut) {
 
     public static final RingShape CLOSED = new RingShape(0, 0, 0, 0, 0, 0);

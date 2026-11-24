@@ -2,15 +2,12 @@ package com.modularmc.mmclutils.client.render.effect;
 
 import net.minecraft.client.particle.SpriteSet;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.ArrayList;
 
 /**
  * 从粒子图集读取并缓存各帧的 UV，资源重载后重新解析。
  */
-@OnlyIn(Dist.CLIENT)
 public final class MoteSprite {
 
     static int generation;

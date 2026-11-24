@@ -1,14 +1,10 @@
 package com.modularmc.mmclutils.client.render.effect;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 
-@OnlyIn(Dist.CLIENT)
 public final class ParticleRing {
 
     public static final float PIXEL = 1F / 16F;

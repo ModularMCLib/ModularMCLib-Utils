@@ -3,8 +3,6 @@ package com.modularmc.mmclutils.client.render.geometry;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import org.joml.Matrix4f;
@@ -13,7 +11,6 @@ import org.joml.Matrix4f;
  * 按每格十六像素生成轴对齐的纹理面，使流体或面板可以跨方块连续平铺。
  * 顶点包含位置、颜色、UV、覆盖层、亮度和法线。
  */
-@OnlyIn(Dist.CLIENT)
 public final class SpriteQuads {
 
     public static final int DOWN = 1, UP = 2, NORTH = 4, SOUTH = 8, WEST = 16, EAST = 32;
