@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.client.level;
 
 import com.modularmc.mmclutils.level.BlockEnvironment;
+import com.modularmc.mmclutils.spatial.BlockDirections;
 import com.modularmc.mmclutils.spatial.VoxelContoursShape;
 import com.modularmc.mmclutils.spatial.VoxelShapes;
 
@@ -12,13 +13,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import org.jspecify.annotations.Nullable;
 
+import java.util.Arrays;
+
 /** 在客户端线程分步读取已加载区段。单个复杂形状的读取同样受本轮时限约束。 */
-@OnlyIn(Dist.CLIENT)
 public final class SectionCapture {
 
     private static final Direction[] DIRECTIONS = Direction.values();
@@ -31,9 +31,11 @@ public final class SectionCapture {
     private final int[] visible = new int[4096];
     private final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
     private final BlockPos.MutableBlockPos neighbor = new BlockPos.MutableBlockPos();
-    private static final ChunkEntry UNQUERIED = new ChunkEntry(false, null);
-    private final ChunkEntry[] chunks = { UNQUERIED, UNQUERIED, UNQUERIED, UNQUERIED, UNQUERIED, UNQUERIED, UNQUERIED, UNQUERIED, UNQUERIED };
+    private final LevelChunk[] chunks = new LevelChunk[9];
+    private @Nullable ClientLevel world;
+    private @Nullable SectionGeometryData result;
     private @Nullable PendingBlock pending;
+    private int queriedChunks;
     private int cursor;
 
     public SectionCapture(long section, int modes) {
@@ -43,7 +45,14 @@ public final class SectionCapture {
         this.modes = modes;
     }
 
+    /** 在同一客户端世界线程恢复采集，时限使用 System.nanoTime 计时。 */
     public @Nullable SectionGeometryData advance(ClientLevel level, VoxelShapes cache, long deadline) {
+        if (world == null) world = level;
+        else if (world != level) throw new IllegalArgumentException("区段采集已经绑定到另一世界");
+        if (result != null) return result;
+        if (System.nanoTime() >= deadline) return null;
+        refreshChunks(level);
+
         while (cursor < shapes.length && System.nanoTime() < deadline) {
             int x = cursor % 18 - 1, z = cursor / 18 % 18 - 1, y = cursor / (18 * 18) - 1;
             position.set(BlockPos.getX(origin) + x, BlockPos.getY(origin) + y, BlockPos.getZ(origin) + z);
@@ -76,7 +85,10 @@ public final class SectionCapture {
             visible[index] = exposedFaces(level, position, state);
             if ((modes & SectionGeometryData.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelContoursShape.BLOCK)) temperatures[index] = BlockEnvironment.temperature(state, level, position);
         }
-        return cursor == shapes.length ? new SectionGeometryData(origin, modes, shapes, temperatures, visible) : null;
+        if (cursor != shapes.length) return null;
+        Arrays.fill(chunks, null);
+        result = new SectionGeometryData(origin, modes, shapes, temperatures, visible);
+        return result;
     }
 
     private int exposedFaces(ClientLevel level, BlockPos position, BlockState state) {
@@ -85,10 +97,10 @@ public final class SectionCapture {
         for (Direction direction : DIRECTIONS) {
             neighbor.setWithOffset(position, direction);
             LevelChunk chunk = loadedChunk(level, neighbor.getX() >> 4, neighbor.getZ() >> 4);
-            if (chunk == null) faces |= 1 << direction.ordinal();
+            if (chunk == null) faces |= BlockDirections.mask(direction);
             else {
                 BlockState adjacent = chunk.getBlockState(neighbor);
-                if ((fluid.isEmpty() || !fluid.getType().isSame(adjacent.getFluidState().getType())) && Block.shouldRenderFace(level, position, state, adjacent, direction)) faces |= 1 << direction.ordinal();
+                if ((fluid.isEmpty() || !fluid.getType().isSame(adjacent.getFluidState().getType())) && Block.shouldRenderFace(level, position, state, adjacent, direction)) faces |= BlockDirections.mask(direction);
             }
         }
         return faces;
@@ -96,15 +108,31 @@ public final class SectionCapture {
 
     private @Nullable LevelChunk loadedChunk(ClientLevel level, int chunkX, int chunkZ) {
         int chunkIndex = (chunkX - baseChunkX + 1) * 3 + chunkZ - baseChunkZ + 1;
-        ChunkEntry entry = chunks[chunkIndex];
-        if (!entry.queried()) {
-            entry = new ChunkEntry(true, level.getChunkSource().getChunk(chunkX, chunkZ, false));
-            chunks[chunkIndex] = entry;
+        int bit = 1 << chunkIndex;
+        if ((queriedChunks & bit) == 0) {
+            chunks[chunkIndex] = level.getChunkSource().getChunk(chunkX, chunkZ, false);
+            queriedChunks |= bit;
         }
-        return entry.chunk();
+        return chunks[chunkIndex];
+    }
+
+    private void refreshChunks(ClientLevel level) {
+        for (int mask = queriedChunks; mask != 0; mask &= mask - 1) {
+            int index = Integer.numberOfTrailingZeros(mask);
+            int x = baseChunkX + index / 3 - 1;
+            int z = baseChunkZ + index % 3 - 1;
+            if (chunks[index] == level.getChunkSource().getChunk(x, z, false)) continue;
+
+            // 区块缺失或被替换后，已经采集的可见面也可能发生变化。
+            cursor = 0;
+            pending = null;
+            queriedChunks = 0;
+            Arrays.fill(chunks, null);
+            Arrays.fill(temperatures, 0);
+            Arrays.fill(visible, 0);
+            return;
+        }
     }
 
     private record PendingBlock(BlockState state, VoxelShape shape) {}
-
-    private record ChunkEntry(boolean queried, @Nullable LevelChunk chunk) {}
 }

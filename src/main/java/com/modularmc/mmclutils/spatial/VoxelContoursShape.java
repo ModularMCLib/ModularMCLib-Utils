@@ -3,13 +3,10 @@ package com.modularmc.mmclutils.spatial;
 import com.modularmc.mmclutils.client.level.SectionOccupancy;
 
 import net.minecraft.core.Direction;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import java.util.Arrays;
 
-/** Owned coordinates and occupied runs, safely published after capture and never mutated by workers. */
-@OnlyIn(Dist.CLIENT)
+/** 构造时接管坐标和占用区间。读取方共享同一份数据，交付后各方均只读。 */
 public record VoxelContoursShape(double[] x, double[] y, double[] z, SectionOccupancy runs) {
 
     public static final VoxelContoursShape EMPTY = new VoxelContoursShape(new double[] { 0 }, new double[] { 0 }, new double[] { 0 }, new SectionOccupancy());

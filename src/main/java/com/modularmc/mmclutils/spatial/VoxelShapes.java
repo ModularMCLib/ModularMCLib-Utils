@@ -7,15 +7,12 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.phys.shapes.DiscreteVoxelShape;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import it.unimi.dsi.fastutil.doubles.DoubleList;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import org.jspecify.annotations.Nullable;
 
-/** Client-thread identity cache. Both coordinate copying and grid sampling yield to the tick budget. */
-@OnlyIn(Dist.CLIENT)
+/** 在所属线程按形状实例缓存采样结果。坐标复制和网格读取均按时限分步进行。 */
 public final class VoxelShapes {
 
     private static final long MAX_CELLS = 65_536;
@@ -26,11 +23,13 @@ public final class VoxelShapes {
     public @Nullable VoxelContoursShape capture(VoxelShape shape, long deadline) {
         if (shape == Shapes.block()) return VoxelContoursShape.BLOCK;
         if (shape == Shapes.empty()) return VoxelContoursShape.EMPTY;
-        if (!shapes.containsKey(shape)) {
-            shapes.put(shape, new Capture(shape));
+        Capture capture = shapes.getAndMoveToLast(shape);
+        if (capture == null) {
+            capture = new Capture(shape);
+            shapes.put(shape, capture);
             if (shapes.size() > MAX_CACHED_SHAPES) shapes.removeFirst();
         }
-        return shapes.getAndMoveToLast(shape).advance(deadline);
+        return capture.advance(deadline);
     }
 
     public void clear() {
@@ -67,7 +66,7 @@ public final class VoxelShapes {
             while (axis < 3) {
                 if (System.nanoTime() >= deadline) return null;
                 double value = source[axis].getDouble(coordinate);
-                if (!Double.isFinite(value)) throw new IllegalArgumentException("Non-finite vision shape coordinate");
+                if (!Double.isFinite(value)) throw new IllegalArgumentException("体素形状包含非有限坐标");
                 coordinates[axis][coordinate++] = value;
                 if (coordinate == coordinates[axis].length) {
                     coordinate = 0;

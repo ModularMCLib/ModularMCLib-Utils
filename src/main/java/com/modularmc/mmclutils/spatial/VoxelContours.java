@@ -4,8 +4,6 @@ import com.modularmc.mmclutils.client.level.SectionGeometryData;
 
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.doubles.DoubleComparators;
@@ -18,7 +16,6 @@ import java.util.function.Consumer;
 
 /** 从区段几何数据计算并集轮廓，可在后台线程中执行。 */
 @RequiredArgsConstructor
-@OnlyIn(Dist.CLIENT)
 public final class VoxelContours {
 
     private static final double EPSILON = 1.0e-5;

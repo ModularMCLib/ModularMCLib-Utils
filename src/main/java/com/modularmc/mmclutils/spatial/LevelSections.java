@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 /**
  * 把维度的方块状态按区段交给 {@link SectionScan}。功能：
  * <ul>
- * <li>读到的值与逐格调用 {@code Level.getBlockState} 相同，未加载的区块也和它一样按需取：高度范围外与空区块整段是虚空空气，全空气区段整段是空气，
+ * <li>默认只读已加载的区块。未加载、高度范围外与空区块整段是虚空空气，全空气区段整段是空气，
  * 其余区段用调色板判断能否跳过，调试世界退回逐格读取</li>
  * <li>{@link #betweenClosed}/{@link #inRange}/{@link #withinManhattan}：对某维度直接做 {@link SectionScan} 的三种扫描，betweenClosed
  * 的角点顺序随意，
@@ -44,7 +44,7 @@ public final class LevelSections implements SectionScan.Sections<BlockState> {
     private int baseX, baseY, baseZ;
 
     public LevelSections(Level level) {
-        this(level, Unloaded.LOAD);
+        this(level, Unloaded.SKIP);
     }
 
     public LevelSections(Level level, Unloaded unloaded) {
@@ -54,12 +54,12 @@ public final class LevelSections implements SectionScan.Sections<BlockState> {
     }
 
     public static int betweenClosed(Level level, BlockPos a, BlockPos b, Predicate<? super BlockState> match, int limit, Collection<? super BlockPos> out) {
-        return betweenClosed(level, Unloaded.LOAD, a, b, match, (state, pos) -> true, limit, out);
+        return betweenClosed(level, Unloaded.SKIP, a, b, match, (state, pos) -> true, limit, out);
     }
 
     public static int betweenClosed(Level level, BlockPos a, BlockPos b, Predicate<? super BlockState> palette,
                                     SectionScan.CellTest<? super BlockState> test, int limit, Collection<? super BlockPos> out) {
-        return betweenClosed(level, Unloaded.LOAD, a, b, palette, test, limit, out);
+        return betweenClosed(level, Unloaded.SKIP, a, b, palette, test, limit, out);
     }
 
     public static int betweenClosed(Level level, Unloaded unloaded, BlockPos a, BlockPos b, Predicate<? super BlockState> match, int limit,
@@ -74,12 +74,12 @@ public final class LevelSections implements SectionScan.Sections<BlockState> {
     }
 
     public static int inRange(Level level, BlockPos center, BlockRange range, Predicate<? super BlockState> match, int limit, Collection<? super BlockPos> out) {
-        return inRange(level, Unloaded.LOAD, center, range, match, (state, pos) -> true, limit, out);
+        return inRange(level, Unloaded.SKIP, center, range, match, (state, pos) -> true, limit, out);
     }
 
     public static int inRange(Level level, BlockPos center, BlockRange range, Predicate<? super BlockState> palette,
                               SectionScan.CellTest<? super BlockState> test, int limit, Collection<? super BlockPos> out) {
-        return inRange(level, Unloaded.LOAD, center, range, palette, test, limit, out);
+        return inRange(level, Unloaded.SKIP, center, range, palette, test, limit, out);
     }
 
     public static int inRange(Level level, Unloaded unloaded, BlockPos center, BlockRange range, Predicate<? super BlockState> match, int limit,
@@ -94,12 +94,12 @@ public final class LevelSections implements SectionScan.Sections<BlockState> {
 
     public static int withinManhattan(Level level, BlockPos center, int rx, int ry, int rz, Predicate<? super BlockState> match, int limit,
                                       Collection<? super BlockPos> out) {
-        return withinManhattan(level, Unloaded.LOAD, center, rx, ry, rz, match, (state, pos) -> true, limit, out);
+        return withinManhattan(level, Unloaded.SKIP, center, rx, ry, rz, match, (state, pos) -> true, limit, out);
     }
 
     public static int withinManhattan(Level level, BlockPos center, int rx, int ry, int rz, Predicate<? super BlockState> palette,
                                       SectionScan.CellTest<? super BlockState> test, int limit, Collection<? super BlockPos> out) {
-        return withinManhattan(level, Unloaded.LOAD, center, rx, ry, rz, palette, test, limit, out);
+        return withinManhattan(level, Unloaded.SKIP, center, rx, ry, rz, palette, test, limit, out);
     }
 
     public static int withinManhattan(Level level, Unloaded unloaded, BlockPos center, int rx, int ry, int rz, Predicate<? super BlockState> match,

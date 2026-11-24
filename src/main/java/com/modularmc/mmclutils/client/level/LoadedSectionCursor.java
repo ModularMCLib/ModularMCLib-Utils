@@ -3,14 +3,11 @@ package com.modularmc.mmclutils.client.level;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.SectionPos;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 
 /** 以中心区块为起点螺旋遍历，按高度交替访问已加载的非空区段。 */
-@OnlyIn(Dist.CLIENT)
 public final class LoadedSectionCursor {
 
     public static final long NO_SECTION = Long.MIN_VALUE;

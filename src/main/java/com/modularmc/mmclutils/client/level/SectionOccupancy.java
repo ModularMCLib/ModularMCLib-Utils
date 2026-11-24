@@ -1,12 +1,8 @@
 package com.modularmc.mmclutils.client.level;
 
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
-
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
-/** Fixed-size primitive pages. Ownership transfers after capture, avoiding a final whole-grid flatten/copy. */
-@OnlyIn(Dist.CLIENT)
+/** 用原始类型分页存储占用区间的端点。采集结束后由后台只读访问。 */
 public final class SectionOccupancy {
 
     private static final int PAGE_BITS = 10;
@@ -14,6 +10,7 @@ public final class SectionOccupancy {
     private final ObjectArrayList<long[]> pages = new ObjectArrayList<>();
     private int size;
 
+    /** 在采集线程按升序成对追加区间起点和终点。区间包含起点，排除终点。 */
     public void append(long value) {
         int offset = size & (PAGE_SIZE - 1);
         if (offset == 0) pages.add(new long[PAGE_SIZE]);
