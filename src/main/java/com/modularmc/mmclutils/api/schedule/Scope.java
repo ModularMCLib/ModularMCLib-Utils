@@ -1,6 +1,10 @@
 package com.modularmc.mmclutils.api.schedule;
 
 import com.mojang.logging.LogUtils;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -20,8 +24,8 @@ import java.util.function.Supplier;
 /**
  * 作用域：持有副作用，结束时全部收回；绑定一条车道，只在该车道线程上使用。功能：
  * <ul>
- * <li>{@link #child}：子作用域，父结束时连带结束；只有 child 与 {@link OwnedScope#root} 返回能结束的
- * {@link OwnedScope}，select、when、each、模块挂载、共享池、{@link ScopeSlot} 交给回调的作用域都不是 OwnedScope，强转后结束不了</li>
+ * <li>{@link #child}：子作用域，父结束时连带结束；只有 child 与 {@link Owned#root} 返回能结束的
+ * {@link Owned}，select、when、each、模块挂载、共享池、{@link ScopeSlot} 交给回调的作用域都不是 Owned，强转后结束不了</li>
  * <li>{@link #onDispose}/{@link #effect}：登记撤销；结束时先把整棵子树标为不活动，再自叶到根、按登记倒序执行，子作用域之间也按建立的倒序；每个作用域只拆一次，撤销里结束祖先或别的作用域、触发信号、新建作用域都是安全的；撤销抛异常记入失败记录并继续；effect
  * 先检查撤销非空再施加，施加抛异常时异常交给调用方、不登记撤销</li>
  * <li>{@link #effectWhile}：条件为真期间施加，变假或作用域结束时撤销；不建子作用域；施加与撤销的失败处理同三参 effect</li>
@@ -39,7 +43,7 @@ import java.util.function.Supplier;
  * <li>所有挂载体的第一个参数都是它所在的作用域；派生函数拿不到作用域，只读</li>
  * <li>派生函数抛异常记日志并保持原状；挂载体抛异常记日志，这次挂到一半的子作用域整个撤回，值再变化时重新挂</li>
  * <li>{@link #pool}/{@link #lease}：建一个随本作用域结束的 {@link SharedPool}；向池借用共享资源，借用方结束时归还</li>
- * <li>{@link #provide}/{@link #lookup}/{@link #require}：按 {@link ScopeKey} 向所属实例（最近的 {@link ScopeKind}
+ * <li>{@link #provide}/{@link #lookup}/{@link #require}：按 {@link Key} 向所属实例（最近的 {@link ScopeKind}
  * 实例或无父作用域）提供带类型的服务，提供方结束时撤下；查找沿父作用域向上，在派生里查找会自动依赖经过的实例，别的实例上的增减不会让它重算；require 找不到时报错</li>
  * <li>在已结束的作用域上登记：副作用不发生，撤销立即执行，任务直接是已取消状态；listen、watch、select、when、each、effect、effectWhile、provide
  * 此时记一次误用，作用域是因车道关闭而结束的不记</li>
@@ -55,7 +59,7 @@ import java.util.function.Supplier;
  * 层；每一种在首次发生时带调用栈告警并记进最近摘要，之后只计数；系统属性 mmclutils.strictScopes 为 true 时误用直接抛 IllegalStateException</li>
  * </ul>
  */
-public abstract sealed class Scope permits OwnedScope, Scope.Inner {
+public abstract sealed class Scope permits Scope.Owned, Scope.Inner {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final AtomicInteger LIVE = new AtomicInteger();
@@ -199,9 +203,9 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
         return active;
     }
 
-    public final OwnedScope child(String name) {
+    public final Owned child(String name) {
         checkFrame(this);
-        return new OwnedScope(name, lane, this);
+        return new Owned(name, lane, this);
     }
 
     final Scope inner(Object label) {
@@ -404,7 +408,7 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
         return pool.lease(this, key);
     }
 
-    public final <V> void provide(ScopeKey<V> key, V value) {
+    public final <V> void provide(Key<V> key, V value) {
         Objects.requireNonNull(value, "value");
         guard();
         checkFrame(this);
@@ -419,7 +423,7 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
 
     @Nullable
     @SuppressWarnings("unchecked")
-    public final <V> V lookup(ScopeKey<V> key) {
+    public final <V> V lookup(Key<V> key) {
         for (Scope s = this; s != null; s = s.parent) {
             if (!s.anchor) continue;
             s.trackInstance();
@@ -432,13 +436,13 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
         return null;
     }
 
-    public final <V> V require(ScopeKey<V> key) {
+    public final <V> V require(Key<V> key) {
         V value = lookup(key);
         if (value == null) throw new IllegalStateException("No " + key + " in scope " + this);
         return value;
     }
 
-    private void put(ScopeKey<?> key, Object value) {
+    private void put(Key<?> key, Object value) {
         Extras x = extras();
         if (x.serviceCount * 2 == x.services.length) x.services = Arrays.copyOf(x.services, Math.max(4, x.services.length * 2));
         x.services[x.serviceCount * 2] = key;
@@ -447,7 +451,7 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
         instanceChanged();
     }
 
-    private void withdraw(ScopeKey<?> key, Object value) {
+    private void withdraw(Key<?> key, Object value) {
         Extras x = extras;
         if (x == null) return;
         for (int i = x.serviceCount - 1; i >= 0; i--) {
@@ -1037,4 +1041,46 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
     }
 
     private record Entry<V>(V value, Scope scope) {}
+
+    /** 作用域服务的类型键。同名键各自独立，在所属车道上通过 provide 和 lookup 使用。 */
+    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
+    public static final class Key<V> {
+
+        @Getter
+        @Accessors(fluent = true)
+        private final String name;
+
+        public static <V> Key<V> of(String name) {
+            return new Key<>(name);
+        }
+
+        @Override
+        public String toString() {
+            return "Scope.Key[" + name + "]";
+        }
+    }
+
+    /** 持有结束权限的作用域。由 root 和 child 建立，结束会按作用域的车道安排。 */
+    public static final class Owned extends Scope {
+
+        private Owned(Object label, TickScheduler lane, @Nullable Scope parent) {
+            super(label, lane, parent);
+        }
+
+        public static Owned root(String name, TickScheduler lane) {
+            checkFrame(name);
+            return new Owned(name, lane, null);
+        }
+
+        public static Owned root(Object label, TickScheduler lane) {
+            Objects.requireNonNull(label, "label");
+            checkFrame(label);
+            return new Owned(label, lane, null);
+        }
+
+        /** 结束本作用域及其子作用域，重复调用幂等。 */
+        public void dispose() {
+            end();
+        }
+    }
 }

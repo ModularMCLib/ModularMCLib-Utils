@@ -14,7 +14,7 @@ import java.util.Objects;
  * <li>{@link Lease#demand}：借用者声明是否需要资源工作；{@link Pooled#demanded} 汇总为"至少一个借用者需要"，在派生里读取时自动追踪</li>
  * <li>{@link #peek}/{@link #size}：查看已有资源与资源数</li>
  * <li>池所在的作用域结束后全部资源结束，之后的借用拿到的是已结束作用域里的资源</li>
- * <li>池作用域与资源作用域都不是 {@link OwnedScope}，{@link Pooled#scope} 拿到的一方强转后结束不了</li>
+ * <li>池作用域与资源作用域都不是 {@link Scope.Owned}，{@link Pooled#scope} 拿到的一方强转后结束不了</li>
  * </ul>
  */
 public final class SharedPool<K, V> {

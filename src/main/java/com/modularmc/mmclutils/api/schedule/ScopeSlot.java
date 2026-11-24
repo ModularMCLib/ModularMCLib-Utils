@@ -13,8 +13,8 @@ import java.util.function.Consumer;
  * <ul>
  * <li>{@link #open(Object, TickScheduler, Consumer)}：先结束槽里上一个作用域，再在车道上建一个新的无父作用域并在里面执行体；体抛异常记入失败记录，这次挂到一半的作用域整个撤回，槽变空；车道已关闭时不执行体，返回已结束的作用域，槽变空；在车道以外的线程上调用、或车道是异步车道时直接报错，槽里原有的作用域不受影响；在派生函数求值期间调用记一次误用</li>
  * <li>{@link #open(Object, TickScheduler, Object, BiConsumer)}：同上，体额外收一个实参，体可以写成不捕获的静态常量，省掉每次打开新建的转接 lambda</li>
- * <li>返回的作用域与 {@link #current} 都不是 {@link OwnedScope}，强转后结束不了，只能经 {@link #close} 或再次 open 结束</li>
- * <li>{@link #close}：结束槽里的作用域；幂等，槽空、作用域已自行结束、车道已关闭时什么也不做；在别的线程上调用按 {@link OwnedScope#dispose} 的规矩转投</li>
+ * <li>返回的作用域与 {@link #current} 都不是 {@link Scope.Owned}，强转后结束不了，只能经 {@link #close} 或再次 open 结束</li>
+ * <li>{@link #close}：结束槽里的作用域；幂等，槽空、作用域已自行结束、车道已关闭时什么也不做；在别的线程上调用按 {@link Scope.Owned#dispose} 的规矩转投</li>
  * <li>{@link #current}/{@link #isOpen}：查询槽内仍在活动的作用域。槽位以发布语义写入，其它线程可通过 volatile 读取取得该值</li>
  * </ul>
  */

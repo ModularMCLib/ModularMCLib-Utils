@@ -1,5 +1,7 @@
 package com.modularmc.mmclutils.api.schedule;
 
+import com.modularmc.mmclutils.api.schedule.Scope.Key;
+
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectLinkedOpenHashMap;
 import org.jspecify.annotations.Nullable;
@@ -14,7 +16,7 @@ import java.util.function.BiConsumer;
  * <ul>
  * <li>{@link #byIdentity}/{@link #byEquality}：建一种作用域，拥有者按对象身份或按 equals 区分；返回的 {@link Control} 只交给负责开关的一方</li>
  * <li>{@link #install}：登记一个模块；之后建立的每个实例都会挂上它，已经存在的实例立即补挂；同名重复登记报错</li>
- * <li>open 建的实例与模块的子作用域都不是 {@link OwnedScope}，拿到的一方强转后结束不了；每个模块挂在实例下自己的子作用域里，它用 {@link Scope#provide}
+ * <li>open 建的实例与模块的子作用域都不是 {@link Scope.Owned}，拿到的一方强转后结束不了；每个模块挂在实例下自己的子作用域里，它用 {@link Scope#provide}
  * 提供的服务对整个实例可见；某个模块挂载时抛异常记入失败记录，它已挂上的部分整个撤回，不影响其余模块；模块挂载期间读到的信号不会记成外层派生的依赖</li>
  * <li>{@link #get}：拥有者当前的实例，没有时为 null；在派生里调用会随这个拥有者的实例建立、更换与结束自动重算，别的拥有者的实例结束不会让它重算</li>
  * <li>{@link #lookup}/{@link #require}：直接取拥有者实例上的服务；没有实例或没有该服务时，lookup 为 null，require 报错</li>
@@ -92,12 +94,12 @@ public final class ScopeKind<T> {
     }
 
     @Nullable
-    public <V> V lookup(T owner, ScopeKey<V> key) {
+    public <V> V lookup(T owner, Key<V> key) {
         Scope scope = get(owner);
         return scope == null ? null : scope.lookup(key);
     }
 
-    public <V> V require(T owner, ScopeKey<V> key) {
+    public <V> V require(T owner, Key<V> key) {
         Scope scope = get(owner);
         if (scope == null) throw new IllegalStateException("No " + name + " scope for " + owner);
         return scope.require(key);
