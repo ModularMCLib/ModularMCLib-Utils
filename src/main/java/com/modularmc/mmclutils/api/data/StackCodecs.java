@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.api.data;
 
-import com.modularmc.mmclutils.utils.FileUtils.BinaryCodec;
+import com.modularmc.mmclutils.utils.FileUtils.Serializer;
 import com.modularmc.mmclutils.utils.ItemUtils;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -20,7 +20,7 @@ public final class StackCodecs {
     public static final Codec<FluidStack> FLUID = FluidStack.OPTIONAL_CODEC;
 
     /** 按命名空间、路径和数量写入。读取时也接受早期版本写出的单 UTF 标识。 */
-    public static final BinaryCodec<ItemStack> LEGACY_ITEM = new BinaryCodec<>(input -> {
+    public static final Serializer<ItemStack> LEGACY_ITEM = new Serializer<>(input -> {
         Identifier id = readLegacyItemId(input);
         int count = input.readInt();
         if (count < 0) throw new IOException("无效的物品数量：" + count);
@@ -28,7 +28,7 @@ public final class StackCodecs {
         var item = BuiltInRegistries.ITEM.getOptional(id).orElseThrow(() -> new IOException("找不到物品：" + id));
         return new ItemStack(item, count);
     }, (output, stack) -> {
-        BinaryCodec.IDENTIFIER_PARTS.write(output, ItemUtils.id(stack));
+        Serializer.IDENTIFIER_PARTS.write(output, ItemUtils.id(stack));
         output.writeInt(stack.getCount());
     });
 

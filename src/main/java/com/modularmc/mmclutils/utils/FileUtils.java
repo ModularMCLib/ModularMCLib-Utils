@@ -355,16 +355,16 @@ public final class FileUtils {
     }
 
     /** 同一值的两个编解码方向共享约定的字节布局。 */
-    public record BinaryCodec<T>(Reader<T> reader, Writer<T> writer) implements Reader<T>, Writer<T> {
+    public record Serializer<T>(Reader<T> reader, Writer<T> writer) implements Reader<T>, Writer<T> {
 
         /** 使用数据流的修订版 UTF-8 格式。 */
-        public static final BinaryCodec<String> UTF = new BinaryCodec<>(DataInput::readUTF, DataOutputStream::writeUTF);
+        public static final Serializer<String> UTF = new Serializer<>(DataInput::readUTF, DataOutputStream::writeUTF);
 
         /** 使用数据流的一字节布尔格式。 */
-        public static final BinaryCodec<Boolean> BOOLEAN = new BinaryCodec<>(DataInputStream::readBoolean, DataOutputStream::writeBoolean);
+        public static final Serializer<Boolean> BOOLEAN = new Serializer<>(DataInputStream::readBoolean, DataOutputStream::writeBoolean);
 
         /** 以单个 UTF 字段保存 UUID，与旧存档的文本布局一致。 */
-        public static final BinaryCodec<UUID> UUID_TEXT = new BinaryCodec<>(input -> {
+        public static final Serializer<UUID> UUID_TEXT = new Serializer<>(input -> {
             String value = input.readUTF();
             try {
                 return UUID.fromString(value);
@@ -374,7 +374,7 @@ public final class FileUtils {
         }, (output, value) -> output.writeUTF(value.toString()));
 
         /** 将完整标识作为一个 UTF 字段写入。 */
-        public static final BinaryCodec<Identifier> IDENTIFIER = new BinaryCodec<>(input -> {
+        public static final Serializer<Identifier> IDENTIFIER = new Serializer<>(input -> {
             String text = input.readUTF();
             Identifier id = Identifier.tryParse(text);
             if (id == null) throw new IOException("无效的资源标识：" + text);
@@ -382,7 +382,7 @@ public final class FileUtils {
         }, (output, value) -> output.writeUTF(value.toString()));
 
         /** 兼容先写命名空间、再写路径的双 UTF 布局。 */
-        public static final BinaryCodec<Identifier> IDENTIFIER_PARTS = new BinaryCodec<>(input -> {
+        public static final Serializer<Identifier> IDENTIFIER_PARTS = new Serializer<>(input -> {
             String namespace = input.readUTF();
             String path = input.readUTF();
             Identifier id = Identifier.tryBuild(namespace, path);
@@ -394,9 +394,9 @@ public final class FileUtils {
         });
 
         /** 以四字节长度开头读写字节数组，限制读写的最大字节数。 */
-        public static BinaryCodec<byte[]> bytes(int maximumLength) {
+        public static Serializer<byte[]> bytes(int maximumLength) {
             checkMaximumLength(maximumLength);
-            return new BinaryCodec<>(input -> {
+            return new Serializer<>(input -> {
                 int length = checkLength(input.readInt(), maximumLength);
                 byte[] bytes = new byte[length];
                 input.readFully(bytes);
@@ -408,9 +408,9 @@ public final class FileUtils {
         }
 
         /** 按有符号二进制补码读写大整数。上限单位为字节。 */
-        public static BinaryCodec<BigInteger> bigInteger(int maximumLength) {
-            BinaryCodec<byte[]> bytes = bytes(maximumLength);
-            return new BinaryCodec<>(input -> {
+        public static Serializer<BigInteger> bigInteger(int maximumLength) {
+            Serializer<byte[]> bytes = bytes(maximumLength);
+            return new Serializer<>(input -> {
                 byte[] value = bytes.read(input);
                 if (value.length == 0) throw new IOException("整数二进制字段为空");
                 return new BigInteger(value);
@@ -418,9 +418,9 @@ public final class FileUtils {
         }
 
         /** 兼容旧文件的四字节长度与逐字节异或布局。字符集须与旧文件写入时一致。 */
-        public static BinaryCodec<String> legacyXorString(int maximumLength, Charset charset) {
-            BinaryCodec<byte[]> bytes = bytes(maximumLength);
-            return new BinaryCodec<>(input -> new String(xor(bytes.read(input)), charset),
+        public static Serializer<String> legacyXorString(int maximumLength, Charset charset) {
+            Serializer<byte[]> bytes = bytes(maximumLength);
+            return new Serializer<>(input -> new String(xor(bytes.read(input)), charset),
                     (output, value) -> bytes.write(output, xor(value.getBytes(charset))));
         }
 
