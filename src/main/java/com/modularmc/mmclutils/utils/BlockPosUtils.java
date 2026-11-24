@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceKey;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.RandomAccess;
 import java.util.function.Function;
 
 /**
@@ -26,6 +27,7 @@ public final class BlockPosUtils {
 
     private BlockPosUtils() {}
 
+    /** 按原版闭合区间的遍历顺序比较元素坐标。 */
     public static <T> Comparator<T> betweenClosed(Function<? super T, ? extends BlockPos> pos) {
         return (a, b) -> {
             BlockPos pa = pos.apply(a), pb = pos.apply(b);
@@ -37,10 +39,11 @@ public final class BlockPosUtils {
         };
     }
 
+    /** 原地稳定排序。排序期间坐标提取函数应对同一个元素返回相同坐标。 */
     public static <T> void sortBetweenClosed(List<T> list, Function<? super T, ? extends BlockPos> pos) {
         int n = list.size();
         if (n < 2) return;
-        if (n > (1 << 20) || !sortClosedPacked(list, pos)) list.sort(betweenClosed(pos));
+        if (!(list instanceof RandomAccess) || n > (1 << 20) || !sortClosedPacked(list, pos)) list.sort(betweenClosed(pos));
     }
 
     @SuppressWarnings("unchecked")
@@ -48,8 +51,8 @@ public final class BlockPosUtils {
         int n = list.size();
         int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
         int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (int i = 0; i < n; i++) {
-            BlockPos p = pos.apply(list.get(i));
+        for (T t : list) {
+            BlockPos p = pos.apply(t);
             minX = Math.min(minX, p.getX());
             minY = Math.min(minY, p.getY());
             minZ = Math.min(minZ, p.getZ());
@@ -62,7 +65,7 @@ public final class BlockPosUtils {
         long[] keys = new long[n];
         for (int i = 0; i < n; i++) {
             BlockPos p = pos.apply(list.get(i));
-            long k = ((long) (p.getZ() - minZ) << (by + bx)) | ((long) (p.getY() - minY) << bx) | (p.getX() - minX);
+            long k = (((long) p.getZ() - minZ) << (by + bx)) | (((long) p.getY() - minY) << bx) | ((long) p.getX() - minX);
             keys[i] = k << 20 | i;
         }
         Arrays.sort(keys);
@@ -77,6 +80,7 @@ public final class BlockPosUtils {
         return 64 - Long.numberOfLeadingZeros(span);
     }
 
+    /** 按相对中心坐标的曼哈顿距离及原版遍历顺序比较元素。 */
     public static <T> Comparator<T> withinManhattan(BlockPos center, Function<? super T, ? extends BlockPos> pos) {
         long cx = center.getX(), cy = center.getY(), cz = center.getZ();
         return (a, b) -> {
@@ -93,10 +97,11 @@ public final class BlockPosUtils {
         };
     }
 
+    /** 以指定坐标为中心原地稳定排序，使元素顺序与原版曼哈顿遍历一致。 */
     public static <T> void sortWithinManhattan(List<T> list, BlockPos center, Function<? super T, ? extends BlockPos> pos) {
         int n = list.size();
         if (n < 2) return;
-        if (n <= (1 << 20) && withinPackedRange(list, center, pos)) {
+        if (list instanceof RandomAccess && n <= (1 << 20) && withinPackedRange(list, center, pos)) {
             sortPacked(list, center, pos);
         } else {
             list.sort(withinManhattan(center, pos));
@@ -105,8 +110,8 @@ public final class BlockPosUtils {
 
     private static <T> boolean withinPackedRange(List<T> list, BlockPos center, Function<? super T, ? extends BlockPos> pos) {
         int cx = center.getX(), cy = center.getY(), cz = center.getZ();
-        for (int i = 0, n = list.size(); i < n; i++) {
-            BlockPos p = pos.apply(list.get(i));
+        for (T t : list) {
+            BlockPos p = pos.apply(t);
             if (Math.abs((long) p.getX() - cx) > 63 || Math.abs((long) p.getY() - cy) > 63 || Math.abs((long) p.getZ() - cz) > 63) {
                 return false;
             }
@@ -140,10 +145,12 @@ public final class BlockPosUtils {
         return dx * dx + dy * dy + dz * dz;
     }
 
+    /** 返回两个打包方块坐标之间的欧氏距离，单位为方块。 */
     public static double distance(long first, long second) {
         return Math.sqrt(distanceSquared(first, second));
     }
 
+    /** 用维度标识和原版打包坐标构建全局位置。坐标为零时表示该维度的原点。 */
     public static GlobalPos globalPos(Identifier dimension, long packedPos) {
         return GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dimension), BlockPos.of(packedPos));
     }

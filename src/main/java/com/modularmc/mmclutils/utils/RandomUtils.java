@@ -12,11 +12,13 @@ public final class RandomUtils {
 
     private RandomUtils() {}
 
+    /** 以给定概率进行一次抽样。概率必须在 0～1 之间，两个端点直接返回。 */
     public static boolean chance(RandomSource random, double probability) {
         if (!(probability >= 0 && probability <= 1)) throw new IllegalArgumentException("概率应在零与一之间");
         return probability == 1 || probability > 0 && random.nextDouble() < probability;
     }
 
+    /** 按指定概率独立试验，返回成功次数。次数须非负，概率须在 0～1 之间。 */
     public static int occurrences(RandomSource random, int trials, double probability) {
         if (trials < 0 || !(probability >= 0 && probability <= 1)) throw new IllegalArgumentException("试验次数或概率无效");
         if (probability == 0 || probability == 1) return probability == 0 ? 0 : trials;
@@ -35,6 +37,17 @@ public final class RandomUtils {
         return successes;
     }
 
+    /**
+     * 以权重比例抽取一个条目。权重函数对每个候选调用一次。
+     *
+     * @param random  调用方持有的随机源
+     * @param entries 抽样期间保持不变的候选列表
+     * @param weight  返回非负权重的函数
+     * @param <T>     候选类型
+     * @return 选中的条目，权重总和为零时返回空值
+     * @throws IllegalArgumentException 发现负权重
+     * @throws ArithmeticException      权重总和超出 long 范围
+     */
     public static <T> @Nullable T chooseWeighted(RandomSource random, List<T> entries, ToLongFunction<? super T> weight) {
         long[] weights = new long[entries.size()];
         long total = 0;
@@ -62,6 +75,13 @@ public final class RandomUtils {
         return value;
     }
 
+    /**
+     * 用于带权抽样的候选及其非负权重。
+     *
+     * @param value  候选值
+     * @param weight 相对于其他候选的权重，零表示不会抽中
+     * @param <T>    候选类型
+     */
     public record WeightedEntry<T>(T value, long weight) {
 
         public WeightedEntry {

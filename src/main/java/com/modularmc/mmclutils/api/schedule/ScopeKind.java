@@ -30,9 +30,17 @@ import java.util.function.BiConsumer;
  */
 public final class ScopeKind<T> {
 
+    /** 将模块资源安装到指定拥有者的生命周期作用域中。 */
     @FunctionalInterface
     public interface Module<T> {
 
+        /**
+         * 在拥有者的子作用域里安装模块资源。
+         * 安装抛出异常时该子作用域会整体结束，并按模块挂载规则报告异常。
+         *
+         * @param scope 该模块独占的子作用域
+         * @param owner 模块所属对象
+         */
         void mount(Scope scope, T owner);
     }
 
@@ -155,6 +163,7 @@ public final class ScopeKind<T> {
         for (var installed : mounting) mountSafely(installed, scope, owner);
     }
 
+    /** 对拥有者实例进行开设、绑定和关闭的句柄。 */
     public static final class Control<T> {
 
         private final ScopeKind<T> kind;
@@ -163,10 +172,19 @@ public final class ScopeKind<T> {
             this.kind = kind;
         }
 
+        /** 返回此句柄管理的作用域种类。 */
         public ScopeKind<T> kind() {
             return kind;
         }
 
+        /**
+         * 为拥有者打开一个根实例并按登记顺序安装所有模块。
+         * 同一拥有者的既有实例会先结束。
+         *
+         * @param owner 新实例的拥有者
+         * @param lane 驱动实例中任务与清理的调度车道
+         * @return 新打开的拥有者作用域
+         */
         public Scope open(T owner, TickScheduler lane) {
             kind.enter();
             lane.claim();
@@ -178,6 +196,7 @@ public final class ScopeKind<T> {
             return root;
         }
 
+        /** 将已有活动作用域登记为该拥有者的当前实例，结束旧实例并安装尚未安装的模块。 */
         public void bind(T owner, Scope scope) {
             if (!scope.isActive() || kind.live.get(owner) == scope) return;
             scope.guard();
@@ -186,11 +205,13 @@ public final class ScopeKind<T> {
             kind.attach(owner, scope);
         }
 
+        /** 结束此拥有者由 {@link #open(Object, TickScheduler)} 建立的根实例。 */
         public void close(T owner) {
             var root = kind.roots.remove(owner);
             if (root != null) root.end();
         }
 
+        /** 结束调用开始时以及结束回调期间新建立的全部根实例。 */
         public void closeAll() {
             for (int budget = kind.roots.size() + 16; budget > 0 && !kind.roots.isEmpty(); budget--) {
                 var first = kind.roots.values().iterator();

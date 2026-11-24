@@ -19,10 +19,12 @@ public final class FluidUtils {
 
     private FluidUtils() {}
 
+    /** 返回流体栈的注册表标识。 */
     public static Identifier id(FluidStack stack) {
         return id(stack.getFluid());
     }
 
+    /** 返回已注册流体的标识。 */
     public static Identifier id(Fluid fluid) {
         return BuiltInRegistries.FLUID.getKey(fluid);
     }
@@ -45,6 +47,7 @@ public final class FluidUtils {
         return amount >= divisor && amount % divisor == 0;
     }
 
+    /** 按单栈可表示的 int 数量上限拆分毫桶数。结果保留流体组件，元素可独立修改。 */
     public static List<FluidStack> split(FluidStack stack, long amount) {
         var result = new ObjectArrayList<FluidStack>();
         if (stack.isEmpty()) return result;
@@ -56,10 +59,12 @@ public final class FluidUtils {
         return result;
     }
 
+    /** 按流体与组件汇总毫桶数，不保留输入顺序。 */
     public static Object2IntMap<FluidStack> countStacks(Iterable<FluidStack> inputs) {
         return countStacks(inputs, true);
     }
 
+    /** 按流体与组件汇总毫桶数。键是数量为一的副本，可选择保留首次出现顺序。 */
     public static Object2IntMap<FluidStack> countStacks(Iterable<FluidStack> inputs, boolean linked) {
         var counts = createStackCountMap(linked);
         for (FluidStack stack : inputs) {
@@ -68,6 +73,7 @@ public final class FluidUtils {
         return counts;
     }
 
+    /** 创建忽略数量的流体栈计数映射。插入后须保持键的流体与组件不变。 */
     public static Object2IntMap<FluidStack> createStackCountMap(boolean linked) {
         FluidStackStrategy strategy = FluidStackStrategy.comparingAllButAmount();
         return linked ? new Object2IntLinkedOpenCustomHashMap<>(strategy) : new Object2IntOpenCustomHashMap<>(strategy);

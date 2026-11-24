@@ -6,6 +6,10 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Objects;
 
+/**
+ * 可重复提交而在任一时刻只排队一次的任务。
+ * 实例可跨线程提交和取消，但其动作始终在所属 {@link TickScheduler} 的驱动线程运行。
+ */
 public final class CoalescedTask {
 
     private static final VarHandle QUEUED;
@@ -25,21 +29,31 @@ public final class CoalescedTask {
     @SuppressWarnings("unused")
     private volatile @Nullable TickScheduler queuedIn;
 
+    /** 创建无所有者的合并任务。 */
     public CoalescedTask(Runnable action) {
         this(null, action);
     }
 
+    /**
+     * 创建带所有者的合并任务，供崩溃报告识别任务来源。
+     *
+     * @param owner 可选任务所有者
+     * @param action 被调度的操作
+     * @throws NullPointerException 操作为空
+     */
     public CoalescedTask(@Nullable Object owner, Runnable action) {
         this.owner = owner;
         this.action = Objects.requireNonNull(action, "action");
         this.entry = TickScheduler.coalescedEntry(this, owner, action);
     }
 
+    /** 查询此任务是否已进入尚未关闭的调度器队列。 */
     public boolean isQueued() {
         TickScheduler s = queuedIn();
         return s != null && !s.isClosed();
     }
 
+    /** 取消当前排队的执行；之后仍可重新提交此任务。 */
     public void cancel() {
         TickScheduler s = queuedIn();
         if (s == null) return;

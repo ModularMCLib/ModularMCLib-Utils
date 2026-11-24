@@ -99,6 +99,12 @@ public final class WaitList<T> {
         waiter.list = null;
     }
 
+    /**
+     * 可在等待表之间转移并复用的单个等待节点。
+     * 登记、触发和取消均须由等待表所属线程执行。
+     *
+     * @param <T> 等待者持有的对象类型
+     */
     public static final class Waiter<T> {
 
         private final T owner;
@@ -106,19 +112,27 @@ public final class WaitList<T> {
         private int slot;
         private int stamp;
 
+        /**
+         * 创建未登记的等待节点。
+         *
+         * @param owner 等待触发时提供给回调的非空对象
+         */
         public Waiter(T owner) {
             this.owner = Objects.requireNonNull(owner, "owner");
         }
 
+        /** 判断该节点当前是否登记在等待表中。 */
         public boolean waiting() {
             return list != null;
         }
 
+        /** 返回当前登记的等待表，尚未登记时返回空值。 */
         @Nullable
         public WaitList<T> list() {
             return list;
         }
 
+        /** 从当前等待表移除此节点；未登记时不执行操作。 */
         public void cancel() {
             WaitList<T> at = list;
             if (at == null) return;

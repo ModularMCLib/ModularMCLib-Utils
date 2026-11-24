@@ -200,14 +200,24 @@ public class IntrusiveDeque<T extends IntrusiveDeque.LinkNode<T>> implements Ite
         }
     }
 
+    /**
+     * 为侵入式双端队列提供前后节点链接。
+     * 实现对象同一时刻只能加入一条链，链接初始为空且由所属队列维护。
+     *
+     * @param <T> 实际节点类型
+     */
     public interface LinkNode<T extends LinkNode<T>> {
 
+        /** 返回当前节点的前驱，作为队首时返回空值。 */
         T getPrev();
 
+        /** 更新前驱链接，由所属队列调用。 */
         void setPrev(T prev);
 
+        /** 返回当前节点的后继，作为队尾时返回空值。 */
         T getNext();
 
+        /** 更新后继链接，由所属队列调用。 */
         void setNext(T next);
     }
 

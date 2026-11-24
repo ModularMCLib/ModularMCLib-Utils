@@ -26,8 +26,11 @@ import java.util.function.Predicate;
  */
 public final class LevelSections implements SectionScan.Sections<BlockState> {
 
+    /** 指定区块扫描遇到未加载区块时的处理方式。 */
     public enum Unloaded {
+        /** 查询时允许由原版加载所需区块。 */
         LOAD,
+        /** 不加载区块，将未加载区域视为虚空空气。 */
         SKIP
     }
 

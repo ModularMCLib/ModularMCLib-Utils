@@ -40,6 +40,7 @@ public final class SyncedKeyMappings {
         return key;
     }
 
+    /** 将按键状态载荷登记到模组总线。 */
     @ApiStatus.Internal
     public static void init(IEventBus modBus) {
         modBus.addListener(SyncedKeyMappings::initPayload);
@@ -106,6 +107,7 @@ public final class SyncedKeyMappings {
             this.id = id;
         }
 
+        /** 返回两端共享的按键标识。 */
         public Identifier id() {
             return id;
         }
@@ -115,10 +117,12 @@ public final class SyncedKeyMappings {
             return pressed.contains(player);
         }
 
+        /** 在服务端登记本键的全局状态监听，同一监听只登记一次。 */
         public void addListener(Listener listener) {
             listeners.addIfAbsent(listener);
         }
 
+        /** 移除全局状态监听。 */
         public void removeListener(Listener listener) {
             listeners.remove(listener);
         }
@@ -128,6 +132,7 @@ public final class SyncedKeyMappings {
             playerListeners.computeIfAbsent(player, ignored -> new CopyOnWriteArrayList<>()).addIfAbsent(listener);
         }
 
+        /** 移除指定玩家的状态监听，不影响此键的其他监听。 */
         public void removeListener(ServerPlayer player, Listener listener) {
             var current = playerListeners.get(player);
             if (current != null && current.remove(listener) && current.isEmpty()) playerListeners.remove(player);
@@ -150,14 +155,27 @@ public final class SyncedKeyMappings {
     @FunctionalInterface
     public interface Listener {
 
-        /** 在状态已更新时收到通知。退出时仍处于按下状态的键会发出释放通知。 */
+        /**
+         * 在状态已更新时收到通知。退出时仍处于按下状态的键会发出释放通知。
+         *
+         * @param player 状态变化的服务端玩家
+         * @param key    该玩家操作的按键
+         * @param down   新状态，真为按下
+         */
         void changed(ServerPlayer player, Key key, boolean down);
     }
 
+    /**
+     * 通过 NeoForge 传输一批本地按键状态变化。
+     *
+     * @param changes 已登记按键的标识及其按下状态
+     */
     @ApiStatus.Internal
     public record ChangeSet(Object2BooleanMap<Identifier> changes) implements CustomPacketPayload {
 
+        /** 单个载荷允许的最大变化条目数。 */
         public static final int MAX_CHANGES = 64;
+        /** 登记在连接上的载荷类型。 */
         public static final Type<ChangeSet> TYPE = new Type<>(ModularMCLibUtils.id("key_state"));
         private static final StreamCodec<FriendlyByteBuf, ChangeSet> CODEC = StreamCodec.of(ChangeSet::write, ChangeSet::read);
 

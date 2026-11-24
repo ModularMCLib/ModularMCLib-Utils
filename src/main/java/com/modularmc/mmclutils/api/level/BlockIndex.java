@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  * 防止方块替换或区块重载时旧对象把新对象注销掉；区域清空后释放</li>
  * <li>{@link #get}/{@link #query}/{@link #findAny}/{@link #findNearest}/{@link #forEach}：按坐标、按
  * {@link BlockRange}（球形或长方体）或对全部条目查询，
- * 跨区域的结果与单棵树完全一致，最近查询的并列规则同 {@link BlockOctree#findNearest}</li>
+ * 跨区域的结果与单棵树完全一致，最近查询的并列规则同 {@link BlockOctree#findNearest(int, int, int, BlockRange, Predicate)}</li>
  * <li>{@link #version()}：每次登记内容变化加一，使用方据此判断自己缓存的查询结果是否过期</li>
  * <li>不是线程安全的，只在拥有该维度的线程上使用</li>
  * </ul>

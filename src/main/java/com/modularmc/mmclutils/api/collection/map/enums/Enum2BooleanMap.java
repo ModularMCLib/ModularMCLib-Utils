@@ -46,6 +46,7 @@ public final class Enum2BooleanMap<K extends Enum<K>> extends AbstractReference2
         this.size = map.size;
     }
 
+    /** 返回此映射按序号直接寻址时使用的枚举类型。 */
     public Class<K> keyType() {
         return keyType;
     }

@@ -29,7 +29,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-/** 按维度和稳定标识保存二进制数据。值的修改、取快照及保存调度均在服务器线程执行。 */
+/**
+ * 按维度和稳定标识保存紧凑二进制数据。在所属服务器线程修改值，并在修改后调用 {@link #setDirty()}。
+ * 保存时复制本次要写的数据。服务器的串行写入队列保序写盘，成功后仅确认本次提交的数据版本。
+ * 常规世界保存异步排队，强制刷盘与世界卸载等待已提交的操作完成。
+ *
+ * @param <T> 存档值的类型
+ */
 @NullMarked
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID)
 public final class FastSavedData<T> {
@@ -53,7 +59,17 @@ public final class FastSavedData<T> {
         this.executor = executor;
     }
 
-    /** 类型实例和标识由调用方长期持有。同一个标识在一份维度存储中只能注册一种类型。 */
+    /**
+     * 在服务器线程取得或读取该维度的存档。新文件缺失时尝试调用方指定的旧文件。
+     * 只有两个文件都缺失时才调用默认值工厂，成功读取旧数据后会安排保存为新文件。
+     *
+     * @param level 所属维度
+     * @param type  由调用方长期持有的类型。同一维度中每个标识只能对应一种类型
+     * @param <T>   存档值的类型
+     * @return 维度生命周期内复用的存档对象
+     * @throws IOException           文件读取失败或数据格式无效
+     * @throws IllegalStateException 从非所属服务器线程访问，或同标识已用于另一类型
+     */
     public static <T> FastSavedData<T> get(ServerLevel level, Type<T> type) throws IOException {
         checkOwner(level);
         var entries = DATA.get(level);
@@ -87,6 +103,7 @@ public final class FastSavedData<T> {
         return data;
     }
 
+    /** 取得服务器线程持有的存档值。修改其内容后须调用 {@link #setDirty()}。 */
     public T value() {
         return value;
     }
@@ -96,6 +113,7 @@ public final class FastSavedData<T> {
         revision++;
     }
 
+    /** 查询是否还存在尚未成功写入的数据版本。 */
     public boolean isDirty() {
         return revision != savedRevision;
     }
@@ -105,6 +123,7 @@ public final class FastSavedData<T> {
         if (event.getLevel() instanceof ServerLevel level) saveLevel(level, false);
     }
 
+    /** 在所属服务器线程提交全部待保存数据并等待写盘队列完成。 */
     @ApiStatus.Internal
     public static void flush(ServerLevel level) {
         checkOwner(level);
@@ -151,18 +170,35 @@ public final class FastSavedData<T> {
         if (!level.getServer().isSameThread()) throw new IllegalStateException("存档须在所属服务器线程访问");
     }
 
-    /** copyForWrite 由世界线程调用，返回写盘线程可以独立读取的值。 */
+    /**
+     * 定义一个存档的标识、复制方式和读写格式。
+     *
+     * @param id           用于文件位置的稳定标识
+     * @param factory      新旧文件均不存在时提供默认值
+     * @param copyForWrite 在世界线程复制写入所需数据。返回值与继续在世界线程修改的状态独立
+     * @param reader       在服务器线程解码当前格式
+     * @param writer       在服务器的后台队列编码复制后的数据
+     * @param legacy       仅在新文件缺失时使用的旧格式入口，可以为空
+     * @param <T>          存档值的类型
+     */
     public record Type<T>(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                           FileUtils.Reader<T> reader, FileUtils.Writer<T> writer,
                           @Nullable LegacyFile<T> legacy) {
 
+        /** 定义只读取当前文件格式的存档类型。 */
         public Type(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                     FileUtils.Reader<T> reader, FileUtils.Writer<T> writer) {
             this(id, factory, copyForWrite, reader, writer, null);
         }
     }
 
-    /** 指定相对于世界目录的旧存档和其读取方式。旧文件读取在服务器线程进行。 */
+    /**
+     * 指定可从旧布局导入的文件。在服务器线程使用，并可访问所属维度的注册表。
+     *
+     * @param relativePath 相对整个世界根目录的路径
+     * @param reader       文件存在时使用的旧格式读取器
+     * @param <T>          读取值的类型
+     */
     public record LegacyFile<T>(Path relativePath, LegacyReader<T> reader) {
 
         public LegacyFile {
@@ -170,10 +206,22 @@ public final class FastSavedData<T> {
         }
     }
 
-    /** 支持读取原有的二进制或 NBT。需要注册表的读取器可使用所属维度的上下文。 */
+    /**
+     * 在服务器线程读取旧格式，仅在当前存档缺失时调用。
+     *
+     * @param <T> 读取得到的存档值的类型
+     */
     @FunctionalInterface
     public interface LegacyReader<T> {
 
+        /**
+         * 读取旧二进制或 NBT 文件，并关闭自行打开的流。
+         *
+         * @param level 所属维度，可用于查询注册表
+         * @param path  已确认存在的旧文件
+         * @return 可由当前存档类型保存的非空值
+         * @throws IOException 打开或读取文件失败，或者文件格式无效
+         */
         T read(ServerLevel level, Path path) throws IOException;
     }
 }

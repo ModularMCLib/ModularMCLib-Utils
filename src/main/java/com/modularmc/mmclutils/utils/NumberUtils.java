@@ -116,14 +116,17 @@ public final class NumberUtils {
         return millions ? digits + "M (" + format(value) + ")" : digits + "K";
     }
 
+    /** 以固定区域设置对长整数进行千位分组。 */
     public static String formatGrouped(long value) {
         return NumberFormat.getNumberInstance(Locale.ROOT).format(value);
     }
 
+    /** 以固定区域设置对浮点数进行千位分组，小数位采用默认数字格式。 */
     public static String formatGrouped(double value) {
         return NumberFormat.getNumberInstance(Locale.ROOT).format(value);
     }
 
+    /** 以默认数字格式和固定区域设置为数值添加千位分组。 */
     public static String formatGrouped(Number value) {
         return NumberFormat.getNumberInstance(Locale.ROOT).format(value);
     }
@@ -159,6 +162,7 @@ public final class NumberUtils {
         return formatSi(value, milli, decimalFormat("#,##0.##"), unit);
     }
 
+    /** 使用调用方提供的数字格式和可选单位显示 SI 数量。非有限值也交由数字格式表示。 */
     public static String formatSi(double value, boolean milli, NumberFormat numberFormat, @Nullable String unit) {
         return Double.isFinite(value) ? formatSi(BigDecimal.valueOf(value), milli, numberFormat, unit) : numberFormat.format(value) + (unit == null ? "" : unit);
     }

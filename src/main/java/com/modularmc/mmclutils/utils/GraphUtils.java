@@ -75,8 +75,10 @@ public final class GraphUtils {
         return new Grid(xs, ys, obstacles).route(start, end);
     }
 
+    /** 连接源节点到目标节点的有向边，节点用从零开始的整数下标表示。 */
     public record Edge(int from, int to) {}
 
+    /** 二维平面中的点。坐标须为有限值。 */
     public record Point(double x, double y) {
 
         public Point {
@@ -84,6 +86,7 @@ public final class GraphUtils {
         }
     }
 
+    /** 平面上的闭合矩形。坐标须为有限值且左上角不超过右下角。 */
     public record Bounds(double left, double top, double right, double bottom) {
 
         public Bounds {
@@ -92,6 +95,7 @@ public final class GraphUtils {
             }
         }
 
+        /** 判断点是否严格位于矩形内部，边界不计入内部。 */
         public boolean containsInterior(Point point) {
             return point.x() > left && point.x() < right && point.y() > top && point.y() < bottom;
         }

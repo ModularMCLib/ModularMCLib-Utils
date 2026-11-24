@@ -14,8 +14,11 @@ package com.modularmc.mmclutils.api.level;
  */
 public final class BlockRange {
 
+    /** 范围使用的几何形状。 */
     public enum Shape {
+        /** 三轴平方距离之和不超过半径平方。 */
         SPHERE,
+        /** 三轴距离分别不超过各自半径。 */
         BOX
     }
 

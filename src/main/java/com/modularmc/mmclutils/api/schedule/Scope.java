@@ -565,21 +565,38 @@ public abstract sealed class Scope {
         }
     }
 
+    /** 按依赖变化触发的轻量通知入口。 */
     @FunctionalInterface
     public interface Trigger {
 
+        /** 在依赖状态变化后执行通知。 */
         void fire();
     }
 
+    /** 在指定作用域中挂载由调用方提供的值。 */
     @FunctionalInterface
     public interface Body<T> {
 
+        /**
+         * 将值与生命周期作用域一起挂载。
+         *
+         * @param scope 管理挂载资源的子作用域
+         * @param value 已取得的挂载值
+         */
         void mount(Scope scope, T value);
     }
 
+    /** 在作用域中挂载带显式键和值的资源。 */
     @FunctionalInterface
     public interface KeyedBody<K, V> {
 
+        /**
+         * 将键值资源挂载至子作用域。
+         *
+         * @param scope 管理挂载资源的子作用域
+         * @param key 资源标识键
+         * @param value 与键对应的资源值
+         */
         void mount(Scope scope, K key, V value);
     }
 

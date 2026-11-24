@@ -1,9 +1,12 @@
 package com.modularmc.mmclutils.utils;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.PlainTextContents;
+import net.minecraft.util.Util;
+import net.minecraft.world.level.block.state.properties.Property;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.jspecify.annotations.NullMarked;
@@ -20,10 +23,25 @@ public final class ComponentUtils {
 
     private ComponentUtils() {}
 
+    /**
+     * 将方块状态属性及其原版序列化值组成一个可显示的组件。布尔值使用绿色和红色区分。
+     *
+     * @param property 要显示的属性
+     * @param value    属于该属性的值
+     * @return 属性名称和带样式的值
+     */
+    public static MutableComponent propertyText(Property<?> property, Comparable<?> value) {
+        MutableComponent text = Component.literal(Util.getPropertyName(property, value));
+        if (value instanceof Boolean flag) text.withStyle(flag ? ChatFormatting.GREEN : ChatFormatting.RED);
+        return Component.literal(property.getName()).append(": ").append(text);
+    }
+
+    /** 将长整数按紧凑数值格式封装为字面组件。 */
     public static MutableComponent numberText(long value) {
         return Component.literal(NumberUtils.format(value));
     }
 
+    /** 将浮点数按紧凑数值格式封装为字面组件。 */
     public static MutableComponent numberText(double value) {
         return Component.literal(NumberUtils.format(value));
     }
@@ -40,10 +58,12 @@ public final class ComponentUtils {
         return lines;
     }
 
+    /** 创建只含一行长整数文本的可修改列表。 */
     public static List<MutableComponent> literalLine(long value) {
         return literalLine(Long.toString(value));
     }
 
+    /** 创建只含一行浮点数文本的可修改列表。 */
     public static List<MutableComponent> literalLine(double value) {
         return literalLine(Double.toString(value));
     }
@@ -109,6 +129,7 @@ public final class ComponentUtils {
         return Component.literal('"' + entry + '"').withStyle(style);
     }
 
+    /** 按迭代顺序拼接组件，在相邻项之间插入分隔符。各子组件的翻译和样式得以保留。 */
     public static MutableComponent join(Iterable<? extends Component> components, Component separator) {
         Iterator<? extends Component> iterator = components.iterator();
         MutableComponent result = Component.empty();
@@ -117,6 +138,7 @@ public final class ComponentUtils {
         return result;
     }
 
+    /** 创建与 {@link #join} 一致的流收集器，保留来源的相遇顺序。 */
     public static Collector<Component, ?, MutableComponent> joining(Component separator) {
         return Collector.of(
                 ObjectArrayList<Component>::new,
@@ -128,6 +150,7 @@ public final class ComponentUtils {
                 parts -> join(parts, separator));
     }
 
+    /** 按 Tick 从色板选定颜色。每种颜色须持续至少一个 Tick，色板须包含至少一种颜色。 */
     public static UnaryOperator<Style> cyclingColor(long tick, int ticksPerColor, int... colors) {
         int color = colors[cycleIndex(tick, ticksPerColor, colors.length)];
         return style -> style.withColor(color & 0xffffff);
@@ -152,6 +175,7 @@ public final class ComponentUtils {
         return Math.floorMod(Math.floorDiv(tick, ticksPerColor), colorCount);
     }
 
+    /** 按圈数选取循环色相，返回只修改文本颜色的样式变换。 */
     public static UnaryOperator<Style> rainbow(double turns) {
         int color = ColorUtils.fromHsl((float) (turns - Math.floor(turns)), 1, 0.55f, 255);
         return style -> style.withColor(color & 0xffffff);

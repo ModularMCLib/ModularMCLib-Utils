@@ -18,11 +18,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * 将一个维度的调度轮次提交到指定 Executor，并在同一维度上跳过尚未完成的轮次。
+ * 调度任务在传入的执行器线程运行，除提交线程安全的调度操作外，不应直接读取游戏线程状态。
+ * 执行器由创建方管理，本类只在维度卸载时关闭该维度的调度器。
+ */
 public final class AsyncLane {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static volatile AsyncLane[] lanes = new AsyncLane[0];
 
+    /** 使用库默认后台线程池的异步车道。 */
     public static final AsyncLane DEFAULT = create("mmclutils:default", defaultExecutor());
 
     private final String id;
@@ -35,6 +41,15 @@ public final class AsyncLane {
         this.runners = LevelStore.createWithLevel(level -> new Runner(this), Runner::close);
     }
 
+    /**
+     * 创建并登记全局唯一标识的异步车道。
+     *
+     * @param id 用于诊断和区分车道的标识
+     * @param executor 提交异步调度轮次的执行器，生命周期由调用方管理
+     * @return 新登记的车道
+     * @throws NullPointerException 标识或执行器为空
+     * @throws IllegalArgumentException 已有车道使用相同标识
+     */
     public static synchronized AsyncLane create(String id, Executor executor) {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(executor, "executor");
@@ -48,6 +63,12 @@ public final class AsyncLane {
         return lane;
     }
 
+    /**
+     * 创建带指定名称前缀的守护型低优先级工作线程。
+     *
+     * @param name 线程名前缀
+     * @return 用于异步车道的线程工厂
+     */
     public static ThreadFactory threadFactory(String name) {
         AtomicInteger count = new AtomicInteger();
         return r -> {
@@ -58,10 +79,12 @@ public final class AsyncLane {
         };
     }
 
+    /** 判断当前线程是否由 {@link #threadFactory(String)} 创建。 */
     public static boolean isWorkerThread() {
         return Thread.currentThread() instanceof Worker;
     }
 
+    /** 返回该车道的诊断标识。 */
     public String id() {
         return id;
     }

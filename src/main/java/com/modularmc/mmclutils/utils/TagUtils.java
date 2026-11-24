@@ -9,10 +9,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import org.jspecify.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -23,58 +23,84 @@ public final class TagUtils {
 
     private TagUtils() {}
 
+    /** 构造指定标识的方块标签键，不查询注册表。 */
     public static TagKey<Block> block(Identifier id) {
         return TagKey.create(Registries.BLOCK, id);
     }
 
+    /** 构造指定标识的物品标签键，不查询注册表。 */
     public static TagKey<Item> item(Identifier id) {
         return TagKey.create(Registries.ITEM, id);
     }
 
+    /** 构造指定标识的流体标签键，不查询注册表。 */
     public static TagKey<Fluid> fluid(Identifier id) {
         return TagKey.create(Registries.FLUID, id);
     }
 
+    /**
+     * 将标签条件解析成可反复匹配的表达式。支持括号、前缀取反及从左至右的二元逻辑运算。
+     * 每个实例在同一线程使用，已返回的表达式可跨线程匹配。
+     */
     public static class TagExprParser {
 
+        /** 标签文本、括号与逻辑运算符的记号类型。 */
         public enum TokenType {
+            /** 左括号。 */
             LParen,
+            /** 右括号。 */
             RParen,
+            /** 逻辑与。 */
             And,
+            /** 逻辑或。 */
             Or,
+            /** 前缀取反。 */
             Not,
+            /** 逻辑异或。 */
             Xor,
+            /** 标签文本。 */
             String
         }
 
+        /** 分词得到的类型与原始文本。 */
         public static class Token {
 
+            /** 标签的原始文本，运算符与括号对应空值。 */
             @Nullable
             public String lexeme;
+            /** 该记号的语法类型。 */
             public TokenType type;
 
+            /** 创建没有文本的运算符或括号记号。 */
             public Token(TokenType type) {
                 this.type = type;
             }
 
+            /** 创建带原始文本的记号。 */
             public Token(TokenType type, String lexeme) {
                 this.lexeme = lexeme;
                 this.type = type;
             }
         }
 
+        /** 已经解析的标签条件，供不同物品和流体反复匹配。 */
         public static abstract class MatchExpr {
 
+            /**
+             * 计算给定标签集合是否满足表达式。
+             *
+             * @param input 标签的完整标识集合，可以为空集合
+             * @return 是否匹配
+             */
             public abstract boolean matches(Set<String> input);
         }
 
-        private static class BinExpr extends MatchExpr {
+        private static final class BinExpr extends MatchExpr {
 
-            @Nullable
-            MatchExpr left, right;
-            Token op;
+            private final MatchExpr left, right;
+            private final TokenType op;
 
-            public BinExpr(Token op, @Nullable MatchExpr left, @Nullable MatchExpr right) {
+            private BinExpr(TokenType op, MatchExpr left, MatchExpr right) {
                 this.op = op;
                 this.left = left;
                 this.right = right;
@@ -82,99 +108,78 @@ public final class TagUtils {
 
             @Override
             public boolean matches(Set<String> input) {
-                if (left == null || right == null) {
-                    return false;
-                }
-                return switch (op.type) {
+                return switch (op) {
                     case And -> left.matches(input) && right.matches(input);
                     case Or -> left.matches(input) || right.matches(input);
                     case Xor -> left.matches(input) ^ right.matches(input);
-                    default -> false;
+                    default -> throw new IllegalStateException("无效的二元运算符 " + op);
                 };
             }
         }
 
-        private static class UnaryExpr extends MatchExpr {
+        private static final class UnaryExpr extends MatchExpr {
 
-            Token token;
-            @Nullable
-            MatchExpr expr;
+            private final MatchExpr expr;
 
-            public UnaryExpr(Token token, @Nullable MatchExpr expr) {
-                this.token = token;
+            private UnaryExpr(MatchExpr expr) {
                 this.expr = expr;
             }
 
             @Override
             public boolean matches(Set<String> input) {
-                if (token.type == TokenType.Not) {
-                    return expr != null && !expr.matches(input);
-                }
+                return !expr.matches(input);
+            }
+        }
 
+        private static final class StringExpr extends MatchExpr {
+
+            private final @Nullable Pattern pattern;
+
+            private StringExpr(String value) {
+                if (value.equals("$")) {
+                    pattern = null;
+                    return;
+                }
+                String tag = value.contains(":") || value.startsWith("*") ? value : "c:" + value;
+                StringBuilder regex = new StringBuilder();
+                int start = 0;
+                for (int star = tag.indexOf('*'); star >= 0; star = tag.indexOf('*', start)) {
+                    regex.append(Pattern.quote(tag.substring(start, star))).append(".*");
+                    start = star + 1;
+                }
+                pattern = Pattern.compile(regex.append(Pattern.quote(tag.substring(start))).toString());
+            }
+
+            @Override
+            public boolean matches(Set<String> input) {
+                if (pattern == null) return input.isEmpty();
+                for (String tag : input) {
+                    if (pattern.matcher(tag).matches()) return true;
+                }
                 return false;
             }
         }
 
-        private static class StringExpr extends MatchExpr {
+        private List<Token> tokens = List.of();
+        private int idx;
 
-            @Nullable
-            String value;
-
-            public StringExpr(@Nullable String value) {
-                this.value = value;
-            }
-
-            @Override
-            public boolean matches(Set<String> input) {
-                if (value == null || value.isEmpty()) return false;
-                if (value.equals("$") && input.isEmpty()) return true;
-                if (!value.contains(":") && !value.startsWith("*")) {
-                    value = "c:" + value;
-                }
-
-                String val = quote(value);
-                return input.stream().anyMatch(inp -> Pattern.matches(val, inp));
-            }
-
-            private String quote(String str) {
-                if (str.contains("*")) {
-                    var idx = str.indexOf("*");
-                    if (idx == str.length() - 1) {
-                        return quote(str.substring(0, idx)) + ".*";
-                    } else {
-                        return quote(str.substring(0, idx)) + ".*" + quote(str.substring(idx + 1));
-                    }
-                }
-
-                return Pattern.quote(str);
-            }
-        }
-
-        private static class GroupingExpr extends MatchExpr {
-
-            @Nullable
-            MatchExpr inner;
-
-            public GroupingExpr(@Nullable MatchExpr inner) {
-                this.inner = inner;
-            }
-
-            @Override
-            public boolean matches(Set<String> input) {
-                return inner != null && inner.matches(input);
-            }
-        }
-
-        List<Token> tokens = Collections.emptyList();
-        int idx = 0;
-        @Nullable
-        Token prev = null;
-
+        /**
+         * 编译一个完整表达式。星号匹配任意字符，单独的美元符号匹配没有标签的对象。
+         * 未指定命名空间且没有首位通配符的标签默认为 {@code c}。
+         *
+         * @param expr 表达式文本
+         * @return 可复用条件，空表达式或语法不完整时返回空值
+         */
         @Nullable
         public MatchExpr parse(String expr) {
             tokens = tokenize(expr);
-
-            return expression();
+            idx = 0;
+            try {
+                MatchExpr result = term();
+                return idx == tokens.size() ? result : null;
+            } finally {
+                tokens = List.of();
+            }
         }
 
         private boolean match(TokenType tt) {
@@ -183,7 +188,6 @@ public final class TagUtils {
             }
 
             if (tokens.get(idx).type == tt) {
-                prev = tokens.get(idx);
                 idx++;
                 return true;
             }
@@ -192,26 +196,14 @@ public final class TagUtils {
         }
 
         @Nullable
-        private MatchExpr expression() {
-            return term();
-        }
-
-        @Nullable
         private MatchExpr term() {
             MatchExpr lhs = unary();
-
-            BinExpr result = null;
+            if (lhs == null) return null;
             while (match(TokenType.And) || match(TokenType.Or) || match(TokenType.Xor)) {
-                if (result == null) {
-                    // noinspection DataFlowIssue 前一次 match 成功时赋值。
-                    result = new BinExpr(prev, lhs, unary());
-                } else {
-                    result = new BinExpr(prev, result, unary());
-                }
-            }
-
-            if (result != null) {
-                return result;
+                TokenType op = tokens.get(idx - 1).type;
+                MatchExpr rhs = unary();
+                if (rhs == null) return null;
+                lhs = new BinExpr(op, lhs, rhs);
             }
 
             return lhs;
@@ -219,33 +211,30 @@ public final class TagUtils {
 
         @Nullable
         private MatchExpr unary() {
-            if (match(TokenType.Not)) {
-                // noinspection DataFlowIssue 前一次 match 成功时赋值。
-                return new UnaryExpr(prev, id());
-            }
-
-            return id();
+            boolean negate = false;
+            while (match(TokenType.Not)) negate = !negate;
+            MatchExpr expr = id();
+            return negate && expr != null ? new UnaryExpr(expr) : expr;
         }
 
         @Nullable
         private MatchExpr id() {
             if (match(TokenType.LParen)) {
-                MatchExpr inner = expression();
-                match(TokenType.RParen);
-
-                return new GroupingExpr(inner);
+                MatchExpr inner = term();
+                return match(TokenType.RParen) ? inner : null;
             }
 
             if (match(TokenType.String)) {
-                // noinspection DataFlowIssue 前一次 match 成功时赋值。
-                return new StringExpr(prev.lexeme);
+                String lexeme = tokens.get(idx - 1).lexeme;
+                assert lexeme != null;
+                return new StringExpr(lexeme);
             }
 
             return null;
         }
 
         private List<Token> tokenize(String expr) {
-            List<Token> result = new ArrayList<>();
+            List<Token> result = new ObjectArrayList<>();
 
             int idx = 0;
             while (idx < expr.length()) {
@@ -260,7 +249,7 @@ public final class TagUtils {
                 {
                     int stringLen = 0;
                     while (cur != '(' && cur != ')' && cur != '!' && cur != '&' && cur != '|' && cur != '^' &&
-                            cur != ' ') {
+                            !Character.isWhitespace(cur)) {
                         stringLen++;
 
                         if (stringLen + idx == expr.length()) {
@@ -298,7 +287,7 @@ public final class TagUtils {
      * 将标签表达式解析为匹配节点。
      *
      * @param expression 待解析的表达式
-     * @return 解析结果
+     * @return 可复用的匹配节点，空表达式和无效语法返回空值
      */
     public static TagExprParser.@Nullable MatchExpr parseExpression(String expression) {
         return new TagExprParser().parse(expression);
@@ -307,25 +296,28 @@ public final class TagUtils {
     /**
      * 判断物品是否满足标签表达式。
      *
-     * @param expr  匹配表达式
+     * @param expr  匹配表达式，空值表示不匹配
      * @param stack 待检查物品栈
      * @return 物品的标签是否符合表达式
      */
     public static boolean tagsMatch(TagExprParser.@Nullable MatchExpr expr, ItemStack stack) {
+        if (expr == null) return false;
         Set<String> tags = stack.typeHolder().tags()
                 .map(TagKey::location)
                 .map(Identifier::toString)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(ObjectOpenHashSet::new));
 
-        return expr != null && expr.matches(tags);
+        return expr.matches(tags);
     }
 
+    /** 检查流体当前标签是否匹配已编译条件。空条件返回假。 */
     public static boolean tagsMatch(TagExprParser.@Nullable MatchExpr expr, FluidStack stack) {
+        if (expr == null) return false;
         Set<String> tags = stack.getFluid().builtInRegistryHolder().tags()
                 .map(TagKey::location)
                 .map(Identifier::toString)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(ObjectOpenHashSet::new));
 
-        return expr != null && expr.matches(tags);
+        return expr.matches(tags);
     }
 }

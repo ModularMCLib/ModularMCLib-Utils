@@ -43,10 +43,12 @@ public final class ItemUtils {
         return id;
     }
 
+    /** 返回栈中物品的注册表标识，空栈使用空气物品的标识。 */
     public static Identifier id(ItemStack stack) {
         return id(stack.getItem());
     }
 
+    /** 返回已注册物品的标识。 */
     public static Identifier id(Item item) {
         return BuiltInRegistries.ITEM.getKey(item);
     }
@@ -70,10 +72,12 @@ public final class ItemUtils {
         return ItemStack.EMPTY;
     }
 
+    /** 复制第一个非空栈及其数据组件，候选都为空时返回空栈。 */
     public static ItemStack copyFirst(ItemStack... stacks) {
         return firstNonEmpty(stacks).copy();
     }
 
+    /** 复制第一个非空栈并使用指定数量，候选都为空时返回空栈。 */
     public static ItemStack copyFirst(int count, ItemStack... stacks) {
         return firstNonEmpty(stacks).copyWithCount(count);
     }
@@ -103,14 +107,17 @@ public final class ItemUtils {
         return result;
     }
 
+    /** 同时比较物品类型、数据组件和堆叠数量。 */
     public static boolean matches(ItemStack first, ItemStack second) {
         return first.getCount() == second.getCount() && ItemStack.isSameItemSameComponents(first, second);
     }
 
+    /** 按物品与组件汇总非空栈的数量，不保留输入顺序。 */
     public static Object2IntMap<ItemStack> countStacks(Iterable<ItemStack> inputs) {
         return countStacks(inputs, false);
     }
 
+    /** 按物品与组件汇总非空栈的数量。键是数量为一的副本，可保留同类栈首次出现的顺序。总量超出 int 范围时抛出算术异常。 */
     public static Object2IntMap<ItemStack> countStacks(Iterable<ItemStack> inputs, boolean linked) {
         var counts = createStackCountMap(linked);
         for (ItemStack stack : inputs) {
@@ -119,6 +126,7 @@ public final class ItemUtils {
         return counts;
     }
 
+    /** 创建忽略栈数量比较的计数映射。插入后须保持键的物品与组件不变。 */
     public static Object2IntMap<ItemStack> createStackCountMap(boolean linked) {
         ItemStackStrategy strategy = ItemStackStrategy.comparingAllButCount();
         return linked ? new Object2IntLinkedOpenCustomHashMap<>(strategy) : new Object2IntOpenCustomHashMap<>(strategy);

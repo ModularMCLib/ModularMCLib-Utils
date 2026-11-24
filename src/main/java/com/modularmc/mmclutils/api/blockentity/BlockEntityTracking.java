@@ -9,6 +9,7 @@ import net.minecraft.world.level.chunk.LevelChunk;
 import org.jetbrains.annotations.ApiStatus;
 import org.jspecify.annotations.Nullable;
 
+/** 维护方块实体与区块可见性变化对应的空间索引状态。 */
 @ApiStatus.Internal
 public final class BlockEntityTracking {
 
@@ -42,14 +43,22 @@ public final class BlockEntityTracking {
 
     private BlockEntityTracking() {}
 
+    /** 在实体加入其所在区块后登记可探测索引。 */
     public static void added(BlockEntity be) {
         TRACKER.added(be);
     }
 
+    /** 在实体移除或替换前撤销其索引登记。 */
     public static void removed(BlockEntity be) {
         TRACKER.removed(be);
     }
 
+    /**
+     * 切换整个区块在空间索引中的可见性，并同步处理当前保存的方块实体。
+     *
+     * @param chunk 要更新的区块
+     * @param visible 区块应参与索引查询时为 {@code true}
+     */
     public static void setVisible(LevelChunk chunk, boolean visible) {
         TrackedChunk tracked = (TrackedChunk) chunk;
         if (tracked.mmclutils$hidden() != visible) return;
@@ -64,10 +73,10 @@ public final class BlockEntityTracking {
     @ApiStatus.Internal
     public interface TrackedBlockEntity {
 
-        /** 返回当前索引登记的位。 */
+        /** 返回已通过探测并登记的索引位掩码。 */
         int mmclutils$probedMask();
 
-        /** 更新该方块实体的索引登记。 */
+        /** 将索引登记位掩码替换为指定值。 */
         void mmclutils$setProbedMask(int mask);
     }
 

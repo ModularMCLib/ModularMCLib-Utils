@@ -17,26 +17,38 @@ public final class ResourceUtils {
 
     private ResourceUtils() {}
 
+    /**
+     * 将目录视为原版资源包，目录应包含 assets 或 data 等资源类型目录。
+     *
+     * @param pack 资源包的原版位置元数据
+     * @param root 资源包根目录
+     * @return 可供原版读取的路径资源包
+     */
     public static PathPackResources openPath(PackLocationInfo pack, Path root) {
         return new PathPackResources(pack, root);
     }
 
+    /** 查询资源包中是否存在指定资源，不打开资源流。 */
     public static boolean exists(PackResources pack, PackType type, Identifier id) {
         return pack.getResource(type, id) != null;
     }
 
+    /** 从当前资源提供器查询标识是否可读。 */
     public static boolean exists(ResourceProvider provider, Identifier id) {
         return provider.getResource(id).isPresent();
     }
 
+    /** 查询资源标识对应的普通文件是否存在，根目录包含资源类型子目录。 */
     public static boolean exists(Path root, PackType type, Identifier id) {
         return Files.isRegularFile(resolve(root, type, id));
     }
 
+    /** 以包含资源类型子目录的包根目录解析完整资源路径。 */
     public static Path resolve(Path root, PackType type, Identifier id) {
         return resolve(root.resolve(type.getDirectory()), id);
     }
 
+    /** 以资源类型目录为根，按命名空间和标识中的各路径片段解析。非法路径会抛出异常。 */
     public static Path resolve(Path root, Identifier id) {
         return FileUtil.resolvePath(root.resolve(id.getNamespace()), resourcePath(id));
     }

@@ -14,6 +14,7 @@ public final class ColorUtils {
 
     private ColorUtils() {}
 
+    /** 将给定透明度和低 24 位的 RGB 合成为 ARGB。 */
     public static int withAlpha(int rgb, int alpha) {
         return ARGB.color(alpha, rgb);
     }
@@ -23,6 +24,7 @@ public final class ColorUtils {
         return ARGB.alpha(color) == 0 ? withAlpha(color, alpha) : color;
     }
 
+    /** 以 0～1 的比例逐通道插值 ARGB，并四舍五入到整数分量。 */
     public static int interpolate(int from, int to, float amount) {
         return ARGB.color(
                 Math.round(Mth.lerp(amount, ARGB.alpha(from), ARGB.alpha(to))),
@@ -31,6 +33,7 @@ public final class ColorUtils {
                 Math.round(Mth.lerp(amount, ARGB.blue(from), ARGB.blue(to))));
     }
 
+    /** 交换红色与蓝色通道，保持透明度和绿色通道。 */
     public static int swapRedBlue(int argb) {
         return ARGB.toABGR(argb);
     }
@@ -87,6 +90,7 @@ public final class ColorUtils {
         return red * red + green * green + blue * blue;
     }
 
+    /** 按相同透明度填充两种 RGB 之间的均匀色阶，色阶数至少为二并包含两端颜色。 */
     public static int[] stepGradient(int from, int to, int alpha, int steps) {
         if (steps < 2) throw new IllegalArgumentException("渐变至少需要两个色阶");
         int[] result = new int[steps];
@@ -100,6 +104,7 @@ public final class ColorUtils {
         return result;
     }
 
+    /** 从色板按归一化进度选出相邻色阶并插值。色板至少一个颜色。 */
     public static int gradient(int[] stops, float position) {
         if (stops.length == 0) throw new IllegalArgumentException("渐变至少需要一种颜色");
         float scaled = Mth.clamp(position, 0f, 1f) * (stops.length - 1);
@@ -117,6 +122,7 @@ public final class ColorUtils {
                 hslChannel(turn, chroma, light, 4));
     }
 
+    /** 根据归一化 HSL 及指定透明度生成 ARGB。 */
     public static int fromHsl(Hsl hsl, int alpha) {
         return fromHsl(hsl.hue(), hsl.saturation(), hsl.lightness(), alpha);
     }

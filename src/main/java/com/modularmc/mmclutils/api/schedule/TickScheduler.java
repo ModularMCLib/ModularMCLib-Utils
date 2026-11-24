@@ -34,9 +34,16 @@ import java.util.function.Predicate;
  */
 public final class TickScheduler {
 
+    /** 接收调度任务执行期间抛出的异常和对应的任务所有者。 */
     @FunctionalInterface
     public interface FailureHandler {
 
+        /**
+         * 处理一次调度失败。
+         *
+         * @param error 任务抛出的异常
+         * @param owner 注册任务时附带的所有者，可以为空
+         */
         void failed(Throwable error, @Nullable Object owner);
     }
 

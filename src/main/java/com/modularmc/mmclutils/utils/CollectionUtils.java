@@ -13,6 +13,7 @@ public final class CollectionUtils {
 
     private CollectionUtils() {}
 
+    /** 以迭代顺序复制元素并返回不可变列表。已有不可变副本可以直接复用。 */
     public static <E> ObjectList<E> immutableList(Collection<? extends E> source) {
         if (source.isEmpty()) return ObjectList.of();
         if (source instanceof ObjectImmutableList<?>) {
@@ -24,6 +25,7 @@ public final class CollectionUtils {
         return new ObjectImmutableList<>(source);
     }
 
+    /** 按相等性去重并返回不可变集合。元素引用沿用源集合，迭代顺序由散列表决定。 */
     public static <E> ObjectSet<E> immutableSet(Collection<? extends E> source) {
         if (source.isEmpty()) return ObjectSets.emptySet();
         if (source instanceof ImmutableSetCopy<?>) {

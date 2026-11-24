@@ -68,12 +68,28 @@ public final class FileUtils {
         };
     }
 
-    /** 读取存在的文件。回调返回后流由本方法关闭。 */
+    /**
+     * 打开文件并读取一个值。读取完成或抛出异常时关闭流。
+     *
+     * @param path   已存在的文件路径
+     * @param reader 从文件头开始解码的读取器
+     * @param <T>    解码值类型
+     * @return 读取器解码的非空值
+     * @throws IOException 文件缺失、读取失败或格式无效
+     */
     public static <T> T read(Path path, Reader<T> reader) throws IOException {
         return read(Files.newInputStream(path), reader);
     }
 
-    /** 从输入流读取一个值并关闭输入流。 */
+    /**
+     * 从输入流当前位置读取一个值并关闭流。
+     *
+     * @param stream 要读取并关闭的流
+     * @param reader 负责读取一个值的回调
+     * @param <T>    解码值类型
+     * @return 读取器解码的非空值
+     * @throws IOException 数据读取或输入流关闭失败
+     */
     public static <T> T read(InputStream stream, Reader<T> reader) throws IOException {
         try (var input = new DataInputStream(new BufferedInputStream(stream))) {
             return reader.read(input);
@@ -221,11 +237,22 @@ public final class FileUtils {
         return length;
     }
 
-    /** 在调用线程从数据流读取完整的非空值。外层负责维护流的生命周期，格式错误通过 IOException 报告。 */
+    /**
+     * 在调用线程从数据流读取完整的非空值。外层负责维护流的生命周期，回调仅在调用期间使用流。
+     * 成对的写入器负责写出约定布局。读取器应在分配数据前验证文件中的长度、索引和标识。
+     *
+     * @param <T> 读取值的类型
+     */
     @FunctionalInterface
     public interface Reader<T> {
 
-        /** 从当前流位置解码一个值，遇到截断或格式错误时抛出 IOException。 */
+        /**
+         * 从当前流位置按约定布局解码，消费一个值所需的字节。
+         *
+         * @param input 已打开的二进制输入流
+         * @return 解码的非空值
+         * @throws IOException 数据截断、输入错误或格式不合法
+         */
         T read(DataInputStream input) throws IOException;
 
         /** 将已有读取器的结果转换为另一类型。 */
@@ -300,11 +327,22 @@ public final class FileUtils {
         }
     }
 
-    /** 在调用线程按读取器约定的布局写入非空值。输出失败时抛出 IOException，外层负责关闭流。 */
+    /**
+     * 在调用线程按读取器约定的布局写入非空值。调用方负责关闭流。
+     * 供后台写盘的实现须使用已交给写盘线程的独立数据。
+     *
+     * @param <T> 写入值的类型
+     */
     @FunctionalInterface
     public interface Writer<T> {
 
-        /** 从当前流位置写入值，输出失败时抛出 IOException。 */
+        /**
+         * 从当前流位置写入一个值，保留外层对输出流生命周期的控制。
+         *
+         * @param output 已打开的二进制输出流
+         * @param value  需要按约定编码的非空值
+         * @throws IOException 编码或输出失败
+         */
         void write(DataOutputStream output, T value) throws IOException;
 
         /** 将写入前的值转换为已有写入器接受的类型。 */
@@ -354,7 +392,13 @@ public final class FileUtils {
         }
     }
 
-    /** 同一值的两个编解码方向共享约定的字节布局。 */
+    /**
+     * 将共享同一字节布局的读取器与写入器组合为可复用的二进制序列化定义。
+     *
+     * @param reader 解码一个值的读取器
+     * @param writer 使用对应格式的写入器
+     * @param <T>    二进制布局对应的值类型
+     */
     public record Serializer<T>(Reader<T> reader, Writer<T> writer) implements Reader<T>, Writer<T> {
 
         /** 使用数据流的修订版 UTF-8 格式。 */
@@ -442,11 +486,21 @@ public final class FileUtils {
         }
     }
 
-    /** 在调用线程处理由外层打开的流，读写失败时由调用方接收 IOException。 */
+    /**
+     * 在调用线程处理已打开的流，读写失败时由调用方接收 IOException。
+     * 回调只在执行期间使用流。
+     *
+     * @param <S> 流的类型
+     */
     @FunctionalInterface
     public interface StreamAction<S> {
 
-        /** 在流开放期间处理数据，流的关闭由调用本回调的方法负责。 */
+        /**
+         * 在流开放期间处理数据。流在回调结束后由外层关闭。
+         *
+         * @param stream 已打开的流
+         * @throws IOException 读写或数据校验失败
+         */
         void accept(S stream) throws IOException;
     }
 }

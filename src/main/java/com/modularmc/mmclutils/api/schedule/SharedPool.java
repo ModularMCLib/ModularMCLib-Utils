@@ -19,9 +19,17 @@ import java.util.Objects;
  */
 public final class SharedPool<K, V> {
 
+    /** 首次借用资源键时创建共享值的工厂。 */
     @FunctionalInterface
     public interface Factory<K, V> {
 
+        /**
+         * 在资源自己的作用域内创建值。
+         *
+         * @param pooled 接收资源作用域与需求状态的池条目
+         * @param key 共享资源的键
+         * @return 新建的非空资源值
+         */
         V create(Pooled pooled, K key);
     }
 
@@ -92,6 +100,7 @@ public final class SharedPool<K, V> {
         slot.scope.end();
     }
 
+    /** 描述一个仍由池管理的共享资源及其作用域和合并需求状态。 */
     public static final class Pooled {
 
         private final Scope scope;
@@ -105,10 +114,12 @@ public final class SharedPool<K, V> {
             this.scope = scope;
         }
 
+        /** 返回共享资源的生命周期作用域。 */
         public Scope scope() {
             return scope;
         }
 
+        /** 查询至少一个租用者是否声明需要该资源，且在响应式派生中登记依赖。 */
         public boolean demanded() {
             demand.track();
             return demands > 0;
@@ -121,6 +132,7 @@ public final class SharedPool<K, V> {
         }
     }
 
+    /** 持有共享资源的单个租约，租用者作用域结束时自动归还。 */
     public static final class Lease<V> {
 
         private final SharedPool<?, V> pool;
@@ -137,10 +149,12 @@ public final class SharedPool<K, V> {
             this.value = Objects.requireNonNull(value, "value");
         }
 
+        /** 返回此租约所借到的共享资源。 */
         public V get() {
             return value;
         }
 
+        /** 将此租用者的需要状态纳入共享资源的合并状态。 */
         public void demand(boolean wanted) {
             if (released || wanted == demanding) return;
             demanding = wanted;

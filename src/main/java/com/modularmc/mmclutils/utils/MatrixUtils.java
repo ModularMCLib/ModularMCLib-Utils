@@ -16,6 +16,7 @@ import java.text.NumberFormat;
 import java.util.EnumMap;
 import java.util.Map;
 
+/** 处理原版方向和 JOML 矩阵之间的旋转，以及矩阵的文本表示。 */
 public class MatrixUtils {
 
     private static final Map<Direction, Vector3fc> directionAxes = Util.make(new EnumMap<>(Direction.class), map -> {
@@ -125,6 +126,7 @@ public class MatrixUtils {
         } * Mth.HALF_PI;
     }
 
+    /** 旋转传入矩阵，使模型前方向映射到指定面，返回作为后续旋转轴的方向向量。 */
     public static Vector3f rotateMatrixToFront(Matrix4f matrix, Direction frontFace) {
         // 将局部前方旋到指定世界方向。
         var front = frontFace.step();
@@ -132,11 +134,13 @@ public class MatrixUtils {
         return front;
     }
 
+    /** 围绕给定前向单位轴旋转矩阵。参考上方向使用四个水平朝向表示旋转的四分之一圈数。 */
     public static void rotateMatrixToUp(Matrix4f matrix, Vector3f front, Direction upwardsFace) {
         // 围绕前方轴调整局部上方。
         rotateMatrix(matrix, upwardFacingAngle(upwardsFace), front);
     }
 
+    /** 按模型前向与水平旋转编号取得矩阵。返回共享只读视图，应复制后再编辑。 */
     public static Matrix4fc createRotationState(Direction frontFace, Direction upwardFace) {
         if (rotations.contains(frontFace, upwardFace)) {
             var rotation = rotations.get(frontFace, upwardFace);
@@ -151,6 +155,7 @@ public class MatrixUtils {
         return matrix;
     }
 
+    /** 返回原版方向的单位步进向量，应视为只读。 */
     public static Vector3fc getDirectionAxis(Direction dir) {
         return directionAxes.get(dir);
     }

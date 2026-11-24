@@ -25,18 +25,42 @@ import java.util.function.Predicate;
  */
 public final class SectionScan {
 
+    /**
+     * 为区段扫描提供统一值跳过、调色板筛选和单格读取入口。
+     * 实现负责保证 {@link #get} 接收有效的局部坐标。
+     *
+     * @param <T> 区段单格值类型
+     */
     public interface Sections<T> {
 
+        /**
+         * 获取指定区段的统一值，或以空值表示需逐格读取。
+         *
+         * @param sectionX 区段 X 坐标
+         * @param sectionY 区段 Y 坐标
+         * @param sectionZ 区段 Z 坐标
+         * @return 表示整个区段内容的值，空值表示没有可跳过的统一值
+         */
         @Nullable
         T seek(int sectionX, int sectionY, int sectionZ);
 
+        /** 判断区段调色板是否可能含有满足筛选条件的值。 */
         boolean mayContain(Predicate<? super T> palette);
 
+        /** 按 0～15 的区段局部坐标取得单格值。 */
         T get(int localX, int localY, int localZ);
     }
 
+    /** 对已读取的单格值和当前可变方块坐标执行最终匹配。 */
     public interface CellTest<T> {
 
+        /**
+         * 检查一个单格值。
+         *
+         * @param value 单格方块状态或统一区段值
+         * @param pos 扫描器复用的坐标，只在本次调用期间有效
+         * @return 是否收集该坐标
+         */
         boolean test(T value, BlockPos pos);
     }
 

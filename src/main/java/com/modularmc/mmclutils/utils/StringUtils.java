@@ -18,6 +18,7 @@ public final class StringUtils {
 
     private StringUtils() {}
 
+    /** 将 0～9 的数字转换成一个汉字，超出范围时抛出参数异常。 */
     public static String chineseDigit(int digit) {
         if (digit < 0 || digit >= CHINESE_DIGITS.length()) throw new IllegalArgumentException("数字须在零至九之间");
         return String.valueOf(CHINESE_DIGITS.charAt(digit));
@@ -122,10 +123,12 @@ public final class StringUtils {
         return result.toString();
     }
 
+    /** 在第一个分隔符处拆分并去掉分隔符。没有匹配时第二段为空值。 */
     public static Parts splitFirst(String value, char delimiter) {
         return split(value, value.indexOf(delimiter));
     }
 
+    /** 在最后一个分隔符处拆分并去掉分隔符。没有匹配时第二段为空值。 */
     public static Parts splitLast(String value, char delimiter) {
         return split(value, value.lastIndexOf(delimiter));
     }
@@ -137,10 +140,12 @@ public final class StringUtils {
     /** 缺少分隔符时后段为空值，分隔符位于边缘时对应一段为空字符串。 */
     public record Parts(String first, @Nullable String second) {}
 
+    /** 判断 Unicode 码点是否属于汉字、日文假名或韩文字母。 */
     public static boolean isCjk(int codePoint) {
         return UnicodeScript.of(codePoint) == UnicodeScript.HAN;
     }
 
+    /** 将搜索文本的小写和空白表示统一，供后续模糊匹配复用。 */
     public static String normalize(String text) {
         StringBuilder result = new StringBuilder(text.length());
         for (int i = 0; i < text.length();) {
@@ -151,6 +156,7 @@ public final class StringUtils {
         return result.toString();
     }
 
+    /** 标准化查询词和原文后进行搜索匹配。 */
     public static boolean matches(String text, String query) {
         return !text.isEmpty() && matchesNormalized(text, normalize(query));
     }
@@ -171,6 +177,7 @@ public final class StringUtils {
         return false;
     }
 
+    /** 检查任一已编译表达式是否完全匹配文本。 */
     public static boolean matchesAny(String text, Pattern... patterns) {
         for (Pattern pattern : patterns) {
             if (pattern.matcher(text).matches()) return true;

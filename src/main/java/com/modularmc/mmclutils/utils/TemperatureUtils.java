@@ -16,6 +16,7 @@ public final class TemperatureUtils {
 
     private TemperatureUtils() {}
 
+    /** 根据方块、流体及发光状态估算相对热度。该值可作为颜色映射的输入。 */
     public static int temperature(BlockState state, Level level, BlockPos position) {
         if (state.getFluidState().is(FluidTags.LAVA) || state.is(BlockTags.FIRE) || state.is(Blocks.MAGMA_BLOCK)) return 255;
         if (state.is(BlockTags.ICE) || state.is(BlockTags.SNOW) || state.getFluidState().is(FluidTags.WATER)) return 12;
@@ -28,10 +29,12 @@ public final class TemperatureUtils {
         return ambient;
     }
 
+    /** 用此位置的原版群系温度估算环境热度。调用方负责在所属线程读取世界。 */
     public static int ambient(Level level, BlockPos position) {
         return 86 + Math.round(Mth.clamp(level.getBiome(position).value().getBaseTemperature(), -0.5f, 2) * 22);
     }
 
+    /** 估算实体的相对热度。燃烧状态优先，普通非生物使用环境热度。 */
     public static int temperature(Entity entity) {
         return entity.isOnFire() ? 255 : entity instanceof LivingEntity ? 218 : ambient(entity.level(), entity.blockPosition());
     }
