@@ -1,9 +1,9 @@
 package com.modularmc.mmclutils.client.level;
 
-import com.modularmc.mmclutils.level.BlockEnvironment;
-import com.modularmc.mmclutils.spatial.BlockDirections;
 import com.modularmc.mmclutils.spatial.VoxelContoursShape;
 import com.modularmc.mmclutils.spatial.VoxelShapes;
+import com.modularmc.mmclutils.utils.DirectionUtils;
+import com.modularmc.mmclutils.utils.TemperatureUtils;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -83,7 +83,7 @@ public final class SectionCapture {
             if (x < 0 || y < 0 || z < 0 || x > 15 || y > 15 || z > 15) continue;
             int index = (y * 16 + z) * 16 + x;
             visible[index] = exposedFaces(level, position, state);
-            if ((modes & SectionGeometryData.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelContoursShape.BLOCK)) temperatures[index] = BlockEnvironment.temperature(state, level, position);
+            if ((modes & SectionGeometryData.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelContoursShape.BLOCK)) temperatures[index] = TemperatureUtils.temperature(state, level, position);
         }
         if (cursor != shapes.length) return null;
         Arrays.fill(chunks, null);
@@ -97,10 +97,10 @@ public final class SectionCapture {
         for (Direction direction : DIRECTIONS) {
             neighbor.setWithOffset(position, direction);
             LevelChunk chunk = loadedChunk(level, neighbor.getX() >> 4, neighbor.getZ() >> 4);
-            if (chunk == null) faces |= BlockDirections.mask(direction);
+            if (chunk == null) faces |= DirectionUtils.mask(direction);
             else {
                 BlockState adjacent = chunk.getBlockState(neighbor);
-                if ((fluid.isEmpty() || !fluid.getType().isSame(adjacent.getFluidState().getType())) && Block.shouldRenderFace(level, position, state, adjacent, direction)) faces |= BlockDirections.mask(direction);
+                if ((fluid.isEmpty() || !fluid.getType().isSame(adjacent.getFluidState().getType())) && Block.shouldRenderFace(level, position, state, adjacent, direction)) faces |= DirectionUtils.mask(direction);
             }
         }
         return faces;

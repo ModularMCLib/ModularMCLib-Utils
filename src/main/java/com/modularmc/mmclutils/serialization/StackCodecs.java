@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.serialization;
 
-import com.modularmc.mmclutils.item.ItemStacks;
 import com.modularmc.mmclutils.serialization.BinaryCodecs.BinaryCodec;
+import com.modularmc.mmclutils.utils.ItemUtils;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.item.ItemStack;
@@ -25,7 +25,7 @@ public final class StackCodecs {
         var item = BuiltInRegistries.ITEM.getOptional(id).orElseThrow(() -> new IOException("找不到物品：" + id));
         return new ItemStack(item, count);
     }, (output, stack) -> {
-        BinaryCodecs.IDENTIFIER.write(output, ItemStacks.id(stack));
+        BinaryCodecs.IDENTIFIER.write(output, ItemUtils.id(stack));
         output.writeInt(stack.getCount());
     });
 

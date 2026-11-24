@@ -2,8 +2,8 @@ package com.modularmc.mmclutils.persistence;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
 import com.modularmc.mmclutils.concurrent.SerialTaskExecutor;
-import com.modularmc.mmclutils.io.FileUtils;
 import com.modularmc.mmclutils.level.LevelStore;
+import com.modularmc.mmclutils.utils.FileUtils;
 
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;

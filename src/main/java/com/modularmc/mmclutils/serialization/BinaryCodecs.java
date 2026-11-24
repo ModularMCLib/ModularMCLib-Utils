@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.serialization;
 
-import com.modularmc.mmclutils.io.FileUtils.Reader;
-import com.modularmc.mmclutils.io.FileUtils.Writer;
+import com.modularmc.mmclutils.utils.FileUtils.Reader;
+import com.modularmc.mmclutils.utils.FileUtils.Writer;
 
 import net.minecraft.resources.Identifier;
 

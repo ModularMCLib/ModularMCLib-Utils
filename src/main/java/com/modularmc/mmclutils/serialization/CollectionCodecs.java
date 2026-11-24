@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectList;
 
 import java.util.Collection;
 import java.util.EnumMap;
@@ -73,5 +74,11 @@ public final class CollectionCodecs {
     /** 用相同结构表示普通值与空值，可在 NBT 中保持集合元素类型统一。 */
     public static <E> Codec<Optional<E>> optionalElement(Codec<E> codec) {
         return codec.optionalFieldOf("value").codec();
+    }
+
+    public static <E> Codec<ObjectList<E>> objectListCodec(Codec<E> elementCodec) {
+        return elementCodec.listOf().xmap(
+                values -> new ObjectArrayList<>(values),
+                values -> values);
     }
 }
