@@ -32,7 +32,7 @@ import java.util.function.UnaryOperator;
 /**
  * 按维度和稳定标识保存紧凑二进制数据。在所属服务器线程修改值，并在修改后调用 {@link #setDirty()}。
  * 保存时复制本次要写的数据。服务器的串行写入队列保序写盘，成功后仅确认本次提交的数据版本。
- * 常规世界保存异步排队，强制刷盘与世界卸载等待已提交的操作完成。
+ * 常规世界保存异步排队，强制刷盘与世界卸载等待写入完成，失败时再尝试一次。
  *
  * @param <T> 存档值的类型
  */
@@ -123,7 +123,7 @@ public final class FastSavedData<T> {
         if (event.getLevel() instanceof ServerLevel level) saveLevel(level, false);
     }
 
-    /** 在所属服务器线程提交全部待保存数据并等待写盘队列完成。 */
+    /** 在所属服务器线程提交全部待保存数据并等待写盘队列完成。写入失败时再尝试一次。 */
     @ApiStatus.Internal
     public static void flush(ServerLevel level) {
         checkOwner(level);
@@ -137,20 +137,30 @@ public final class FastSavedData<T> {
 
     private void save(boolean wait) {
         long writingRevision = revision;
-        if (writingRevision != savedRevision && (submitted != writingRevision || pending.isCompletedExceptionally())) {
-            T valueToWrite = type.copyForWrite().apply(value);
-            submitted = writingRevision;
-            pending = executor.submit(() -> {
-                FileUtils.writeAtomically(path, valueToWrite, type.writer());
-                // 写盘期间发生的修改留给下一次保存。
-                savedRevision = writingRevision;
-                return null;
-            });
-            pending.whenComplete((ignored, failure) -> {
-                if (failure != null) ModularMCLibUtils.LOGGER.error("写入二进制存档 {} 失败", path, failure);
-            });
-        }
-        if (wait) pending.handle((ignored, failure) -> null).join();
+        queueWrite(writingRevision);
+        if (!wait || awaitWrite()) return;
+        // 常规保存可能在强制刷盘已经开始等待后才失败。
+        queueWrite(writingRevision);
+        awaitWrite();
+    }
+
+    private void queueWrite(long writingRevision) {
+        if (writingRevision == savedRevision || submitted == writingRevision && !pending.isCompletedExceptionally()) return;
+        T valueToWrite = type.copyForWrite().apply(value);
+        submitted = writingRevision;
+        pending = executor.submit(() -> {
+            FileUtils.writeAtomically(path, valueToWrite, type.writer());
+            // 写盘期间发生的修改留给下一次保存。
+            savedRevision = writingRevision;
+            return null;
+        });
+        pending.whenComplete((ignored, failure) -> {
+            if (failure != null) ModularMCLibUtils.LOGGER.error("写入二进制存档 {} 失败", path, failure);
+        });
+    }
+
+    private boolean awaitWrite() {
+        return pending.handle((ignored, failure) -> failure == null).join();
     }
 
     private static synchronized SerialTaskExecutor executor(MinecraftServer server) {
