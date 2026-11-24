@@ -4,12 +4,17 @@ import com.modularmc.mmclutils.client.render.quad.QuadMeshes;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.block.BlockAndTintGetter;
 import net.minecraft.client.renderer.block.BlockModelRenderState;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
 import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
+import net.minecraft.client.renderer.block.dispatch.SingleVariant;
 import net.minecraft.client.renderer.block.model.BlockDisplayContext;
 import net.minecraft.client.renderer.item.ItemModel;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
+import net.minecraft.client.resources.model.geometry.BakedQuad;
+import net.minecraft.client.resources.model.sprite.Material;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.RandomSource;
@@ -18,6 +23,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.client.model.DelegateBlockStateModel;
 import net.neoforged.neoforge.client.model.standalone.StandaloneModelKey;
 
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -25,6 +31,8 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectImmutableList;
 import it.unimi.dsi.fastutil.objects.ObjectList;
 import org.jspecify.annotations.Nullable;
+
+import java.util.List;
 
 /** 通过当前资源版本的原版模型解析器和提交器操作模型。 */
 public final class ClientModels {
@@ -68,6 +76,18 @@ public final class ClientModels {
     public static ObjectList<QuadMeshes.Face> quads(BlockStateModel model, RandomSource random) {
         var parts = new ObjectArrayList<BlockStateModelPart>();
         model.collectParts(random, parts);
+        return quads(parts);
+    }
+
+    /** 使用当前方块视图读取模型。连接纹理等上下文相关模型从视图获取数据。 */
+    public static ObjectList<QuadMeshes.Face> quads(BlockStateModel model, BlockAndTintGetter level, BlockPos pos,
+                                                    BlockState state, RandomSource random) {
+        var parts = new ObjectArrayList<BlockStateModelPart>();
+        model.collectParts(level, pos, state, random, parts);
+        return quads(parts);
+    }
+
+    public static ObjectList<QuadMeshes.Face> quads(List<? extends BlockStateModelPart> parts) {
         var result = new ObjectArrayList<QuadMeshes.Face>();
         for (BlockStateModelPart part : parts) {
             for (var quad : part.getQuads(null)) result.add(new QuadMeshes.Face(quad, null));
@@ -76,5 +96,80 @@ public final class ClientModels {
             }
         }
         return new ObjectImmutableList<>(result);
+    }
+
+    /** 给由方块实体渲染器负责提交几何的方块提供粒子材质。 */
+    public static BlockStateModel particleOnly(Material.Baked material) {
+        return new SingleVariant(new ParticlePart(material));
+    }
+
+    /** 按输入顺序组合已烘焙模型。各部分共享随机变体种子，粒子材质取第一项。 */
+    public static BlockStateModel combine(List<? extends BlockStateModel> parts) {
+        if (parts.isEmpty()) throw new IllegalArgumentException("模型组合需要至少一个部件");
+        if (parts.size() == 1) return parts.getFirst();
+        return new CombinedModel(List.copyOf(parts));
+    }
+
+    private record ParticlePart(Material.Baked particleMaterial) implements BlockStateModelPart {
+
+        @Override
+        public List<BakedQuad> getQuads(@Nullable Direction direction) {
+            return List.of();
+        }
+
+        @Override
+        public boolean useAmbientOcclusion() {
+            return false;
+        }
+
+        @Override
+        public int materialFlags() {
+            return 0;
+        }
+    }
+
+    private static final class CombinedModel extends DelegateBlockStateModel {
+
+        private final List<BlockStateModel> parts;
+
+        private CombinedModel(List<BlockStateModel> parts) {
+            super(parts.getFirst());
+            this.parts = parts;
+        }
+
+        @Override
+        @Deprecated
+        public void collectParts(RandomSource random, List<BlockStateModelPart> output) {
+            long seed = random.nextLong();
+            for (BlockStateModel model : parts) {
+                random.setSeed(seed);
+                model.collectParts(random, output);
+            }
+        }
+
+        @Override
+        public void collectParts(BlockAndTintGetter level, BlockPos pos, BlockState state,
+                                 RandomSource random, List<BlockStateModelPart> output) {
+            long seed = random.nextLong();
+            for (BlockStateModel model : parts) {
+                random.setSeed(seed);
+                model.collectParts(level, pos, state, random, output);
+            }
+        }
+
+        @Override
+        @Deprecated
+        public int materialFlags() {
+            int flags = 0;
+            for (BlockStateModel model : parts) flags |= model.materialFlags();
+            return flags;
+        }
+
+        @Override
+        public int materialFlags(BlockAndTintGetter level, BlockPos pos, BlockState state) {
+            int flags = 0;
+            for (BlockStateModel model : parts) flags |= model.materialFlags(level, pos, state);
+            return flags;
+        }
     }
 }
