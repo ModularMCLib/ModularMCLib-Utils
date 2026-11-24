@@ -39,7 +39,7 @@ public abstract class ServerChunkCacheMixin implements Source {
     @Override
     public @Nullable LevelChunk mmclutils$loadedChunk(int chunkX, int chunkZ) {
         if (Thread.currentThread() == mainThread) return getChunkNow(chunkX, chunkZ);
-        long key = ChunkPos.pack(chunkX, chunkZ);
+        long key = ChunkPos.asLong(chunkX, chunkZ);
         LevelChunk cached = mmclutils$recent.get(key);
         if (cached != null) return cached;
         ChunkHolder holder = mmclutils$visibleChunk(key);

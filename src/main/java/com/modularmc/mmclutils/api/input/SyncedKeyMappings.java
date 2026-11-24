@@ -5,7 +5,7 @@ import com.modularmc.mmclutils.ModularMCLibUtils;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.IEventBus;
@@ -29,12 +29,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID)
 public final class SyncedKeyMappings {
 
-    private static final ConcurrentHashMap<Identifier, Key> KEYS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<ResourceLocation, Key> KEYS = new ConcurrentHashMap<>();
 
     private SyncedKeyMappings() {}
 
     /** 在模组初始化时于两端声明一次。标识应使用调用方的命名空间，重复声明会抛出异常。 */
-    public static Key define(Identifier id) {
+    public static Key define(ResourceLocation id) {
         var key = new Key(id);
         if (KEYS.putIfAbsent(id, key) != null) throw new IllegalArgumentException("同步按键已经声明 " + id);
         return key;
@@ -51,7 +51,7 @@ public final class SyncedKeyMappings {
                 (payload, context) -> apply((ServerPlayer) context.player(), payload.changes));
     }
 
-    private static void apply(ServerPlayer player, Object2BooleanMap<Identifier> changes) {
+    private static void apply(ServerPlayer player, Object2BooleanMap<ResourceLocation> changes) {
         var accepted = new Object2BooleanLinkedOpenHashMap<Key>();
         for (var change : changes.object2BooleanEntrySet()) {
             Key key = KEYS.get(change.getKey());
@@ -98,17 +98,17 @@ public final class SyncedKeyMappings {
     /** 一个可被客户端绑定并由服务端读取的按键。状态和玩家监听仅在服务端线程访问。 */
     public static final class Key {
 
-        private final Identifier id;
+        private final ResourceLocation id;
         private final ReferenceOpenHashSet<ServerPlayer> pressed = new ReferenceOpenHashSet<>();
         private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
         private final Reference2ObjectOpenHashMap<ServerPlayer, CopyOnWriteArrayList<Listener>> playerListeners = new Reference2ObjectOpenHashMap<>();
 
-        private Key(Identifier id) {
+        private Key(ResourceLocation id) {
             this.id = id;
         }
 
         /** 返回两端共享的按键标识。 */
-        public Identifier id() {
+        public ResourceLocation id() {
             return id;
         }
 
@@ -171,7 +171,7 @@ public final class SyncedKeyMappings {
      * @param changes 已登记按键的标识及其按下状态
      */
     @ApiStatus.Internal
-    public record ChangeSet(Object2BooleanMap<Identifier> changes) implements CustomPacketPayload {
+    public record ChangeSet(Object2BooleanMap<ResourceLocation> changes) implements CustomPacketPayload {
 
         /** 单个载荷允许的最大变化条目数。 */
         public static final int MAX_CHANGES = 64;
@@ -182,9 +182,9 @@ public final class SyncedKeyMappings {
         private static ChangeSet read(FriendlyByteBuf buffer) {
             int count = buffer.readVarInt();
             if (count < 1 || count > MAX_CHANGES) throw new DecoderException("同步按键数量超出范围 " + count);
-            var changes = new Object2BooleanLinkedOpenHashMap<Identifier>(count);
+            var changes = new Object2BooleanLinkedOpenHashMap<ResourceLocation>(count);
             for (int i = 0; i < count; i++) {
-                Identifier id = Identifier.STREAM_CODEC.decode(buffer);
+                ResourceLocation id = ResourceLocation.STREAM_CODEC.decode(buffer);
                 if (changes.containsKey(id)) throw new DecoderException("同步按键标识重复 " + id);
                 changes.put(id, buffer.readBoolean());
             }
@@ -194,7 +194,7 @@ public final class SyncedKeyMappings {
         private static void write(FriendlyByteBuf buffer, ChangeSet state) {
             buffer.writeVarInt(state.changes.size());
             for (var change : state.changes.object2BooleanEntrySet()) {
-                Identifier.STREAM_CODEC.encode(buffer, change.getKey());
+                ResourceLocation.STREAM_CODEC.encode(buffer, change.getKey());
                 buffer.writeBoolean(change.getBooleanValue());
             }
         }

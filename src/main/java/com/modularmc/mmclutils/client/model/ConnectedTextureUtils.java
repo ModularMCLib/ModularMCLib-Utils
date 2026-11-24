@@ -1,21 +1,20 @@
 package com.modularmc.mmclutils.client.model;
 
 import com.modularmc.mmclutils.client.model.QuadUtils.Face;
+import com.modularmc.mmclutils.client.model.QuadView.MaterialInfo;
 
-import net.minecraft.client.renderer.block.BlockAndTintGetter;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModel;
-import net.minecraft.client.renderer.block.dispatch.BlockStateModelPart;
-import net.minecraft.client.resources.model.geometry.BakedQuad;
-import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
-import net.minecraft.client.resources.model.geometry.QuadCollection;
-import net.minecraft.client.resources.model.sprite.Material;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.model.BakedQuad;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
-import net.minecraft.util.TriState;
+import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.model.DelegateBlockStateModel;
+import net.neoforged.neoforge.client.model.BakedModelWrapper;
+import net.neoforged.neoforge.client.model.data.ModelData;
+import net.neoforged.neoforge.client.model.data.ModelProperty;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectImmutableList;
@@ -36,13 +35,12 @@ public final class ConnectedTextureUtils {
     /**
      * 包装能根据相邻方块更换表面的模型。无世界上下文的渲染沿用父模型。
      *
-     * @param parent           提供基础几何和粒子材质的模型
-     * @param replacementFlags 所有候选替换材质的 {@link MaterialInfo#flags()} 按位或
-     * @param rule             根据世界上下文确定每个面的输出
+     * @param parent 提供基础几何和粒子材质的模型
+     * @param rule   根据世界上下文确定每个面的输出
      * @return 保留父模型随机变体和光照行为的方块模型
      */
-    public static BlockStateModel wrap(BlockStateModel parent, @BakedQuad.MaterialFlags int replacementFlags, FaceRule rule) {
-        return new ConnectedModel(parent, replacementFlags, rule);
+    public static BakedModel wrap(BakedModel parent, FaceRule rule) {
+        return new ConnectedModel(parent, rule);
     }
 
     /** 四份材质按从左到右、从上到下排列。每个子面映射整个新贴图。 */
@@ -195,80 +193,50 @@ public final class ConnectedTextureUtils {
         }
     }
 
-    private static final class ConnectedModel extends DelegateBlockStateModel {
+    private static final class ConnectedModel extends BakedModelWrapper<BakedModel> {
 
-        private final int replacementFlags;
+        private static final ModelProperty<Context> CONTEXT = new ModelProperty<>();
         private final FaceRule rule;
 
-        private ConnectedModel(BlockStateModel parent, int replacementFlags, FaceRule rule) {
+        private ConnectedModel(BakedModel parent, FaceRule rule) {
             super(parent);
-            this.replacementFlags = replacementFlags;
             this.rule = rule;
         }
 
         @Override
-        public void collectParts(BlockAndTintGetter level, BlockPos pos, BlockState state, RandomSource random,
-                                 List<BlockStateModelPart> parts) {
-            var source = new ObjectArrayList<BlockStateModelPart>();
-            delegate.collectParts(level, pos, state, random, source);
-            var geometry = new ObjectArrayList<Face>();
-            for (BlockStateModelPart part : source) {
-                geometry.clear();
-                boolean changed = collectFaces(level, pos, state, part, null, geometry);
-                for (Direction direction : DIRECTIONS) {
-                    changed |= collectFaces(level, pos, state, part, direction, geometry);
-                }
-                parts.add(changed ? new ConnectedPart(part, QuadUtils.collect(geometry)) : part);
-            }
-        }
-
-        private boolean collectFaces(BlockAndTintGetter level, BlockPos pos, BlockState state, BlockStateModelPart part,
-                                     @Nullable Direction direction, ObjectList<Face> geometry) {
-            boolean changed = false;
-            for (BakedQuad quad : part.getQuads(direction)) {
-                var face = new Face(quad, direction);
-                Iterable<Face> replacement = rule.replace(level, pos, state, face);
-                if (replacement == null) geometry.add(face);
-                else {
-                    changed = true;
-                    replacement.forEach(geometry::add);
-                }
-            }
-            return changed;
+        public ModelData getModelData(BlockAndTintGetter level, BlockPos pos, BlockState state, ModelData data) {
+            return super.getModelData(level, pos, state, data).derive().with(CONTEXT, new Context(level, pos.immutable())).build();
         }
 
         @Override
-        public int materialFlags(BlockAndTintGetter level, BlockPos pos, BlockState state) {
-            return delegate.materialFlags(level, pos, state) | replacementFlags;
+        public List<BakedQuad> getQuads(@Nullable BlockState state, @Nullable Direction direction, RandomSource random,
+                                        ModelData data, @Nullable RenderType layer) {
+            Context context = data.get(CONTEXT);
+            if (context == null || state == null) return super.getQuads(state, direction, random, data, layer);
+            var output = new ObjectArrayList<BakedQuad>();
+            // 同一个方块的各剔除组使用同一个加权变体，替换规则可以改变面的剔除方向。
+            long seed = state.getSeed(context.pos());
+            RandomSource sample = RandomSource.create(seed);
+            append(context, state, null, direction, sample, data, layer, output);
+            for (Direction side : DIRECTIONS) {
+                sample.setSeed(seed);
+                append(context, state, side, direction, sample, data, layer, output);
+            }
+            return output;
+        }
+
+        private void append(Context context, BlockState state, @Nullable Direction source, @Nullable Direction requested,
+                            RandomSource random, ModelData data, @Nullable RenderType layer, List<BakedQuad> output) {
+            for (BakedQuad quad : originalModel.getQuads(state, source, random, data, layer)) {
+                Iterable<Face> replacement = rule.replace(context.level(), context.pos(), state, new Face(quad, source));
+                if (replacement == null) {
+                    if (source == requested) output.add(quad);
+                } else {
+                    for (Face face : replacement) if (face.cullFace() == requested) output.add(face.quad());
+                }
+            }
         }
     }
 
-    private record ConnectedPart(BlockStateModelPart parent, QuadCollection quads) implements BlockStateModelPart {
-
-        @Override
-        public List<BakedQuad> getQuads(@Nullable Direction direction) {
-            return quads.getQuads(direction);
-        }
-
-        @Override
-        public Material.Baked particleMaterial() {
-            return parent.particleMaterial();
-        }
-
-        @Override
-        @Deprecated
-        public boolean useAmbientOcclusion() {
-            return parent.useAmbientOcclusion();
-        }
-
-        @Override
-        public TriState ambientOcclusion() {
-            return parent.ambientOcclusion();
-        }
-
-        @Override
-        public int materialFlags() {
-            return quads.materialFlags();
-        }
-    }
+    private record Context(BlockAndTintGetter level, BlockPos pos) {}
 }

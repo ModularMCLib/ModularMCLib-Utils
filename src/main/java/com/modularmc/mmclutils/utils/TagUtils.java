@@ -3,7 +3,7 @@ package com.modularmc.mmclutils.utils;
 import com.modularmc.mmclutils.utils.FileUtils.Serializer;
 
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagEntry;
 import net.minecraft.tags.TagKey;
 import net.minecraft.tags.TagLoader.EntryWithSource;
@@ -30,7 +30,7 @@ public final class TagUtils {
      * 此格式没有来源包名称字段，读取时将来源设为空字符串。
      */
     public static final Serializer<EntryWithSource> ENTRY_WITH_SOURCE_SERIALIZER = new Serializer<>(input -> {
-        Identifier id = Serializer.IDENTIFIER_PARTS.read(input);
+        ResourceLocation id = Serializer.IDENTIFIER_PARTS.read(input);
         boolean tag = input.readBoolean();
         boolean required = input.readBoolean();
         TagEntry entry;
@@ -51,17 +51,17 @@ public final class TagUtils {
     private TagUtils() {}
 
     /** 构造指定标识的方块标签键，不查询注册表。 */
-    public static TagKey<Block> block(Identifier id) {
+    public static TagKey<Block> block(ResourceLocation id) {
         return TagKey.create(Registries.BLOCK, id);
     }
 
     /** 构造指定标识的物品标签键，不查询注册表。 */
-    public static TagKey<Item> item(Identifier id) {
+    public static TagKey<Item> item(ResourceLocation id) {
         return TagKey.create(Registries.ITEM, id);
     }
 
     /** 构造指定标识的流体标签键，不查询注册表。 */
-    public static TagKey<Fluid> fluid(Identifier id) {
+    public static TagKey<Fluid> fluid(ResourceLocation id) {
         return TagKey.create(Registries.FLUID, id);
     }
 
@@ -329,9 +329,9 @@ public final class TagUtils {
      */
     public static boolean tagsMatch(TagExprParser.@Nullable MatchExpr expr, ItemStack stack) {
         if (expr == null) return false;
-        Set<String> tags = stack.typeHolder().tags()
+        Set<String> tags = stack.getItemHolder().tags()
                 .map(TagKey::location)
-                .map(Identifier::toString)
+                .map(ResourceLocation::toString)
                 .collect(Collectors.toCollection(ObjectOpenHashSet::new));
 
         return expr.matches(tags);
@@ -342,7 +342,7 @@ public final class TagUtils {
         if (expr == null) return false;
         Set<String> tags = stack.getFluid().builtInRegistryHolder().tags()
                 .map(TagKey::location)
-                .map(Identifier::toString)
+                .map(ResourceLocation::toString)
                 .collect(Collectors.toCollection(ObjectOpenHashSet::new));
 
         return expr.matches(tags);

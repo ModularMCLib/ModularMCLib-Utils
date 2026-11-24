@@ -4,7 +4,7 @@ import com.modularmc.mmclutils.ModularMCLibUtils;
 
 import net.minecraft.client.Camera;
 
-import com.mojang.blaze3d.opengl.GlStateManager;
+import com.mojang.blaze3d.platform.GlStateManager;
 import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;

@@ -2,7 +2,7 @@ package com.modularmc.mmclutils.client.render.effect;
 
 import net.minecraft.client.Camera;
 import net.minecraft.core.Direction;
-import net.minecraft.util.ARGB;
+import net.minecraft.util.FastColor.ARGB32;
 import net.minecraft.util.Mth;
 
 import org.joml.Matrix3f;
@@ -78,7 +78,7 @@ final class RingGeometry {
             if (fade == 0) continue;
             point(command, angle, radial, height, CENTER);
             int rgb = command.palette[ring.tone(i)];
-            float red = ARGB.redFloat(rgb), green = ARGB.greenFloat(rgb), blue = ARGB.blueFloat(rgb);
+            float red = ARGB32.red(rgb) / 255f, green = ARGB32.green(rgb) / 255f, blue = ARGB32.blue(rgb) / 255f;
             if (half > 0) {
                 ring.spin(i, time, ROTATION);
                 voxel(half * fade, red, green, blue);
@@ -111,9 +111,9 @@ final class RingGeometry {
 
     private static void ribbon(EffectRenderer.RingCommand command, float width, int strength) {
         if (width <= 0 || strength <= 0) return;
-        float red = ARGB.red(command.baseColor) * strength / 65025f;
-        float green = ARGB.green(command.baseColor) * strength / 65025f;
-        float blue = ARGB.blue(command.baseColor) * strength / 65025f;
+        float red = ARGB32.red(command.baseColor) * strength / 65025f;
+        float green = ARGB32.green(command.baseColor) * strength / 65025f;
+        float blue = ARGB32.blue(command.baseColor) * strength / 65025f;
         int strands = Math.max(1, command.shape.strands());
         for (int strand = 0; strand < strands; strand++) {
             int pieces = RingRenderer.RIBBON_SEGMENTS / strands + (strand < RingRenderer.RIBBON_SEGMENTS % strands ? 1 : 0);

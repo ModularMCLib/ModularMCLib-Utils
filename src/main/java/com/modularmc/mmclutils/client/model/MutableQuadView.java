@@ -1,11 +1,10 @@
 package com.modularmc.mmclutils.client.model;
 
-import net.minecraft.client.model.geom.builders.UVPair;
-import net.minecraft.client.resources.model.geometry.BakedQuad;
-import net.minecraft.client.resources.model.geometry.BakedQuad.MaterialInfo;
+import com.modularmc.mmclutils.utils.ColorUtils;
+
+import net.minecraft.client.renderer.block.model.BakedQuad;
 import net.minecraft.core.Direction;
-import net.neoforged.neoforge.client.model.quad.BakedColors;
-import net.neoforged.neoforge.client.model.quad.BakedNormals;
+import net.neoforged.neoforge.client.model.IQuadTransformer;
 
 import org.joml.Vector3f;
 import org.joml.Vector3fc;
@@ -20,6 +19,7 @@ public final class MutableQuadView implements QuadView {
     private final long[] uv = new long[VERTEX_COUNT];
     private final int[] normals = new int[VERTEX_COUNT];
     private final int[] colors = new int[VERTEX_COUNT];
+    private final int[] light = new int[VERTEX_COUNT];
     private Direction lightFace = Direction.UP;
     private @Nullable Direction cullFace;
     private MaterialInfo material;
@@ -42,6 +42,7 @@ public final class MutableQuadView implements QuadView {
             uv[vertex] = source.packedUv(vertex);
             normals[vertex] = source.packedNormal(vertex);
             colors[vertex] = source.color(vertex);
+            light[vertex] = source.packedLight(vertex);
         }
         lightFace = source.lightFace();
         cullFace = source.cullFace();
@@ -55,6 +56,7 @@ public final class MutableQuadView implements QuadView {
         Arrays.fill(uv, 0);
         Arrays.fill(normals, 0);
         Arrays.fill(colors, -1);
+        Arrays.fill(light, 0);
         lightFace = Direction.UP;
         cullFace = null;
         this.material = material;
@@ -91,7 +93,7 @@ public final class MutableQuadView implements QuadView {
 
     /** 写入 UV。烘焙时以当前值为图集坐标，使用局部 UV 时须事先映射到材质精灵。 */
     public MutableQuadView uv(int vertex, float u, float v) {
-        return packedUv(vertex, UVPair.pack(u, v));
+        return packedUv(vertex, (long) Float.floatToIntBits(u) << 32 | Integer.toUnsignedLong(Float.floatToIntBits(v)));
     }
 
     @Override
@@ -107,7 +109,7 @@ public final class MutableQuadView implements QuadView {
 
     /** 将单位向量打包为指定顶点的法线。 */
     public MutableQuadView normal(int vertex, Vector3fc normal) {
-        return packedNormal(vertex, BakedNormals.pack(normal));
+        return packedNormal(vertex, QuadUtils.packNormal(normal));
     }
 
     /** 用几何面法线填充未设置的顶点法线。退化面沿用光照方向。 */
@@ -116,7 +118,7 @@ public final class MutableQuadView implements QuadView {
         if (flags == (1 << VERTEX_COUNT) - 1) return this;
         var normal = QuadUtils.normal(this, new Vector3f());
         if (normal.lengthSquared() == 0) normal.set(lightFace.getStepX(), lightFace.getStepY(), lightFace.getStepZ());
-        int packed = BakedNormals.pack(normal);
+        int packed = QuadUtils.packNormal(normal);
         for (int vertex = 0; vertex < VERTEX_COUNT; vertex++) {
             if ((flags & (1 << vertex)) == 0) normals[vertex] = packed;
         }
@@ -126,6 +128,17 @@ public final class MutableQuadView implements QuadView {
     @Override
     public int color(int vertex) {
         return colors[vertex];
+    }
+
+    @Override
+    public int packedLight(int vertex) {
+        return light[vertex];
+    }
+
+    /** 设置顶点的打包光照。 */
+    public MutableQuadView packedLight(int vertex, int value) {
+        light[vertex] = value;
+        return this;
     }
 
     /** 设置单个顶点的 ARGB 调制色。 */
@@ -175,8 +188,19 @@ public final class MutableQuadView implements QuadView {
 
     /** 产生可直接提交给原版的四边形。剔除分组仍由调用者维护。 */
     public BakedQuad bake() {
-        return new BakedQuad(new Vector3f(positions[0]), new Vector3f(positions[1]), new Vector3f(positions[2]), new Vector3f(positions[3]),
-                uv[0], uv[1], uv[2], uv[3], lightFace, material,
-                BakedNormals.of(normals[0], normals[1], normals[2], normals[3]), BakedColors.of(colors[0], colors[1], colors[2], colors[3]));
+        int[] data = new int[VERTEX_COUNT * IQuadTransformer.STRIDE];
+        for (int vertex = 0; vertex < VERTEX_COUNT; vertex++) {
+            int offset = vertex * IQuadTransformer.STRIDE;
+            Vector3f position = positions[vertex];
+            data[offset + IQuadTransformer.POSITION] = Float.floatToRawIntBits(position.x);
+            data[offset + IQuadTransformer.POSITION + 1] = Float.floatToRawIntBits(position.y);
+            data[offset + IQuadTransformer.POSITION + 2] = Float.floatToRawIntBits(position.z);
+            data[offset + IQuadTransformer.UV0] = (int) (uv[vertex] >>> 32);
+            data[offset + IQuadTransformer.UV0 + 1] = (int) uv[vertex];
+            data[offset + IQuadTransformer.COLOR] = ColorUtils.swapRedBlue(colors[vertex]);
+            data[offset + IQuadTransformer.UV2] = light[vertex];
+            data[offset + IQuadTransformer.NORMAL] = normals[vertex];
+        }
+        return new BakedQuad(data, material.tintIndex(), lightFace, material.sprite(), material.shade(), material.ambientOcclusion());
     }
 }

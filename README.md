@@ -1,6 +1,6 @@
 # ModularMCLib Utils
 
-面向 Minecraft 26.1.2、NeoForge 26.1.2.126 与 Java 25 的通用工具库。模组标识为 `mmclutils`。
+面向 Minecraft 1.21.1、NeoForge 21.1.265 与 Java 21 的通用工具库。模组标识为 `mmclutils`。
 
 ## 安装与构建
 

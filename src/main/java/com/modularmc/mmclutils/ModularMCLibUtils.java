@@ -3,7 +3,7 @@ package com.modularmc.mmclutils;
 import com.modularmc.mmclutils.api.input.SyncedKeyMappings;
 import com.modularmc.mmclutils.client.ModularMCLibUtilsClient;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
@@ -46,8 +46,8 @@ public class ModularMCLibUtils {
      * @param path 标识路径
      * @return 属于 {@link #MOD_ID} 的标识
      */
-    public static Identifier id(String path) {
-        return Identifier.fromNamespaceAndPath(MOD_ID, path);
+    public static ResourceLocation id(String path) {
+        return ResourceLocation.fromNamespaceAndPath(MOD_ID, path);
     }
 
     /** 返回当前专用服或本地集成服。服务器尚未启动或已停止时返回空值。 */
@@ -72,7 +72,7 @@ public class ModularMCLibUtils {
 
     /** 判断当前运行是否为生产环境。 */
     public static boolean isProd() {
-        return FMLEnvironment.isProduction();
+        return FMLLoader.isProduction();
     }
 
     /** 判断当前运行是否为开发环境。 */
@@ -93,12 +93,12 @@ public class ModularMCLibUtils {
      */
     public static boolean isModLoaded(String modId) {
         ModList mods = ModList.get();
-        return mods == null ? FMLLoader.getCurrent().getLoadingModList().getModFileById(modId) != null : mods.isLoaded(modId);
+        return mods == null ? FMLLoader.getLoadingModList().getModFileById(modId) != null : mods.isLoaded(modId);
     }
 
     /** 判断物理运行端。集成服务器所在进程同样返回真。 */
     public static boolean isClientSide() {
-        return FMLEnvironment.getDist().isClient();
+        return FMLEnvironment.dist.isClient();
     }
 
     /** 判断当前线程是否为物理客户端主线程。专用服务器上始终返回假。 */

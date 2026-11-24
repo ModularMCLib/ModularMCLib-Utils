@@ -5,7 +5,7 @@ import com.modularmc.mmclutils.api.level.LevelStore;
 import com.modularmc.mmclutils.api.schedule.SerialTaskExecutor;
 import com.modularmc.mmclutils.utils.FileUtils;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.dimension.DimensionType;
@@ -40,7 +40,7 @@ import java.util.function.UnaryOperator;
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID)
 public final class FastSavedData<T> {
 
-    private static final LevelStore<Map<Identifier, FastSavedData<?>>> DATA = LevelStore.create(HashMap::new, entries -> entries.values().forEach(value -> value.save(true)));
+    private static final LevelStore<Map<ResourceLocation, FastSavedData<?>>> DATA = LevelStore.create(HashMap::new, entries -> entries.values().forEach(value -> value.save(true)));
     private static final Map<MinecraftServer, SerialTaskExecutor> EXECUTORS = new IdentityHashMap<>();
 
     private final Type<T> type;
@@ -83,7 +83,8 @@ public final class FastSavedData<T> {
         }
         Path worldRoot = level.getServer().getWorldPath(LevelResource.ROOT).toAbsolutePath().normalize();
         Path directory = DimensionType.getStorageFolder(level.dimension(), worldRoot).resolve("data/mmclutils").normalize();
-        Path path = type.id().withSuffix(".bin").resolveAgainst(directory).normalize();
+        ResourceLocation file = type.id().withSuffix(".bin");
+        Path path = directory.resolve(file.getNamespace()).resolve(file.getPath()).normalize();
         if (!path.startsWith(directory)) throw new IllegalArgumentException("存档路径超出维度数据目录：" + type.id());
 
         boolean imported = false;
@@ -191,7 +192,7 @@ public final class FastSavedData<T> {
      * @param legacy       仅在新文件缺失时使用的旧格式入口，可以为空
      * @param <T>          存档值的类型
      */
-    public record Type<T>(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
+    public record Type<T>(ResourceLocation id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                           FileUtils.Reader<T> reader, FileUtils.Writer<T> writer,
                           @Nullable LegacyFile<T> legacy) {
 
@@ -204,7 +205,7 @@ public final class FastSavedData<T> {
          * @param reader       解码当前文件
          * @param writer       在后台编码交付的数据
          */
-        public Type(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
+        public Type(ResourceLocation id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                     FileUtils.Reader<T> reader, FileUtils.Writer<T> writer) {
             this(id, factory, copyForWrite, reader, writer, null);
         }

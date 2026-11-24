@@ -3,7 +3,7 @@ package com.modularmc.mmclutils.utils;
 import com.modularmc.mmclutils.api.inventory.FluidStackStrategy;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.fluids.FluidStack;
 
@@ -20,12 +20,12 @@ public final class FluidUtils {
     private FluidUtils() {}
 
     /** 返回流体栈的注册表标识。 */
-    public static Identifier id(FluidStack stack) {
+    public static ResourceLocation id(FluidStack stack) {
         return id(stack.getFluid());
     }
 
     /** 返回已注册流体的标识。 */
-    public static Identifier id(Fluid fluid) {
+    public static ResourceLocation id(Fluid fluid) {
         return BuiltInRegistries.FLUID.getKey(fluid);
     }
 
@@ -36,7 +36,7 @@ public final class FluidUtils {
 
     /** 生成包含毫桶数量和流体标识的调试文本。 */
     public static String formatStack(FluidStack stack) {
-        Identifier id = id(stack);
+        ResourceLocation id = id(stack);
         return stack.getAmount() + "x_" + id.getNamespace() + "_" + id.getPath();
     }
 

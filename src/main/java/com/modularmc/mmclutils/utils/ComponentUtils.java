@@ -1,11 +1,11 @@
 package com.modularmc.mmclutils.utils;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.contents.PlainTextContents;
-import net.minecraft.util.Util;
 import net.minecraft.world.level.block.state.properties.Property;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;

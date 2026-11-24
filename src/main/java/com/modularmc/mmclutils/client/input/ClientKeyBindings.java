@@ -9,7 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
@@ -87,7 +87,7 @@ public final class ClientKeyBindings {
     @SubscribeEvent
     private static void sampleKeyboard(InputEvent.Key event) {
         if (event.getAction() != GLFW.GLFW_REPEAT) {
-            sample(InputConstants.getKey(event.getKeyEvent()), event.getAction() == GLFW.GLFW_PRESS);
+            sample(InputConstants.getKey(event.getKey(), event.getScanCode()), event.getAction() == GLFW.GLFW_PRESS);
         }
     }
 
@@ -112,7 +112,7 @@ public final class ClientKeyBindings {
         Minecraft client = Minecraft.getInstance();
         double x = client.mouseHandler.xpos() * event.getScreen().width / client.getWindow().getScreenWidth();
         double y = client.mouseHandler.ypos() * event.getScreen().height / client.getWindow().getScreenHeight();
-        if (dispatchScreen(event.getScreen(), InputConstants.getKey(event.getKeyEvent()), x, y)) event.setCanceled(true);
+        if (dispatchScreen(event.getScreen(), InputConstants.getKey(event.getKeyCode(), event.getScanCode()), x, y)) event.setCanceled(true);
     }
 
     @SubscribeEvent
@@ -180,7 +180,7 @@ public final class ClientKeyBindings {
     }
 
     private static void send(ObjectArrayList<Binding> changes, Consumer<ChangeSet> send) {
-        var payload = new Object2BooleanLinkedOpenHashMap<Identifier>(Math.min(changes.size(), ChangeSet.MAX_CHANGES));
+        var payload = new Object2BooleanLinkedOpenHashMap<ResourceLocation>(Math.min(changes.size(), ChangeSet.MAX_CHANGES));
         for (Binding binding : changes) {
             payload.put(binding.key.id(), binding.down);
             if (payload.size() == ChangeSet.MAX_CHANGES) {

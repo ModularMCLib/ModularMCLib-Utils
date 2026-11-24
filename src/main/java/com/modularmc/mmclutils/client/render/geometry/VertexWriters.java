@@ -18,7 +18,8 @@ public final class VertexWriters {
     /** 按指定姿态写出位置和法线，其余属性使用传入的图集 UV、ARGB、覆盖层与打包光照。 */
     public static void vertex(VertexConsumer vertices, PoseStack.Pose pose, Vector3fc position, int color,
                               float u, float v, int overlay, int light, Vector3fc normal) {
-        vertices.addVertex(pose, position).setColor(color).setUv(u, v).setOverlay(overlay).setLight(light).setNormal(pose, normal);
+        vertices.addVertex(pose, position.x(), position.y(), position.z()).setColor(color).setUv(u, v)
+                .setOverlay(overlay).setLight(light).setNormal(pose, normal.x(), normal.y(), normal.z());
     }
 
     /** 按四边形顶点顺序写入，同一打包光照应用于四点。 */

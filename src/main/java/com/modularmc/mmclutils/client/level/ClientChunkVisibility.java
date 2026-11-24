@@ -56,7 +56,7 @@ public final class ClientChunkVisibility {
             LevelChunk chunk = chunks.get(i);
             if (chunk == null) continue;
             ChunkPos pos = chunk.getPos();
-            BlockEntityTracking.setVisible(chunk, view.mmclutils$inRange(pos.x(), pos.z()));
+            BlockEntityTracking.setVisible(chunk, view.mmclutils$inRange(pos.x, pos.z));
         }
     }
 }

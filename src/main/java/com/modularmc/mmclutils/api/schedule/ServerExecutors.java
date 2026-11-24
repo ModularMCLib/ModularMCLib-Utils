@@ -2,7 +2,7 @@ package com.modularmc.mmclutils.api.schedule;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
 
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -15,12 +15,12 @@ import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID)
 public final class ServerExecutors {
 
-    private static final Reference2ObjectOpenHashMap<MinecraftServer, Object2ObjectOpenHashMap<Identifier, PriorityTaskExecutor>> SERVERS = new Reference2ObjectOpenHashMap<>();
+    private static final Reference2ObjectOpenHashMap<MinecraftServer, Object2ObjectOpenHashMap<ResourceLocation, PriorityTaskExecutor>> SERVERS = new Reference2ObjectOpenHashMap<>();
 
     private ServerExecutors() {}
 
     /** 在所属服务器线程上取得执行器。后台只应使用与游戏线程分离的数据。 */
-    public static synchronized PriorityTaskExecutor priority(MinecraftServer server, Identifier id) {
+    public static synchronized PriorityTaskExecutor priority(MinecraftServer server, ResourceLocation id) {
         if (!server.isSameThread()) throw new IllegalStateException("须在所属服务器线程取得执行器");
         return SERVERS.computeIfAbsent(server, ignored -> new Object2ObjectOpenHashMap<>())
                 .computeIfAbsent(id, key -> new PriorityTaskExecutor(key.toString()));
@@ -28,7 +28,7 @@ public final class ServerExecutors {
 
     @SubscribeEvent
     private static void release(ServerStoppedEvent event) {
-        Object2ObjectOpenHashMap<Identifier, PriorityTaskExecutor> executors;
+        Object2ObjectOpenHashMap<ResourceLocation, PriorityTaskExecutor> executors;
         synchronized (ServerExecutors.class) {
             executors = SERVERS.remove(event.getServer());
         }

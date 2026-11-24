@@ -99,15 +99,15 @@ public final class ParticleEmitters {
 
     private static void spawn(ClientLevel level, ParticleOptions particle, double x, double y, double z, int count, double dx, double dy, double dz,
                               double speed) {
-        var eye = Minecraft.getInstance().gameRenderer.getMainCamera().position();
+        var eye = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         if (eye.distanceToSqr(x, y, z) > ParticleEffects.SPAWN_DISTANCE * ParticleEffects.SPAWN_DISTANCE) return;
         var random = level.getRandom();
         if (count == 0) {
-            level.addParticle(particle, true, false, x, y, z, speed * dx, speed * dy, speed * dz);
+            level.addParticle(particle, true, x, y, z, speed * dx, speed * dy, speed * dz);
             return;
         }
         for (int i = 0; i < count; i++) {
-            level.addParticle(particle, true, false, x + random.nextGaussian() * dx, y + random.nextGaussian() * dy, z + random.nextGaussian() * dz,
+            level.addParticle(particle, true, x + random.nextGaussian() * dx, y + random.nextGaussian() * dy, z + random.nextGaussian() * dz,
                     random.nextGaussian() * speed, random.nextGaussian() * speed, random.nextGaussian() * speed);
         }
     }

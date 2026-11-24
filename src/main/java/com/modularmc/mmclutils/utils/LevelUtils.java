@@ -25,7 +25,7 @@ public final class LevelUtils {
 
     /** 判断当前位置是否处于晴朗日照下。区块未加载或维度无天空光时返回假。 */
     public static boolean canSeeSunClearly(Level level, BlockPos pos) {
-        return level.dimensionType().hasSkyLight() && level.isBrightOutside() && !level.isRaining() && !level.isThundering() && LoadedChunks.isLoaded(level, pos) && level.canSeeSky(pos);
+        return level.dimensionType().hasSkyLight() && level.isDay() && !level.isRaining() && !level.isThundering() && LoadedChunks.isLoaded(level, pos) && level.canSeeSky(pos);
     }
 
     /** 将世界日时映射成 0～1 的日照系数。白天沿正弦曲线变化，夜间为零。 */

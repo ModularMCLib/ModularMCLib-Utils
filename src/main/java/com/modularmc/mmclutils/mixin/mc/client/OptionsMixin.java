@@ -13,6 +13,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.function.Consumer;
+
 /** 在选项序列化流程中读写组合键的主键与修饰键。 */
 @Mixin(Options.class)
 public abstract class OptionsMixin {
@@ -27,9 +29,12 @@ public abstract class OptionsMixin {
         }
     }
 
-    @WrapOperation(method = "load", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Options;processOptions(Lnet/minecraft/client/Options$FieldAccess;)V"))
-    private void mmclutils$readLegacyChords(Options options, Options.FieldAccess access, Operation<Void> original) {
-        original.call(options, access);
+    @WrapOperation(method = "load(Z)V", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V"))
+    private void mmclutils$readLegacyChords(Consumer<Options.FieldAccess> processor, Object value, Operation<Void> original,
+                                            boolean limited) {
+        original.call(processor, value);
+        if (limited) return;
+        var access = (Options.FieldAccess) value;
         for (KeyMapping mapping : keyMappings) {
             if (mapping instanceof KeyChordMapping chord) chord.readLegacyOptions(access);
         }
