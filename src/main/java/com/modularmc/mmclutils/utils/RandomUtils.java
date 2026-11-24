@@ -25,6 +25,16 @@ public final class RandomUtils {
         return successes;
     }
 
+    /** 每次以 1 / oneIn 的概率计数，达到上限时停止取随机数。 */
+    public static int occurrences(RandomSource random, int trials, int oneIn, int limit) {
+        if (trials < 0 || oneIn <= 0 || limit < 0) throw new IllegalArgumentException("试验次数、概率分母或计数上限无效");
+        int successes = 0;
+        for (int trial = 0; trial < trials && successes < limit; trial++) {
+            if (random.nextInt(oneIn) == 0) successes++;
+        }
+        return successes;
+    }
+
     public static <T> @Nullable T chooseWeighted(RandomSource random, List<T> entries, ToLongFunction<? super T> weight) {
         long[] weights = new long[entries.size()];
         long total = 0;

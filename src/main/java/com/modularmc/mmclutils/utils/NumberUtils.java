@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.utils;
 
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -8,6 +9,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -44,7 +46,7 @@ public final class NumberUtils {
      */
     public static String formatDuration(long nanos) {
         if (nanos < 0L) {
-            throw new IllegalArgumentException("A Trinity duration must not be negative");
+            throw new IllegalArgumentException("时长须为非负数");
         }
         if (nanos < NANOS_PER_MILLISECOND) {
             return formatDuration(nanos, 3, " μs");
@@ -86,6 +88,11 @@ public final class NumberUtils {
         return format(BigInteger.valueOf(value));
     }
 
+    /** 按紧凑单位显示浮点数，保留非有限值的标准文本。 */
+    public static String format(double value) {
+        return Double.isFinite(value) ? format(BigDecimal.valueOf(value)) : Double.toString(value);
+    }
+
     /**
      * 格式化任意精度有符号整数。
      *
@@ -99,6 +106,74 @@ public final class NumberUtils {
     /** 格式化以显示单位表示的精确数量，支持带小数的流体量。 */
     public static String format(BigDecimal value) {
         return formatParts(value).text();
+    }
+
+    /** 千以下显示原值，千到百万之间使用 K，百万以上使用 M 并附紧凑数量。 */
+    public static String formatThousandsOrMillions(long value) {
+        if (value > -1_000 && value < 1_000) return Long.toString(value);
+        boolean millions = value <= -1_000_000 || value >= 1_000_000;
+        String digits = decimalFormat("#,##0.00").format(BigDecimal.valueOf(value, millions ? 6 : 3));
+        return millions ? digits + "M (" + format(value) + ")" : digits + "K";
+    }
+
+    public static String formatGrouped(long value) {
+        return NumberFormat.getNumberInstance(Locale.ROOT).format(value);
+    }
+
+    public static String formatGrouped(double value) {
+        return NumberFormat.getNumberInstance(Locale.ROOT).format(value);
+    }
+
+    public static String formatGrouped(Number value) {
+        return NumberFormat.getNumberInstance(Locale.ROOT).format(value);
+    }
+
+    /** 显示最多两位小数并保留千位分组。 */
+    public static String formatTwoDecimals(double value) {
+        return decimalFormat("#,##0.##").format(value);
+    }
+
+    /** 将百分数的数值部分固定为两位小数，百分号由调用方决定。 */
+    public static String formatPercent(double percent) {
+        return decimalFormat("#,##0.00").format(percent);
+    }
+
+    /** 数值的绝对值超过阈值时使用科学计数法。 */
+    public static String formatWithScientificThreshold(BigInteger value, BigInteger threshold) {
+        if (threshold.signum() < 0) throw new IllegalArgumentException("科学计数阈值须为非负数");
+        return value.abs().compareTo(threshold) > 0 ? formatScientific(new BigDecimal(value)) : formatGrouped(value);
+    }
+
+    /** 使用 SI 前缀显示以基本单位计量的整数。 */
+    public static String formatSi(long value) {
+        return formatSi(value, false, null);
+    }
+
+    /** 格式化 SI 前缀。milli 表示传入值以基本单位的千分之一计量。 */
+    public static String formatSi(long value, boolean milli, @Nullable String unit) {
+        return formatSi(BigDecimal.valueOf(value), milli, decimalFormat("#,##0.##"), unit);
+    }
+
+    /** 显示带小数的数量。非有限值使用当前格式器的标准表示。 */
+    public static String formatSi(double value, boolean milli, @Nullable String unit) {
+        return formatSi(value, milli, decimalFormat("#,##0.##"), unit);
+    }
+
+    public static String formatSi(double value, boolean milli, NumberFormat numberFormat, @Nullable String unit) {
+        return Double.isFinite(value) ? formatSi(BigDecimal.valueOf(value), milli, numberFormat, unit) : numberFormat.format(value) + (unit == null ? "" : unit);
+    }
+
+    /** 由调用方决定数字部分的舍入及区域设置。 */
+    public static String formatSi(BigDecimal value, boolean milli, NumberFormat numberFormat, @Nullable String unit) {
+        String suffix = unit == null ? "" : unit;
+        if (value.signum() == 0) return numberFormat.format(value) + suffix;
+
+        final String prefixes = "kMGTPEZ";
+        boolean useMilli = milli && value.abs().compareTo(BigDecimal.valueOf(1_000)) < 0;
+        BigDecimal scaled = milli && !useMilli ? value.movePointLeft(3) : value;
+        int exponent = Math.clamp((scaled.precision() - (long) scaled.scale() - 1) / 3, 0, prefixes.length());
+        String prefix = exponent > 0 ? String.valueOf(prefixes.charAt(exponent - 1)) : useMilli ? "m" : "";
+        return numberFormat.format(scaled.movePointLeft(exponent * 3)) + prefix + suffix;
     }
 
     /**
