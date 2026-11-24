@@ -3,7 +3,6 @@ package com.modularmc.mmclutils.utils;
 import net.minecraft.util.Mth;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
-import org.jspecify.annotations.NonNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -14,14 +13,17 @@ public final class MathUtils {
 
     private MathUtils() {}
 
+    /** 将数值限制在包含两端的区间内。下限须小于或等于上限。 */
     public static long clamp(long value, long min, long max) {
         return Math.max(min, Math.min(max, value));
     }
 
+    /** 按比例插值，对结果向下取整。比例在 0～1 之外时进行外推。 */
     public static int lerpInt(double delta, int start, int end) {
         return start + Mth.floor(delta * (end - start));
     }
 
+    /** 将正整数依次分成尽可能大的正 int。非正数返回空数组。 */
     public static int[] split(long value) {
         IntArrayList result = new IntArrayList();
         while (value > 0) {
@@ -32,25 +34,19 @@ public final class MathUtils {
         return result.toIntArray();
     }
 
+    /** 转换为 int。超出表示范围时返回相应端点。 */
     public static int saturatedCast(long value) {
-        if (value > 2147483647L) {
-            return Integer.MAX_VALUE;
-        } else {
-            return value < -2147483648L ? Integer.MIN_VALUE : (int) value;
-        }
+        return Math.clamp(value, Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
 
+    /** 按 {@link MathContext#DECIMAL32} 计算比例并转为 float。除数为零时抛出算术异常。 */
     public static float ratio(BigInteger a, BigInteger b) {
         return new BigDecimal(a).divide(new BigDecimal(b), MathContext.DECIMAL32).floatValue();
     }
 
+    /** 整数除法向上取整，除数为零时抛出算术异常。 */
     public static int ceilDiv(int x, int y) {
-        final int q = x / y;
-        // 同号且存在余数时向上取整。
-        if ((x ^ y) >= 0 && (q * y != x)) {
-            return q + 1;
-        }
-        return q;
+        return Math.ceilDiv(x, y);
     }
 
     /** 非负被除数除以正除数，余数非零时向上取整。 */
@@ -72,31 +68,31 @@ public final class MathUtils {
         return left != 0 && right > Long.MAX_VALUE / left ? Long.MAX_VALUE : left * right;
     }
 
-    public static float min(float @NonNull... values) {
-        // noinspection ConstantValue JSpecify 将数组声明为非空，保留范围检查。
-        if (values == null || values.length == 0) throw new IllegalArgumentException();
-        if (values.length == 1) return values[0];
-        if (values.length == 2) return Math.min(values[0], values[1]);
-        float min = Float.MAX_VALUE;
-        for (float i : values) {
-            if (i < min) {
-                min = i;
-            }
-        }
-        return min;
+    /**
+     * 取最小浮点值，遵循 {@link Math#min(float, float)} 的 NaN、无穷和正负零规则。
+     *
+     * @param values 至少一个浮点值
+     * @return 最小值，输入含 NaN 时返回 NaN
+     * @throws IllegalArgumentException 数组没有元素
+     */
+    public static float min(float... values) {
+        if (values.length == 0) throw new IllegalArgumentException("至少需要一个值");
+        float result = values[0];
+        for (int i = 1; i < values.length; i++) result = Math.min(result, values[i]);
+        return result;
     }
 
-    public static float max(float @NonNull... values) {
-        // noinspection ConstantValue JSpecify 将数组声明为非空，保留范围检查。
-        if (values == null || values.length == 0) throw new IllegalArgumentException();
-        if (values.length == 1) return values[0];
-        if (values.length == 2) return Math.max(values[0], values[1]);
-        float max = -Float.MAX_VALUE;
-        for (float i : values) {
-            if (i > max) {
-                max = i;
-            }
-        }
-        return max;
+    /**
+     * 取最大浮点值，遵循 {@link Math#max(float, float)} 的 NaN、无穷和正负零规则。
+     *
+     * @param values 至少一个浮点值
+     * @return 最大值，输入含 NaN 时返回 NaN
+     * @throws IllegalArgumentException 数组没有元素
+     */
+    public static float max(float... values) {
+        if (values.length == 0) throw new IllegalArgumentException("至少需要一个值");
+        float result = values[0];
+        for (int i = 1; i < values.length; i++) result = Math.max(result, values[i]);
+        return result;
     }
 }
