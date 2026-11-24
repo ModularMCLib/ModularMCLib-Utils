@@ -1,5 +1,10 @@
 package com.modularmc.mmclutils.api.level;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.world.phys.AABB;
+
 /**
  * 以某个方块为中心的查询范围，供 {@link BlockOctree} 和 {@link BlockIndex} 使用。功能：
  * <ul>
@@ -75,6 +80,20 @@ public final class BlockRange {
         return new BlockRange(Shape.BOX, rx, ry, rz, -1);
     }
 
+    /**
+     * 以方块中心为基准创建区块覆盖范围，水平方向每增加一圈就在两侧各扩展一个区块宽度。
+     *
+     * @param center      原版压缩坐标可表示的中心方块
+     * @param chunkRadius 水平方向的区块圈数，零圈覆盖一个区块宽度
+     * @param below       向下覆盖的方块数
+     * @param above       向上覆盖的方块数
+     * @return 可用于位置判断、区块索引和渲染的范围
+     * @throws IllegalArgumentException 圈数或任一高度为负
+     */
+    public static ChunkCoverage chunkCoverage(BlockPos center, int chunkRadius, int below, int above) {
+        return new ChunkCoverage(center.asLong(), chunkRadius, below, above);
+    }
+
     /** 返回相交测试所使用的形状。 */
     public Shape shape() {
         return shape;
@@ -137,5 +156,96 @@ public final class BlockRange {
     @Override
     public String toString() {
         return shape == Shape.SPHERE ? "BlockRange.sphereSq(" + radiusSq + ")" : "BlockRange.box(" + rx + ", " + ry + ", " + rz + ")";
+    }
+
+    /**
+     * 以方块中心对齐的水平正方形和不对称的竖直范围。可在线程之间共享。
+     *
+     * @param center      用 {@link BlockPos#asLong()} 编码的中心方块
+     * @param chunkRadius 从中心向外扩展的区块圈数，须非负
+     * @param below       从中心方块向下覆盖的方块数，须非负
+     * @param above       从中心方块向上覆盖的方块数，须非负
+     */
+    public record ChunkCoverage(long center, int chunkRadius, int below, int above) {
+
+        /** @throws IllegalArgumentException 圈数或任一高度为负 */
+        public ChunkCoverage {
+            if (chunkRadius < 0 || below < 0 || above < 0) {
+                throw new IllegalArgumentException("区块圈数和覆盖高度须非负");
+            }
+        }
+
+        /** 判断方块中心是否在范围内，水平最小边界计入，最大边界排除。 */
+        public boolean contains(BlockPos pos) {
+            return contains(pos.getX(), pos.getY(), pos.getZ());
+        }
+
+        /** 判断原版压缩坐标对应的方块中心是否在范围内。 */
+        public boolean contains(long pos) {
+            return contains(BlockPos.getX(pos), BlockPos.getY(pos), BlockPos.getZ(pos));
+        }
+
+        private boolean contains(int x, int y, int z) {
+            long halfWidth = halfWidth();
+            long dx = (long) x - BlockPos.getX(center);
+            long dy = (long) y - BlockPos.getY(center);
+            long dz = (long) z - BlockPos.getZ(center);
+            return dx >= -halfWidth && dx < halfWidth && dz >= -halfWidth && dz < halfWidth && dy >= -below && dy <= above;
+        }
+
+        /** 返回未裁切的世界坐标包围盒。最大高度位于最高一层方块的顶面。 */
+        public AABB bounds() {
+            int y = BlockPos.getY(center);
+            return bounds((double) y - below, (double) y + above + 1);
+        }
+
+        /** 将包围盒裁切到世界的建造高度。完全落在世界外时，返回贴在相邻边界的零高包围盒。 */
+        public AABB bounds(LevelHeightAccessor height) {
+            int y = BlockPos.getY(center);
+            int minY = height.getMinY();
+            double endY = (double) height.getMaxY() + 1;
+            return bounds(Math.clamp((double) y - below, minY, endY), Math.clamp((double) y + above + 1, minY, endY));
+        }
+
+        /** 返回包围盒相交的最小区块 X 坐标。 */
+        public int minChunkX() {
+            return chunkAt(BlockPos.getX(center) - halfWidth());
+        }
+
+        /** 返回包围盒相交的最大区块 X 坐标。 */
+        public int maxChunkX() {
+            return chunkAt(BlockPos.getX(center) + halfWidth());
+        }
+
+        /** 返回包围盒相交的最小区块 Z 坐标。 */
+        public int minChunkZ() {
+            return chunkAt(BlockPos.getZ(center) - halfWidth());
+        }
+
+        /** 返回包围盒相交的最大区块 Z 坐标。 */
+        public int maxChunkZ() {
+            return chunkAt(BlockPos.getZ(center) + halfWidth());
+        }
+
+        /** 返回按覆盖宽度折算的区块数，未计入边缘部分相交的区块。超出 {@code long} 时抛出算术异常。 */
+        public long nominalChunkCount() {
+            long diameter = 2L * chunkRadius + 1;
+            return Math.multiplyExact(diameter, diameter);
+        }
+
+        private long halfWidth() {
+            return ((long) chunkRadius << SectionPos.SECTION_BITS) + SectionPos.SECTION_HALF_SIZE;
+        }
+
+        private static int chunkAt(long block) {
+            return Math.toIntExact(block >> SectionPos.SECTION_BITS);
+        }
+
+        private AABB bounds(double minY, double maxY) {
+            double x = BlockPos.getX(center) + 0.5;
+            double z = BlockPos.getZ(center) + 0.5;
+            long halfWidth = halfWidth();
+            return new AABB(x - halfWidth, minY, z - halfWidth, x + halfWidth, maxY, z + halfWidth);
+        }
     }
 }
