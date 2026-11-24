@@ -1,5 +1,7 @@
 package com.modularmc.mmclutils.utils;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -46,7 +48,18 @@ public final class EntityUtils {
     }
 
     public static @Nullable Entity teleport(Entity entity, ServerLevel level, Vec3 position) {
-        return entity.teleport(new TeleportTransition(level, position, entity.getDeltaMovement(), entity.getYRot(),
-                entity.getXRot(), TeleportTransition.DO_NOTHING));
+        return teleport(entity, level, position, entity.getYRot(), entity.getXRot());
+    }
+
+    /** 在服务端线程传送实体，保留既有速度。返回原版传送后的实体，失败时返回空值。 */
+    public static @Nullable Entity teleport(Entity entity, ServerLevel level, Vec3 position, float yaw, float pitch) {
+        return entity.teleport(new TeleportTransition(level, position, entity.getDeltaMovement(), yaw,
+                pitch, TeleportTransition.DO_NOTHING));
+    }
+
+    /** 按维度键定位目标维度。维度尚未加载时返回空值。 */
+    public static @Nullable Entity teleport(Entity entity, MinecraftServer server, ResourceKey<Level> dimension, Vec3 position) {
+        ServerLevel level = server.getLevel(dimension);
+        return level == null ? null : teleport(entity, level, position);
     }
 }

@@ -132,6 +132,18 @@ public final class BlockPosUtils {
         }
     }
 
+    /** 计算两个打包坐标的平方距离，中间乘积使用 long。 */
+    public static long distanceSquared(long first, long second) {
+        long dx = BlockPos.getX(first) - BlockPos.getX(second);
+        long dy = BlockPos.getY(first) - BlockPos.getY(second);
+        long dz = BlockPos.getZ(first) - BlockPos.getZ(second);
+        return dx * dx + dy * dy + dz * dz;
+    }
+
+    public static double distance(long first, long second) {
+        return Math.sqrt(distanceSquared(first, second));
+    }
+
     public static GlobalPos globalPos(Identifier dimension, long packedPos) {
         return GlobalPos.of(ResourceKey.create(Registries.DIMENSION, dimension), BlockPos.of(packedPos));
     }
