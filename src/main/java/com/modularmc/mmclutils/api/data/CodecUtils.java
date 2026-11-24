@@ -1,5 +1,8 @@
 package com.modularmc.mmclutils.api.data;
 
+import com.modularmc.mmclutils.api.function.Memoization;
+
+import com.mojang.datafixers.util.Either;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -98,7 +101,37 @@ public final class CodecUtils {
                                 DataResult.error(() -> errorMessage.apply(value)));
     }
 
+    /** 校验闭区间内的整数。 */
+    public static Codec<Long> longRange(long min, long max) {
+        return longRangeWithMessage(min, max, value -> "数值 " + value + " 超出区间 [" + min + ", " + max + "]");
+    }
+
+    /** 读取两侧类型相同的任一分支。 */
+    public static <T> T unboxEither(Either<T, T> either) {
+        return either.map(Function.identity(), Function.identity());
+    }
+
+    /** 在首次读取时解码并缓存结果，解码失败由该次读取抛出。供应器由调用线程持有。 */
+    public static <T> Codec<Supplier<T>> lazyParsingCodec(Codec<T> delegate) {
+        return new LazyParsingCodec<>(delegate);
+    }
+
     public static <T, A> DataResult<A> encodeMap(T value, MapCodec<T> codec, DynamicOps<A> ops) {
         return codec.encode(value, ops, ops.mapBuilder()).build(ops.empty());
+    }
+
+    private record LazyParsingCodec<A>(Codec<A> delegate) implements Codec<Supplier<A>> {
+
+        @Override
+        public <T> DataResult<Pair<Supplier<A>, T>> decode(DynamicOps<T> ops, T input) {
+            Supplier<A> lazyValue = Memoization.memoize(() -> delegate.decode(ops, input).map(Pair::getFirst).getOrThrow());
+            return DataResult.success(Pair.of(lazyValue, input));
+        }
+
+        @Override
+        public <T> DataResult<T> encode(Supplier<A> input, DynamicOps<T> ops, T prefix) {
+            A value = input.get();
+            return value == null ? DataResult.success(prefix) : delegate.encode(value, ops, prefix);
+        }
     }
 }

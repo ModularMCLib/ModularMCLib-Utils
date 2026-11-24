@@ -16,7 +16,7 @@ public final class BlockPatternUtils {
         List<Pattern> patterns = new ObjectArrayList<>(textPatterns.size());
         for (String entry : textPatterns) {
             if (entry.isBlank()) {
-                throw new IllegalArgumentException("Data Ripper blacklist regex must not be blank");
+                throw new IllegalArgumentException("方块黑名单的正则表达式不能为空");
             }
             patterns.add(Pattern.compile(entry));
         }
@@ -28,17 +28,17 @@ public final class BlockPatternUtils {
         for (String entry : textMultipliers) {
             int separator = entry.lastIndexOf('=');
             if (separator <= 0 || separator >= entry.length() - 1) {
-                throw new IllegalArgumentException("Data Ripper multiplier must use pattern=value: " + entry);
+                throw new IllegalArgumentException("方块倍率须使用“表达式=倍率”格式，实际值为 " + entry);
             }
             String patternText = entry.substring(0, separator).trim();
             String valueText = entry.substring(separator + 1).trim();
             if (patternText.isEmpty()) {
-                throw new IllegalArgumentException("Data Ripper multiplier regex must not be blank: " + entry);
+                throw new IllegalArgumentException("方块倍率的正则表达式不能为空，实际值为 " + entry);
             }
             double value = NumberUtils.parseDouble(valueText)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid Data Ripper multiplier: " + entry));
+                    .orElseThrow(() -> new IllegalArgumentException("无法解析方块倍率 " + entry));
             if (value <= 0.0D) {
-                throw new IllegalArgumentException("Data Ripper multiplier must be finite and positive: " + entry);
+                throw new IllegalArgumentException("方块倍率须为有限正数，实际值为 " + entry);
             }
             entries.add(new MultiplierEntry(Pattern.compile(patternText), value));
         }
@@ -47,17 +47,17 @@ public final class BlockPatternUtils {
 
     public static List<MultiplierEntry> precompileMultipliers(String[] patterns, double[] values) {
         if (patterns.length != values.length) {
-            throw new IllegalArgumentException("Data Ripper multiplier patterns and values must have equal lengths");
+            throw new IllegalArgumentException("方块倍率的表达式和数值须一一对应");
         }
         List<MultiplierEntry> entries = new ObjectArrayList<>(patterns.length);
         for (int index = 0; index < patterns.length; index++) {
             String patternText = patterns[index];
             if (patternText == null || patternText.isBlank()) {
-                throw new IllegalArgumentException("Data Ripper multiplier pattern must not be blank");
+                throw new IllegalArgumentException("方块倍率的正则表达式不能为空");
             }
             double value = values[index];
             if (!Double.isFinite(value) || value <= 0.0D) {
-                throw new IllegalArgumentException("Data Ripper multiplier must be finite and positive");
+                throw new IllegalArgumentException("方块倍率须为有限正数");
             }
             entries.add(new MultiplierEntry(Pattern.compile(patternText), value));
         }

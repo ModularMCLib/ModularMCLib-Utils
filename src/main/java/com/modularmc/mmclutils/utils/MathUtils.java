@@ -53,6 +53,25 @@ public final class MathUtils {
         return q;
     }
 
+    /** 非负被除数除以正除数，余数非零时向上取整。 */
+    public static BigInteger ceilDivNonNegative(BigInteger dividend, BigInteger divisor) {
+        if (dividend.signum() < 0 || divisor.signum() <= 0) {
+            throw new IllegalArgumentException("被除数须为非负数，除数须为正数");
+        }
+        BigInteger[] division = dividend.divideAndRemainder(divisor);
+        return division[1].signum() == 0 ? division[0] : division[0].add(BigInteger.ONE);
+    }
+
+    /** 两个操作数须为非负数，和超出 long 上限时取最大值。 */
+    public static long saturatedAddNonNegative(long left, long right) {
+        return left > Long.MAX_VALUE - right ? Long.MAX_VALUE : left + right;
+    }
+
+    /** 两个操作数须为非负数，积超出 long 上限时取最大值。 */
+    public static long saturatedMultiplyNonNegative(long left, long right) {
+        return left != 0 && right > Long.MAX_VALUE / left ? Long.MAX_VALUE : left * right;
+    }
+
     public static float min(float @NonNull... values) {
         // noinspection ConstantValue JSpecify 将数组声明为非空，保留范围检查。
         if (values == null || values.length == 0) throw new IllegalArgumentException();
