@@ -84,6 +84,7 @@ public final class RandomUtils {
      */
     public record WeightedEntry<T>(T value, long weight) {
 
+        /** 创建候选条目，负权重将被拒绝。 */
         public WeightedEntry {
             if (weight < 0) throw new IllegalArgumentException("权重应为非负数");
         }

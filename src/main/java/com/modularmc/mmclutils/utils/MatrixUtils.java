@@ -28,9 +28,11 @@ public class MatrixUtils {
             .synchronizedTable(HashBasedTable.create());
 
     /**
-     * @param from 原始向量
-     * @param to   目标向量
-     * @return 将原始向量转向目标所需的角度
+     * 用两个单位向量的点积计算夹角。
+     *
+     * @param from 原始单位向量
+     * @param to   目标单位向量
+     * @return 将原始向量转向目标所需的弧度
      */
     @Contract(pure = true)
     public static float getRotationAngle(final Vector3fc from, final Vector3fc to) {
@@ -49,6 +51,8 @@ public class MatrixUtils {
     }
 
     /**
+     * 将叉积归一化并写入指定向量。输入向量须非零且不平行。
+     *
      * @param from 原始向量
      * @param to   目标向量
      * @param dest 接收结果的向量
@@ -59,6 +63,8 @@ public class MatrixUtils {
     }
 
     /**
+     * 构造从原始向量旋转到目标向量的四元数，调用后两输入保持原值。
+     *
      * @param from 原始向量
      * @param to   目标向量
      * @return 将原始向量转向目标的四元数
@@ -69,6 +75,8 @@ public class MatrixUtils {
     }
 
     /**
+     * 按两个原版方向的单位步进向量构造旋转四元数。
+     *
      * @param from 原始方向
      * @param to   目标方向
      * @return 将原始方向转向目标的四元数
@@ -100,6 +108,8 @@ public class MatrixUtils {
     }
 
     /**
+     * 在矩阵上应用旋转，并原地旋转需要同步更新的向量。
+     *
      * @param matrix     原地修改的矩阵
      * @param angle      旋转角度，单位为弧度
      * @param axis       旋转轴
@@ -113,8 +123,11 @@ public class MatrixUtils {
     }
 
     /**
-     * @param upward 局部上方对应的方向
+     * 将水平翻转编码转换为绕局部前向轴的角度。
+     *
+     * @param upward 表示四分之一圈倍数的水平方向，北方表示零
      * @return 以前面法线为轴的旋转角度，单位为弧度
+     * @throws InvalidParameterException 提供了垂直方向
      */
     public static float upwardFacingAngle(Direction upward) {
         return switch (upward) {

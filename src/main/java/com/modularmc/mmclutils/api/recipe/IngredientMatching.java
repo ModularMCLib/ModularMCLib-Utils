@@ -151,6 +151,7 @@ public final class IngredientMatching {
     /** 一项物品谓词及其需求总数。 */
     public record Requirement(Ingredient ingredient, int count) implements CountedRequirement {
 
+        /** 创建带数量的原版配料需求。数量须为正数。 */
         public Requirement {
             if (ingredient.isEmpty()) {
                 throw new IllegalArgumentException("Counted item requirement must not be empty");
@@ -166,6 +167,7 @@ public final class IngredientMatching {
      */
     public record Assignment(int inputIndex, int amount) {
 
+        /** 将一部分输入分配给需求。输入索引从零开始，分配数量须为正数。 */
         public Assignment {
             if (inputIndex < 0) {
                 throw new IllegalArgumentException("Input slot index must not be negative: " + inputIndex);

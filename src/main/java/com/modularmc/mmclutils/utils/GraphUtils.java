@@ -81,6 +81,7 @@ public final class GraphUtils {
     /** 二维平面中的点。坐标须为有限值。 */
     public record Point(double x, double y) {
 
+        /** 创建平面点，两个坐标均须为有限数值。 */
         public Point {
             if (!Double.isFinite(x) || !Double.isFinite(y)) throw new IllegalArgumentException("折线坐标须为有限值");
         }
@@ -89,6 +90,7 @@ public final class GraphUtils {
     /** 平面上的闭合矩形。坐标须为有限值且左上角不超过右下角。 */
     public record Bounds(double left, double top, double right, double bottom) {
 
+        /** 创建面积为正的矩形，四条边必须是有限数值。 */
         public Bounds {
             if (!(left < right && top < bottom) || !Double.isFinite(left) || !Double.isFinite(top) || !Double.isFinite(right) || !Double.isFinite(bottom)) {
                 throw new IllegalArgumentException("折线路由的阻挡矩形无效");

@@ -40,6 +40,7 @@ public final class OrbitUtils {
     public record Sweep(double startAngle, double endAngle, double innerRadius, double outerRadius,
                         double halfWidth, double halfHeight, int steps) {
 
+        /** 创建包含两个角度端点的扫描，要求步数为正，半径与扩张量为有限的非负数。 */
         public Sweep {
             if (!Double.isFinite(startAngle) || !Double.isFinite(endAngle) || !Double.isFinite(innerRadius) || !Double.isFinite(outerRadius) || !Double.isFinite(halfWidth) || !Double.isFinite(halfHeight) || innerRadius < 0 || innerRadius > outerRadius || halfWidth < 0 || halfHeight < 0 || steps < 1) {
                 throw new IllegalArgumentException("轨道几何参数超出范围");

@@ -9,10 +9,13 @@ import java.util.Objects;
 
 /**
  * 按流体、数量和数据组件配置流体栈的哈希与相等策略。
+ * 用作哈希键期间，应保持参与比较的字段稳定。
  */
 public interface FluidStackStrategy extends Hash.Strategy<FluidStack> {
 
     /**
+     * 选择参与散列和比较的栈字段。
+     *
      * @return 可组合比较字段的构建器
      */
     static FluidStackStrategy.FluidStackHashStrategyBuilder builder() {
@@ -83,6 +86,8 @@ public interface FluidStackStrategy extends Hash.Strategy<FluidStack> {
         }
 
         /**
+         * 生成一个由已选择字段定义的策略。用于容器后保持构建器的字段选择稳定。
+         *
          * @return 按当前比较字段生成的流体栈策略
          */
         public FluidStackStrategy build() {
