@@ -1,5 +1,7 @@
 package com.modularmc.mmclutils.client.render.effect;
 
+import com.modularmc.mmclutils.client.render.effect.ParticleEffects.MoteLook;
+
 import net.minecraft.util.Mth;
 
 import java.util.SplittableRandom;
@@ -29,4 +31,7 @@ public final class BurstEffects {
                     style.alpha(), rgb, GpuParticleRenderer.CONSTANT, GpuParticleRenderer.FADE, RANDOM.nextFloat() * Mth.TWO_PI, look.rollSpeed(), 0, 0, 0, 0, look, false);
         }
     }
+
+    /** 一次爆散的粒子数量、寿命、初始分布与视觉参数。 */
+    public record BurstStyle(int count, int life, float radius, float spreadXZ, float spreadY, float rise, float size, float alpha) {}
 }

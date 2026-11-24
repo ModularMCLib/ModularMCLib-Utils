@@ -1,5 +1,7 @@
 package com.modularmc.mmclutils.client.render.effect;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * 在客户端提交带阻力和重力的光点，或提交向指定位置移动的光点。
  * 粒子工厂可以传入自己的精灵，由批量管线统一计算和绘制。
@@ -28,5 +30,29 @@ public final class ParticleEffects {
         if (Double.isNaN(now)) return;
         GpuParticleRenderer.write(GpuParticleRenderer.SLIDE, x0, y0, z0, x1 - x0, y1 - y0, z1 - z0, now, life, 1, 0, size, alpha, rgb, sizeCurve, flags & FADE, 0, look.rollSpeed(),
                 0, 0, 0, 0, look, (flags & THROUGH_WALLS) != 0);
+    }
+
+    /**
+     * 光点样式可选择带亮芯的像素光晕，或由调用方提供的粒子精灵。
+     */
+    public record MoteLook(@Nullable MoteSprite sprite, boolean animated, float rollSpeed, float core) {
+
+        public static final MoteLook GLOW = new MoteLook(null, false, 0, 0.3F);
+
+        public static MoteLook glow(float core) {
+            return new MoteLook(null, false, 0, core);
+        }
+
+        public static MoteLook sprite(MoteSprite sprite) {
+            return new MoteLook(sprite, false, 0, 0);
+        }
+
+        public static MoteLook animated(MoteSprite sprite) {
+            return new MoteLook(sprite, true, 0, 0);
+        }
+
+        public static MoteLook spinning(MoteSprite sprite, float rollSpeed) {
+            return new MoteLook(sprite, false, rollSpeed, 0);
+        }
     }
 }

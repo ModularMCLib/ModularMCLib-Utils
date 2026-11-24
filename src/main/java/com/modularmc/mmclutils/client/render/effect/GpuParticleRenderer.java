@@ -1,6 +1,7 @@
 package com.modularmc.mmclutils.client.render.effect;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
+import com.modularmc.mmclutils.client.render.effect.ParticleEffects.MoteLook;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.renderer.texture.TextureAtlas;

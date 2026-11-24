@@ -1,6 +1,8 @@
 package com.modularmc.mmclutils.client.render.effect;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
+import com.modularmc.mmclutils.client.render.effect.ParticleRing.RingShape;
+import com.modularmc.mmclutils.client.render.effect.ParticleRing.RingStyle;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
@@ -34,7 +36,7 @@ public final class EffectRenderer {
 
     private static final ContextKey<Long> FRAME = new ContextKey<>(ModularMCLibUtils.id("effect_frame"));
     private static final ObjectArrayList<RingCommand> RINGS = new ObjectArrayList<>();
-    private static final ObjectArrayList<EffectSource> SOURCES = new ObjectArrayList<>();
+    private static final ObjectArrayList<Source> SOURCES = new ObjectArrayList<>();
     private static final Matrix4f MODEL_VIEW = new Matrix4f();
     private static int ringCount;
     private static long frame;
@@ -70,11 +72,11 @@ public final class EffectRenderer {
         return collecting;
     }
 
-    public static void addSource(EffectSource source) {
+    public static void addSource(Source source) {
         if (!SOURCES.contains(source)) SOURCES.add(source);
     }
 
-    public static void removeSource(EffectSource source) {
+    public static void removeSource(Source source) {
         SOURCES.remove(source);
     }
 
@@ -227,5 +229,13 @@ public final class EffectRenderer {
     private static void releaseOnShutdown(GameShuttingDownEvent event) {
         clearWorldEffects();
         releaseRenderBuffers();
+    }
+
+    /** 在客户端渲染线程提取世界状态时提交本次绘制的指令。 */
+    @FunctionalInterface
+    public interface Source {
+
+        /** 使用提取时的世界、动画时间与相机坐标提交效果。 */
+        void collect(ClientLevel level, double time, double camX, double camY, double camZ);
     }
 }

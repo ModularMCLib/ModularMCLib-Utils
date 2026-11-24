@@ -130,4 +130,17 @@ public final class ParticleRing {
         data.clear();
         return data;
     }
+
+    /** 环效果中精灵、光晕与亮芯各自的宽度和强度。 */
+    public record RingStyle(float spriteScale, int spriteStrength, float hazeWidth, int hazeStrength, float coreWidth, int coreStrength) {}
+
+    /** 定义闭环或由多条螺旋组成的环轮廓。 */
+    public record RingShape(int strands, float height, float turns, float taper, float fadeIn, float fadeOut) {
+
+        public static final RingShape CLOSED = new RingShape(0, 0, 0, 0, 0, 0);
+
+        public static RingShape helix(int strands, float height, float turns, float taper, float fadeIn, float fadeOut) {
+            return new RingShape(strands, height, turns, Math.max(0, Math.min(taper, 0.95F)), fadeIn, fadeOut);
+        }
+    }
 }

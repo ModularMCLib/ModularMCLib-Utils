@@ -1,6 +1,11 @@
 package com.modularmc.mmclutils.client.render.effect;
 
+import com.modularmc.mmclutils.client.render.effect.BurstEffects.BurstStyle;
+import com.modularmc.mmclutils.client.render.effect.ParticleEffects.MoteLook;
+
 import net.minecraft.util.Mth;
+
+import org.jspecify.annotations.Nullable;
 
 import java.util.SplittableRandom;
 
@@ -90,4 +95,13 @@ public final class BeamEffects {
                     style.alpha(), color, look.animated() ? GpuParticleRenderer.SHRINK : GpuParticleRenderer.CONSTANT, look.animated() ? 0 : GpuParticleRenderer.FADE, 0, look.rollSpeed(), 0, 0, 0, 0, look, false);
         }
     }
+
+    /** 沿直线生成的粒子间距、寿命和着色参数。 */
+    public record BeamStyle(float spacing, float spacingJitter, int life, float size, float alpha, boolean rainbow) {}
+
+    /** 端点间循环移动的粒子流样式，周期和行进时间以 Tick 计。 */
+    public record FlowStyle(int period, int travel, float size, float sizeJitter, float jitter, float alpha) {}
+
+    /** 沿线传播的脉冲参数，可在到达端点时生成爆散。 */
+    public record PulseStyle(float speed, float lag, int trail, float trailStep, float trailLife, float size, float alpha, @Nullable BurstStyle arrival) {}
 }
