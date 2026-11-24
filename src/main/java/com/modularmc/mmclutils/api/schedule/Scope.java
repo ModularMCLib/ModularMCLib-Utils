@@ -110,18 +110,22 @@ public abstract sealed class Scope {
         else end();
     }
 
+    /** 返回当前进程里仍在生效的作用域数。 */
     public static int liveCount() {
         return LIVE.get();
     }
 
+    /** 返回当前进程里记录的作用域回调失败次数。 */
     public static int failureCount() {
         return FAILURES.get();
     }
 
+    /** 返回当前进程里记录的作用域契约违规次数。 */
     public static int anomalyCount() {
         return ANOMALIES.get();
     }
 
+    /** 复制最近的异常记录，顺序从早到晚。调用方可以修改返回的列表。 */
     public static List<String> recentFailures() {
         synchronized (RECENT) {
             int n = Math.min(recentCount, RECENT.length);
@@ -186,11 +190,13 @@ public abstract sealed class Scope {
         return true;
     }
 
+    /** 把作用域标签转换为可用于日志的名称。 */
     public final String name() {
         Object current = label;
         return current instanceof String name ? name : String.valueOf(current);
     }
 
+    /** 取得创建时提供的标签。作用域结束后返回结束标记，避免继续引用所有者。 */
     public final Object label() {
         return label;
     }
@@ -199,10 +205,12 @@ public abstract sealed class Scope {
         return lane;
     }
 
+    /** 判断作用域是否还接收注册。结束阶段开始时立即返回 {@code false}。 */
     public final boolean isActive() {
         return active;
     }
 
+    /** 在当前调度线程创建带结束权限的子作用域。父作用域结束时会结束其子级。 */
     public final Owned child(String name) {
         checkFrame(this);
         return new Owned(name, lane, this);
@@ -246,6 +254,7 @@ public abstract sealed class Scope {
         return x;
     }
 
+    /** 计算当前节点下仍挂接的作用域数，包含自身。请在调度线程调用。 */
     public final int size() {
         int n = 1;
         for (int i = 0; i < childCount; i++) {
@@ -255,6 +264,7 @@ public abstract sealed class Scope {
         return n;
     }
 
+    /** 向缓冲区追加作用域层级诊断信息。当前节点深度为零，达到给定深度时停止展开。 */
     public final void dump(StringBuilder out, int maxDepth) {
         dump(out, 0, maxDepth);
     }
@@ -287,6 +297,7 @@ public abstract sealed class Scope {
         return out;
     }
 
+    /** 在调度线程登记清理回调。清理按登记的逆序执行，已结束的作用域立即执行回调。 */
     public final void onDispose(Runnable action) {
         Objects.requireNonNull(action, "action");
         guard();
@@ -309,6 +320,7 @@ public abstract sealed class Scope {
         undoCount = n + 1;
     }
 
+    /** 立即应用一次变更，并在当前作用域结束时执行对应撤销。 */
     public final void effect(Runnable apply, Runnable revert) {
         Objects.requireNonNull(revert, "revert");
         guard();
@@ -319,6 +331,7 @@ public abstract sealed class Scope {
         else runQuietly(revert);
     }
 
+    /** 跟踪派生值读取的依赖。值变化时先撤销上一值，再应用新值，结束时撤销最后一次应用。 */
     public final <T> void effect(Supplier<? extends T> derive, Consumer<? super T> apply, Consumer<? super T> revert) {
         Objects.requireNonNull(derive, "derive");
         Objects.requireNonNull(apply, "apply");
@@ -329,6 +342,7 @@ public abstract sealed class Scope {
         new Applied<T>(this, derive, apply, revert).run();
     }
 
+    /** 根据受跟踪的布尔条件应用或撤销变更，结束时撤销还生效的变更。 */
     public final void effectWhile(BooleanSupplier condition, Runnable apply, Runnable revert) {
         Objects.requireNonNull(condition, "condition");
         Objects.requireNonNull(apply, "apply");
@@ -339,18 +353,21 @@ public abstract sealed class Scope {
         new Toggled(this, condition, apply, revert).run();
     }
 
+    /** 在所属调度器上提交周期任务。作用域结束后，任务在到期时取消。 */
     public final Task repeat(Cadence cadence, Runnable action) {
         Task task = lane.repeat(cadence, this, action);
         if (!active) task.cancel();
         return task;
     }
 
+    /** 在所属调度器上提交一次性任务。作用域先结束时，任务在到期时跳过。 */
     public final Task schedule(int delay, Runnable action) {
         Task task = lane.schedule(delay, this, action);
         if (!active) task.cancel();
         return task;
     }
 
+    /** 创建与作用域绑定的合并触发器。同一等待窗口内的触发只执行一次。 */
     public final Trigger trigger(int delay, Runnable action) {
         CoalescedTask task = new CoalescedTask(this, action);
         int d = Math.max(0, delay);
@@ -359,6 +376,7 @@ public abstract sealed class Scope {
         };
     }
 
+    /** 在调度线程订阅信号，通知在所属调度器上执行。作用域结束时解除订阅。 */
     public final void listen(Signal signal, Runnable listener) {
         Objects.requireNonNull(listener, "listener");
         guard();
@@ -369,6 +387,7 @@ public abstract sealed class Scope {
         push(hook);
     }
 
+    /** 立即读取派生值并通知监听者。之后只在依赖触发且值发生变化时再次通知。 */
     public final <T> void watch(Supplier<? extends T> derive, Consumer<? super T> action) {
         guard();
         checkFrame(this);
@@ -376,6 +395,7 @@ public abstract sealed class Scope {
         new Watch<T>(this, derive, action).run();
     }
 
+    /** 为当前派生值建立子作用域。值变化时先清理旧子作用域，再运行新的作用域回调。 */
     public final <T> void select(Supplier<? extends T> derive, Body<? super T> body) {
         guard();
         checkFrame(this);
@@ -383,6 +403,7 @@ public abstract sealed class Scope {
         new Select<T>(this, derive, body).run();
     }
 
+    /** 仅在条件成立时维持一个子作用域。条件退出时释放子作用域里的资源。 */
     public final void when(BooleanSupplier condition, Consumer<Scope> body) {
         guard();
         checkFrame(this);
@@ -390,6 +411,7 @@ public abstract sealed class Scope {
         new When(this, condition, body).run();
     }
 
+    /** 按键维护子作用域。键消失或对应值改变时结束旧作用域，同键同值继续复用。 */
     public final <K, V> void each(Supplier<? extends Map<K, ? extends V>> derive, KeyedBody<K, V> body) {
         guard();
         checkFrame(this);
@@ -397,17 +419,20 @@ public abstract sealed class Scope {
         new Each<K, V>(this, derive, body).run();
     }
 
+    /** 创建随当前作用域关闭的共享池。最后一处借用释放后，条目按给定轮数保留。 */
     public final <K, V> SharedPool<K, V> pool(String name, int grace, SharedPool.Factory<K, V> factory) {
         checkFrame(this);
         return new SharedPool<>(inner(name), grace, factory);
     }
 
+    /** 获取指定键的共享资源。借用在当前作用域结束时释放。 */
     public final <K, V> SharedPool.Lease<V> lease(SharedPool<K, V> pool, K key) {
         guard();
         checkFrame(this);
         return pool.lease(this, key);
     }
 
+    /** 把非空值登记到最近的服务作用域。同一键按登记次序覆盖，在派生子作用域中登记的值随该子作用域撤销。 */
     public final <V> void provide(Key<V> key, V value) {
         Objects.requireNonNull(value, "value");
         guard();
@@ -421,6 +446,7 @@ public abstract sealed class Scope {
         push((Runnable) () -> instance.withdraw(key, value));
     }
 
+    /** 从最近的服务作用域向父级按键身份查找。未登记时返回 {@code null}，派生计算中会跟踪查找使用的作用域。 */
     @Nullable
     @SuppressWarnings("unchecked")
     public final <V> V lookup(Key<V> key) {
@@ -436,6 +462,7 @@ public abstract sealed class Scope {
         return null;
     }
 
+    /** 查找当前可见的服务。缺少对应键时抛出 {@link IllegalStateException}。 */
     public final <V> V require(Key<V> key) {
         V value = lookup(key);
         if (value == null) throw new IllegalStateException("No " + key + " in scope " + this);
@@ -1063,10 +1090,12 @@ public abstract sealed class Scope {
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
     public static final class Key<V> {
 
+        /** 出现在诊断输出中的名称。服务键始终按引用身份比较。 */
         @Getter
         @Accessors(fluent = true)
         private final String name;
 
+        /** 分配一个新的服务键。名称相同的多次调用会得到彼此独立的键。 */
         public static <V> Key<V> of(String name) {
             return new Key<>(name);
         }
@@ -1084,11 +1113,13 @@ public abstract sealed class Scope {
             super(label, lane, parent);
         }
 
+        /** 在给定调度器上创建带名字的根作用域。关闭调度器时释放该作用域。 */
         public static Owned root(String name, TickScheduler lane) {
             checkFrame(name);
             return new Owned(name, lane, null);
         }
 
+        /** 创建根作用域并保留对象标签，结束时释放标签的引用。 */
         public static Owned root(Object label, TickScheduler lane) {
             Objects.requireNonNull(label, "label");
             checkFrame(label);

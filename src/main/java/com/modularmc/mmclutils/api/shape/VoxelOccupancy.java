@@ -17,10 +17,12 @@ public final class VoxelOccupancy {
         pages.get(size++ >> PAGE_BITS)[offset] = value;
     }
 
+    /** 判断端点列表是否为空。 */
     public boolean empty() {
         return size == 0;
     }
 
+    /** 根据已发布的升序区间端点判断指定单元索引是否被占用。 */
     public boolean contains(long cell) {
         int low = 0, high = size;
         while (low < high) {
@@ -31,6 +33,7 @@ public final class VoxelOccupancy {
         return (low & 1) != 0;
     }
 
+    /** 判断所有单元是否由一个从零开始的连续区间覆盖。 */
     public boolean fills(long cells) {
         return size == 2 && get(0) == 0 && get(1) == cells;
     }

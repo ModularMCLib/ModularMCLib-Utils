@@ -55,42 +55,51 @@ public final class LevelStore<T> {
         }
     }
 
+    /** 分配一个可复用的维度槽。工厂只在首次读取空槽时调用，须返回非空值。 */
     public static <T> LevelStore<T> create(Supplier<? extends T> factory) {
         Objects.requireNonNull(factory, "factory");
         return new LevelStore<>(holder -> factory.get(), null);
     }
 
+    /** 分配带释放回调的槽。维度卸载或显式释放此槽时，回调接收原值。 */
     public static <T> LevelStore<T> create(Supplier<? extends T> factory, Consumer<? super T> onRelease) {
         Objects.requireNonNull(factory, "factory");
         return new LevelStore<>(holder -> factory.get(), Objects.requireNonNull(onRelease, "onRelease"));
     }
 
+    /** 分配维度槽，并把发生首次读取的世界实例交给工厂。 */
     public static <T> LevelStore<T> createWithLevel(Function<? super Level, ? extends T> factory) {
         Objects.requireNonNull(factory, "factory");
         return new LevelStore<>(holder -> factory.apply((Level) holder), null);
     }
 
+    /** 分配维度槽，工厂接收世界实例，释放回调接收被移除的值。 */
     public static <T> LevelStore<T> createWithLevel(Function<? super Level, ? extends T> factory, Consumer<? super T> onRelease) {
         Objects.requireNonNull(factory, "factory");
         return new LevelStore<>(holder -> factory.apply((Level) holder), Objects.requireNonNull(onRelease, "onRelease"));
     }
 
+    /** 取得本维度的值，首次访问空槽时同步创建。 */
     public T get(Level level) {
         return forHolder((SlotHolder) level);
     }
 
+    /** 只查询现有值，空槽时返回空值。 */
     public @Nullable T getIfPresent(Level level) {
         return forHolderIfPresent((SlotHolder) level);
     }
 
+    /** 替换值，传入空值可清空槽。此操作不会调用释放回调。 */
     public void set(Level level, @Nullable T value) {
         setHolder((SlotHolder) level, value);
     }
 
+    /** 清空指定维度的本槽，并在调用线程释放原值。 */
     public void release(Level level) {
         releaseHolder((SlotHolder) level);
     }
 
+    /** 释放维度的全部现有槽，并标记该实例已经卸载。 */
     public static void releaseAll(Level level) {
         releaseAllHolder((SlotHolder) level);
     }
@@ -100,10 +109,12 @@ public final class LevelStore<T> {
         if (event.getLevel() instanceof Level level) releaseAll(level);
     }
 
+    /** 查询世界是否已收到存储释放标记。 */
     public static boolean isReleased(Level level) {
         return ((SlotHolder) level).mmclutils$released();
     }
 
+    /** 供注入代码使用，按槽读取并初始化持有者的值。 */
     @ApiStatus.Internal
     @SuppressWarnings("unchecked")
     public T forHolder(SlotHolder holder) {
@@ -115,6 +126,7 @@ public final class LevelStore<T> {
         return createIn(holder);
     }
 
+    /** 供注入代码读取已发布的槽内容。槽未分配或无值时返回空值。 */
     @ApiStatus.Internal
     @SuppressWarnings("unchecked")
     public @Nullable T forHolderIfPresent(SlotHolder holder) {
@@ -122,6 +134,7 @@ public final class LevelStore<T> {
         return slots != null && slot < slots.length ? (T) SLOT.getAcquire(slots, slot) : null;
     }
 
+    /** 供注入代码替换或清空槽内容。替换时由调用处决定旧值的释放。 */
     @ApiStatus.Internal
     public void setHolder(SlotHolder holder, @Nullable T value) {
         synchronized (holder) {
@@ -134,6 +147,7 @@ public final class LevelStore<T> {
         }
     }
 
+    /** 从持有者取走现有值，离开持有者的锁后执行释放回调。 */
     @ApiStatus.Internal
     @SuppressWarnings("unchecked")
     public void releaseHolder(SlotHolder holder) {
@@ -147,6 +161,7 @@ public final class LevelStore<T> {
         if (value != null) notifyRelease((T) value);
     }
 
+    /** 摘除持有者的槽数组，再逐槽执行各自的释放回调。 */
     @ApiStatus.Internal
     public static void releaseAllHolder(SlotHolder holder) {
         Object[] slots;

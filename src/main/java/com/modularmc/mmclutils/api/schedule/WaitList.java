@@ -42,6 +42,7 @@ public final class WaitList<T> {
         return home == t;
     }
 
+    /** 将等待项挂到本队列。若它此前属于其他队列，先从原队列摘除。 */
     public void await(Waiter<T> waiter) {
         own();
         WaitList<T> at = waiter.list;
@@ -59,6 +60,7 @@ public final class WaitList<T> {
         size = n + 1;
     }
 
+    /** 唤醒当前等待项并清空本批。处理期间新登记的等待项留待下一批。 */
     public void fire(Consumer<? super T> action) {
         if (size == 0) return;
         own();
@@ -75,14 +77,17 @@ public final class WaitList<T> {
         }
     }
 
+    /** 判断当前是否有等待项。 */
     public boolean isEmpty() {
         return size == 0;
     }
 
+    /** 返回当前队列含有的等待项数。 */
     public int size() {
         return size;
     }
 
+    /** 队列为空时释放内部已分配的存储。 */
     public void trim() {
         if (size == 0) items = none();
     }

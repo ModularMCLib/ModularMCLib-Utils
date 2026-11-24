@@ -19,6 +19,7 @@ public final class KeyedSignal<K> {
 
     private final ConcurrentHashMap<K, Slot> slots = new ConcurrentHashMap<>();
 
+    /** 在派生值计算中登记对指定键的依赖。没有活动计算时直接返回。 */
     public void track(K key) {
         Objects.requireNonNull(key, "key");
         if (!Signal.tracking()) return;
@@ -31,6 +32,7 @@ public final class KeyedSignal<K> {
         slot.track();
     }
 
+    /** 订阅指定键的变化。注册随给定作用域结束而自动移除。 */
     public void listen(Scope scope, K key, Runnable listener) {
         Objects.requireNonNull(scope, "scope");
         Objects.requireNonNull(key, "key");
@@ -47,6 +49,7 @@ public final class KeyedSignal<K> {
         }
     }
 
+    /** 通知指定键的现有订阅者。 */
     public void emit(K key) {
         Slot slot = slots.get(Objects.requireNonNull(key, "key"));
         if (slot == null) return;
@@ -59,10 +62,12 @@ public final class KeyedSignal<K> {
         slot.emit();
     }
 
+    /** 通知所有当前有订阅者的键。 */
     public void emitAll() {
         for (Slot slot : slots.values()) slot.emit();
     }
 
+    /** 返回当前仍有信号条目的键数。 */
     public int keyCount() {
         return slots.size();
     }

@@ -12,6 +12,7 @@ public final class Poll {
 
     private Poll() {}
 
+    /** 在派生计算中建立按给定周期触发的依赖。没有当次派生计算时直接返回。 */
     public static void every(int period) {
         Signal.Frame frame = Signal.currentFrame();
         if (frame == null) return;

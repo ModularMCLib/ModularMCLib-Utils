@@ -25,30 +25,36 @@ import java.util.Arrays;
  */
 public final class LoadedChunks {
 
+    /** 区块未加载或位置超出建造高度时使用的虚空空气状态。 */
     public static final BlockState UNLOADED = Blocks.VOID_AIR.defaultBlockState();
 
     private LoadedChunks() {}
 
+    /** 按区块坐标查询已经存在的区块，缺失时返回空值。 */
     public static @Nullable LevelChunk chunk(Level level, int chunkX, int chunkZ) {
         ChunkSource source = level.getChunkSource();
         if (source instanceof Source loaded) return loaded.mmclutils$loadedChunk(chunkX, chunkZ);
         return source.getChunk(chunkX, chunkZ, false);
     }
 
+    /** 将方块位置换算成区块坐标，查询已加载区块。缺失时返回空值。 */
     public static @Nullable LevelChunk chunk(Level level, BlockPos pos) {
         return chunk(level, pos.getX() >> 4, pos.getZ() >> 4);
     }
 
+    /** 检查该位置所属区块是否已加载。此方法只检查区块平面坐标。 */
     public static boolean isLoaded(Level level, BlockPos pos) {
         return chunk(level, pos.getX() >> 4, pos.getZ() >> 4) != null;
     }
 
+    /** 读取已加载区块中的方块。位置超出建造高度或区块缺失时返回 {@link #UNLOADED}。 */
     public static BlockState blockState(Level level, BlockPos pos) {
         if (level.isOutsideBuildHeight(pos.getY())) return UNLOADED;
         LevelChunk chunk = chunk(level, pos.getX() >> 4, pos.getZ() >> 4);
         return chunk == null ? UNLOADED : chunk.getBlockState(pos);
     }
 
+    /** 读取已经创建且仍有效的方块实体。区块、条目缺失或实体已经移除时返回空值。 */
     public static @Nullable BlockEntity blockEntity(Level level, BlockPos pos) {
         LevelChunk chunk = chunk(level, pos.getX() >> 4, pos.getZ() >> 4);
         if (chunk == null) return null;
@@ -82,6 +88,7 @@ public final class LoadedChunks {
         private final Slot<C>[] slots = new Slot[4];
         private int next;
 
+        /** 按打包的区块坐标查询，缓存未命中时返回空值。 */
         public @Nullable C get(long key) {
             Slot<C>[] s = slots;
             for (int i = 0; i < 4; i++) {
@@ -91,12 +98,14 @@ public final class LoadedChunks {
             return null;
         }
 
+        /** 覆盖轮换位置的键和值。并发读者始终从同一个缓存条目读取键和值。 */
         public void put(long key, C value) {
             int i = next;
             next = (i + 1) & 3;
             slots[i] = new Slot<>(key, value);
         }
 
+        /** 清空所有缓存条目，下一次查询将重新读取区块源。 */
         public void clear() {
             Arrays.fill(slots, null);
         }

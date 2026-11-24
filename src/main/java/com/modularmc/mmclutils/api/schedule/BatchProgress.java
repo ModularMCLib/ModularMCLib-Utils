@@ -35,6 +35,10 @@ public final class BatchProgress {
 
     /**
      * 一次状态连续的推进结果。
+     *
+     * @param elapsedTicks    本次消耗的 Tick 数
+     * @param progress        推进后的进度，到达完成边界时归零
+     * @param reachedBoundary 是否完成了当前周期
      */
     public record Segment(int elapsedTicks, int progress, boolean reachedBoundary) {}
 }

@@ -50,27 +50,49 @@ public final class Schedulers {
         return lane;
     }
 
+    /**
+     * 获取在维度 Tick 结束时推进的主线程调度器。
+     *
+     * @param level 任务所属的维度
+     * @return 对应维度的调度器，维度已卸载时返回关闭状态的调度器
+     */
     public static TickScheduler of(Level level) {
         if (LevelStore.isReleased(level)) return TickScheduler.CLOSED;
         return MAIN.get(level);
     }
 
+    /**
+     * 获取此维度的默认异步调度器。任务访问世界时应使用由所属线程提前取得的独立数据。
+     *
+     * @param level 任务所属的维度
+     * @return 默认异步车道中对应维度的调度器
+     */
     public static TickScheduler async(Level level) {
         return AsyncLane.DEFAULT.scheduler(level);
     }
 
+    /**
+     * 获取指定异步车道的调度器。上一轮仍在执行时跳过本次推进。
+     *
+     * @param level 任务所属的维度
+     * @param lane  此任务使用的异步车道
+     * @return 指定车道中对应维度的调度器
+     */
     public static TickScheduler async(Level level, AsyncLane lane) {
         return lane.scheduler(level);
     }
 
+    /** 返回由服务器主线程驱动的全局调度器。服务器停止后须重新获取。 */
     public static TickScheduler server() {
         return server;
     }
 
+    /** 返回由物理客户端主线程驱动的全局调度器。连接断开后须重新获取。 */
     public static TickScheduler client() {
         return client;
     }
 
+    /** 结束旧客户端调度器及其作用域，并创建空调度器供下一次连接使用。 */
     @ApiStatus.Internal
     public static void resetClient() {
         TickScheduler old = client;
@@ -99,6 +121,7 @@ public final class Schedulers {
         server.runRound();
     }
 
+    /** 推进客户端调度器一轮。应在客户端 Tick 的结束阶段调用一次。 */
     @ApiStatus.Internal
     public static void runClientTick() {
         if (clientThread == null) {

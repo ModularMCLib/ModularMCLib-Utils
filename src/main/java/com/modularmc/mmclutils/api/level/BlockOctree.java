@@ -20,10 +20,13 @@ import java.util.function.Predicate;
  * <li>{@link #compact()}：按 Z 序重排条目池并丢掉空洞，批量插入后调用可提升查询局部性</li>
  * <li>值不能为 null；不是线程安全的</li>
  * </ul>
+ *
+ * @param <T> 与坐标关联的非空值类型
  */
 @SuppressWarnings("unchecked")
 public final class BlockOctree<T> {
 
+    /** 叶节点分裂前默认可以保存的位置数。 */
     public static final int DEFAULT_LEAF_CAPACITY = 32;
 
     private static final int INITIAL_LEAF_CAPACITY = 4;
@@ -67,14 +70,17 @@ public final class BlockOctree<T> {
     private long lastNearestD2;
     private int lastNearestX, lastNearestY, lastNearestZ;
 
+    /** 按 X、Z 共用的边界和独立 Y 边界创建索引，使用默认叶容量。 */
     public BlockOctree(int xzMin, int xzMax, int yMin, int yMax) {
         this(xzMin, yMin, xzMin, xzMax, yMax, xzMax, DEFAULT_LEAF_CAPACITY);
     }
 
+    /** 使用给定的闭合包围盒和默认叶容量创建索引。 */
     public BlockOctree(int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
         this(minX, minY, minZ, maxX, maxY, maxZ, DEFAULT_LEAF_CAPACITY);
     }
 
+    /** 指定叶容量。边界转换为以最小坐标为原点、边长为二次幂的立方体，调用 {@link #inBounds} 查询实际范围。 */
     public BlockOctree(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, int leafCapacity) {
         if (maxX < minX || maxY < minY || maxZ < minZ) {
             throw new IllegalArgumentException("max must be >= min");
@@ -111,6 +117,7 @@ public final class BlockOctree<T> {
         initLeaf(ROOT, initialCapacity);
     }
 
+    /** 在未占用的坐标插入非空值。已有值或坐标越界时返回 {@code false}。 */
     public boolean insert(int x, int y, int z, T value) {
         if (value == null) throw new NullPointerException("value");
         int lx = x - originX, ly = y - originY, lz = z - originZ;
@@ -156,6 +163,7 @@ public final class BlockOctree<T> {
         }
     }
 
+    /** 读取给定坐标的值，缺失或越界时返回空值。 */
     public T get(int x, int y, int z) {
         int lx = x - originX, ly = y - originY, lz = z - originZ;
         if (((lx | ly | lz) >>> shift) != 0) return null;
@@ -182,10 +190,12 @@ public final class BlockOctree<T> {
         }
     }
 
+    /** 检查给定坐标是否保存了值。 */
     public boolean contains(int x, int y, int z) {
         return get(x, y, z) != null;
     }
 
+    /** 移除并返回原值，缺失或越界时返回空值。 */
     public T remove(int x, int y, int z) {
         int lx = x - originX, ly = y - originY, lz = z - originZ;
         if (((lx | ly | lz) >>> shift) != 0) return null;
@@ -195,14 +205,17 @@ public final class BlockOctree<T> {
         return (T) removed;
     }
 
+    /** 返回八叉树中保存的值数量。 */
     public int size() {
         return size;
     }
 
+    /** 判断是否还有任何值。 */
     public boolean isEmpty() {
         return size == 0;
     }
 
+    /** 释放条目并重新初始化根节点。 */
     public void clear() {
         Arrays.fill(values, 0, poolTop, null);
         nodeTop = 1;
@@ -213,10 +226,12 @@ public final class BlockOctree<T> {
         initLeaf(ROOT, initialCapacity);
     }
 
+    /** 检查坐标是否在根节点覆盖的立方体内。 */
     public boolean inBounds(int x, int y, int z) {
         return (((x - originX) | (y - originY) | (z - originZ)) >>> shift) == 0;
     }
 
+    /** 重新紧凑排列叶内条目的存储，返回写入新数组的条目数。 */
     public int compact() {
         if (size == 0) return 0;
         int slots = Math.max(64, size);
@@ -253,11 +268,13 @@ public final class BlockOctree<T> {
         return write;
     }
 
+    /** 将范围内通过筛选的条目交给消费端。筛选可为空，回调中不要修改树。 */
     public void query(int cx, int cy, int cz, BlockRange range, Predicate<? super T> filter, Consumer<? super T> sink) {
         if (range.isEmpty() || size == 0) return;
         query(ROOT, 0, 0, 0, rootSize, (long) cx - originX, (long) cy - originY, (long) cz - originZ, range, filter, sink, false);
     }
 
+    /** 向集合追加匹配值并返回实际新增项数。 */
     public int query(int cx, int cy, int cz, BlockRange range, Predicate<? super T> filter, Collection<? super T> out) {
         if (range.isEmpty() || size == 0) return 0;
         int before = out.size();
@@ -265,12 +282,14 @@ public final class BlockOctree<T> {
         return out.size() - before;
     }
 
+    /** 找到任一范围内的匹配值便返回，没有符合项时返回空值。 */
     public T findAny(int cx, int cy, int cz, BlockRange range, Predicate<? super T> filter) {
         if (range.isEmpty() || size == 0) return null;
         Object r = findAny(ROOT, 0, 0, 0, rootSize, (long) cx - originX, (long) cy - originY, (long) cz - originZ, range, filter, false);
         return r == NOT_FOUND ? null : (T) r;
     }
 
+    /** 查找平方欧氏距离最短的范围内匹配值。此方法复用内部查询状态，不可从筛选回调再次调用。 */
     public T findNearest(int cx, int cy, int cz, BlockRange range, Predicate<? super T> filter) {
         if (range.isEmpty() || size == 0) return null;
         nearestD2 = Long.MAX_VALUE;
@@ -303,12 +322,14 @@ public final class BlockOctree<T> {
         return lastNearestZ;
     }
 
+    /** 跨全部叶节点查找任一匹配值。没有符合项时返回空值。 */
     public T findAny(Predicate<? super T> filter) {
         if (size == 0) return null;
         Object r = findAnyAll(ROOT, filter);
         return r == NOT_FOUND ? null : (T) r;
     }
 
+    /** 向使用方传递每个存储值。遍历期间不要结构性修改树。 */
     public void forEach(Consumer<? super T> action) {
         forEach(ROOT, action);
     }

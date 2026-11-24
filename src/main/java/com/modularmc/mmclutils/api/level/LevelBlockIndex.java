@@ -22,18 +22,22 @@ public final class LevelBlockIndex<T> {
 
     private LevelBlockIndex() {}
 
+    /** 为通用方块位置索引分配维度存储槽。每个维度实例持有独立索引。 */
     public static <T> LevelBlockIndex<T> create() {
         return new LevelBlockIndex<>();
     }
 
+    /** 读取指定维度的索引，首次访问时创建。 */
     public BlockIndex<T> get(Level level) {
         return store.get(level);
     }
 
+    /** 查询已经建立的索引，未建立时返回空值。 */
     public @Nullable BlockIndex<T> getIfPresent(Level level) {
         return store.getIfPresent(level);
     }
 
+    /** 丢弃本维度的索引，后续首次读取时可重新创建。 */
     public void release(Level level) {
         store.release(level);
     }

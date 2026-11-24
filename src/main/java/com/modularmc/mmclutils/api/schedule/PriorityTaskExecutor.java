@@ -13,6 +13,7 @@ public final class PriorityTaskExecutor implements Executor, AutoCloseable {
     private final AtomicLong order = new AtomicLong();
     private final ThreadPoolExecutor executor;
 
+    /** 启动使用指定线程名的串行执行器。首个任务提交时才会创建工作线程。 */
     public PriorityTaskExecutor(String threadName) {
         executor = new ThreadPoolExecutor(1, 1, 0, TimeUnit.SECONDS,
                 new PriorityBlockingQueue<>(), Thread.ofPlatform().daemon().name(threadName).factory());

@@ -33,11 +33,13 @@ public final class ScopeSlot {
 
     private volatile @Nullable Scope scope;
 
+    /** 在给定调度器下打开新作用域，结束槽位上此前建立的作用域。 */
     public Scope open(Object label, TickScheduler lane, Consumer<Scope> body) {
         Objects.requireNonNull(body, "body");
         return open(label, lane, body, PLAIN);
     }
 
+    /** 替换槽中的作用域，将调用方参数传给新作用域的初始化回调。 */
     public <A> Scope open(Object label, TickScheduler lane, A arg, BiConsumer<Scope, ? super A> body) {
         Objects.requireNonNull(label, "label");
         Objects.requireNonNull(body, "body");
@@ -71,6 +73,7 @@ public final class ScopeSlot {
         throw new IllegalStateException("Scope slot " + label + " needs a lane driven by one thread, async lanes are not supported");
     }
 
+    /** 结束当前作用域并清空槽位。没有活动作用域时直接返回。 */
     public void close() {
         Scope current = scope;
         if (current == null) return;
@@ -78,12 +81,14 @@ public final class ScopeSlot {
         current.end();
     }
 
+    /** 读取槽中的当前作用域。槽为空或先前作用域已结束时返回空值。 */
     @Nullable
     public Scope current() {
         Scope current = scope;
         return current != null && current.isActive() ? current : null;
     }
 
+    /** 判断槽中是否还有活动作用域。 */
     public boolean isOpen() {
         return current() != null;
     }

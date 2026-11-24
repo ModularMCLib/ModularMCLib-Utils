@@ -18,6 +18,7 @@ public final class AreaBlockActions {
 
     private AreaBlockActions() {}
 
+    /** 在服务端线程访问两个方块位置构成的闭合立方体。返回回调报告成功的次数。 */
     public static long box(ServerLevel level, BlockPos first, BlockPos second, Action action) {
         return visit(level, Math.min(first.getX(), second.getX()), Math.min(first.getY(), second.getY()), Math.min(first.getZ(), second.getZ()),
                 Math.max(first.getX(), second.getX()), Math.max(first.getY(), second.getY()), Math.max(first.getZ(), second.getZ()), pos -> true, action);
@@ -29,6 +30,7 @@ public final class AreaBlockActions {
                 Math.multiplyExact(Math.max(firstX, secondX), 16) + 15, level.getMaxY(), Math.multiplyExact(Math.max(firstZ, secondZ), 16) + 15, pos -> true, action);
     }
 
+    /** 按水平方向的圆形距离筛选指定高度区间的方块。负半径将被拒绝。 */
     public static long cylinder(ServerLevel level, BlockPos center, int radius, int minY, int maxY, Action action) {
         if (radius < 0) throw new IllegalArgumentException("圆柱半径不能为负数");
         long radiusSquared = (long) radius * radius;
@@ -40,6 +42,7 @@ public final class AreaBlockActions {
                 }, action);
     }
 
+    /** 访问到中心的欧氏距离不超过给定半径的格点。仅处理仍处于加载状态的方块。 */
     public static long sphere(ServerLevel level, BlockPos center, int radius, Action action) {
         if (radius < 0) throw new IllegalArgumentException("球形半径不能为负数");
         long radiusSquared = (long) radius * radius;
@@ -61,6 +64,7 @@ public final class AreaBlockActions {
         return apply(level, positions.iterator(), action);
     }
 
+    /** 从当前位置消耗打包方块坐标迭代器，跳过未加载或超出高度范围的位置。返回成功操作数。 */
     public static long apply(ServerLevel level, LongIterator positions, Action action) {
         checkThread(level);
         long count = 0;

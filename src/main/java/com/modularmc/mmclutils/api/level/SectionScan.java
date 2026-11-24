@@ -70,11 +70,13 @@ public final class SectionScan {
 
     private SectionScan() {}
 
+    /** 按原版闭合区间遍历顺序收集匹配坐标。调色板筛选可整段跳过，结果使用不可变坐标，最多收集指定数量。 */
     public static <T> int betweenClosed(Sections<T> sections, int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
                                         Predicate<? super T> palette, CellTest<? super T> test, int limit, Collection<? super BlockPos> out) {
         return closed(sections, minX, minY, minZ, maxX, maxY, maxZ, null, 0, 0, 0, palette, test, limit, out);
     }
 
+    /** 在指定几何范围内按原版闭合区间的顺序收集匹配坐标。空范围立即返回零。 */
     public static <T> int inRange(Sections<T> sections, int cx, int cy, int cz, BlockRange range,
                                   Predicate<? super T> palette, CellTest<? super T> test, int limit, Collection<? super BlockPos> out) {
         if (range.isEmpty()) return 0;
@@ -178,6 +180,7 @@ public final class SectionScan {
         return keys.size;
     }
 
+    /** 按原版曼哈顿遍历顺序收集坐标。区段按距离推进，达到上限即停止读取更远的区段。 */
     public static <T> int withinManhattan(Sections<T> sections, int cx, int cy, int cz, int rx, int ry, int rz,
                                           Predicate<? super T> palette, CellTest<? super T> test, int limit, Collection<? super BlockPos> out) {
         if (limit < 1 || rx < 0 || ry < 0 || rz < 0) return 0;

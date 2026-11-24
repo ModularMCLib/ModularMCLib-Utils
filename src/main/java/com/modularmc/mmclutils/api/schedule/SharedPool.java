@@ -72,6 +72,7 @@ public final class SharedPool<K, V> {
         return slot;
     }
 
+    /** 查看当前键下已有的资源。缺失时返回空值，此方法不增加借用计数。 */
     @Nullable
     @SuppressWarnings("unchecked")
     public V peek(K key) {
@@ -79,6 +80,7 @@ public final class SharedPool<K, V> {
         return slot == null ? null : (V) slot.value;
     }
 
+    /** 返回当前池中的键数，包含宽限期内等待释放的条目。 */
     public int size() {
         return slots.size();
     }

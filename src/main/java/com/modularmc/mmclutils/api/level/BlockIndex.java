@@ -24,12 +24,18 @@ import java.util.function.Predicate;
  * <li>{@link #version()}：每次登记内容变化加一，使用方据此判断自己缓存的查询结果是否过期</li>
  * <li>不是线程安全的，只在拥有该维度的线程上使用</li>
  * </ul>
+ *
+ * @param <T> 与方块坐标关联的非空对象类型
  */
 public final class BlockIndex<T> {
 
+    /** 原版方块坐标编码支持的最小 X、Z 坐标。 */
     public static final int MIN_XZ = -(1 << 25);
+    /** 原版方块坐标编码支持的最大 X、Z 坐标。 */
     public static final int MAX_XZ = (1 << 25) - 1;
+    /** 原版方块坐标编码支持的最小 Y 坐标。 */
     public static final int MIN_Y = -2048;
+    /** 原版方块坐标编码支持的最大 Y 坐标。 */
     public static final int MAX_Y = 2047;
 
     static final int REGION_SHIFT = 8;
@@ -49,10 +55,12 @@ public final class BlockIndex<T> {
         return regions.get(regionKey(x >> REGION_SHIFT, y >> REGION_SHIFT, z >> REGION_SHIFT));
     }
 
+    /** 检查坐标能否表示为原版打包方块位置。 */
     public boolean inBounds(int x, int y, int z) {
         return x >= MIN_XZ && x <= MAX_XZ && z >= MIN_XZ && z <= MAX_XZ && y >= MIN_Y && y <= MAX_Y;
     }
 
+    /** 将非空值关联到方块坐标，已有值时替换。坐标超出打包范围时返回 {@code false}。 */
     public boolean put(int x, int y, int z, T value) {
         if (!inBounds(x, y, z)) return false;
         int rx = x >> REGION_SHIFT, ry = y >> REGION_SHIFT, rz = z >> REGION_SHIFT;
@@ -72,10 +80,12 @@ public final class BlockIndex<T> {
         return true;
     }
 
+    /** 使用原版位置对象写入索引。索引只提取坐标，不持有传入对象。 */
     public boolean put(BlockPos pos, T value) {
         return put(pos.getX(), pos.getY(), pos.getZ(), value);
     }
 
+    /** 按坐标移除并返回旧值，未命中时返回空值。清空的区域从索引中移除。 */
     public T remove(int x, int y, int z) {
         if (!inBounds(x, y, z)) return null;
         long key = regionKey(x >> REGION_SHIFT, y >> REGION_SHIFT, z >> REGION_SHIFT);
@@ -89,26 +99,31 @@ public final class BlockIndex<T> {
         return removed;
     }
 
+    /** 按照方块位置移除值，位置未登记时返回空值。 */
     public T remove(BlockPos pos) {
         return remove(pos.getX(), pos.getY(), pos.getZ());
     }
 
+    /** 只有当前值与预期对象为同一引用时才删除。可用于避免迟到的清理操作删除新对象。 */
     public boolean remove(int x, int y, int z, T expected) {
         if (expected == null || get(x, y, z) != expected) return false;
         remove(x, y, z);
         return true;
     }
 
+    /** 按位置和预期引用移除，替换后保留当前位置上的新值。 */
     public boolean remove(BlockPos pos, T expected) {
         return remove(pos.getX(), pos.getY(), pos.getZ(), expected);
     }
 
+    /** 按整数坐标读取对应值。未登记或越界时返回空值。 */
     public T get(int x, int y, int z) {
         if (!inBounds(x, y, z)) return null;
         BlockOctree<T> tree = region(x, y, z);
         return tree == null ? null : tree.get(x, y, z);
     }
 
+    /** 按方块位置读取对应值。未登记或越界时返回空值。 */
     public T get(BlockPos pos) {
         return get(pos.getX(), pos.getY(), pos.getZ());
     }
@@ -146,6 +161,7 @@ public final class BlockIndex<T> {
         return out;
     }
 
+    /** 将范围内通过筛选的值依次交给消费端。允许省略筛选，回调中不要修改索引。 */
     public void query(int x, int y, int z, BlockRange range, Predicate<? super T> filter, Consumer<? super T> sink) {
         List<BlockOctree<T>> trees = regionsIn(x, y, z, range);
         depth++;
@@ -156,6 +172,7 @@ public final class BlockIndex<T> {
         }
     }
 
+    /** 将匹配值放入给定集合，返回集合实际增加的元素数。 */
     public int query(int x, int y, int z, BlockRange range, Predicate<? super T> filter, Collection<? super T> out) {
         int before = out.size();
         List<BlockOctree<T>> trees = regionsIn(x, y, z, range);
@@ -168,10 +185,12 @@ public final class BlockIndex<T> {
         return out.size() - before;
     }
 
+    /** 以方块位置为中心收集匹配值，返回集合实际增加的元素数。 */
     public int query(BlockPos center, BlockRange range, Predicate<? super T> filter, Collection<? super T> out) {
         return query(center.getX(), center.getY(), center.getZ(), range, filter, out);
     }
 
+    /** 找到任意一个范围内的匹配值就提前结束。未命中时返回空值。 */
     public T findAny(int x, int y, int z, BlockRange range, Predicate<? super T> filter) {
         List<BlockOctree<T>> trees = regionsIn(x, y, z, range);
         depth++;
@@ -186,10 +205,21 @@ public final class BlockIndex<T> {
         }
     }
 
+    /** 以方块位置为中心查找任一匹配值，未命中时返回空值。 */
     public T findAny(BlockPos center, BlockRange range, Predicate<? super T> filter) {
         return findAny(center.getX(), center.getY(), center.getZ(), range, filter);
     }
 
+    /**
+     * 取得范围内欧氏距离最近的值。距离相等时依次取 X、Y、Z 坐标较小者。
+     *
+     * @param x      中心方块的 X 坐标
+     * @param y      中心方块的 Y 坐标
+     * @param z      中心方块的 Z 坐标
+     * @param range  围绕中心的查询范围
+     * @param filter 值的筛选条件，可为空
+     * @return 最近的匹配值，没有匹配项时为空
+     */
     public T findNearest(int x, int y, int z, BlockRange range, Predicate<? super T> filter) {
         List<BlockOctree<T>> trees = regionsIn(x, y, z, range);
         depth++;
@@ -217,14 +247,17 @@ public final class BlockIndex<T> {
         }
     }
 
+    /** 以方块位置为中心查找平方欧氏距离最短的匹配值，未命中时返回空值。 */
     public T findNearest(BlockPos center, BlockRange range, Predicate<? super T> filter) {
         return findNearest(center.getX(), center.getY(), center.getZ(), range, filter);
     }
 
+    /** 访问所有值。遍历顺序取决于内部区域顺序，遍历中不要修改索引。 */
     public void forEach(Consumer<? super T> action) {
         for (BlockOctree<T> tree : regions.values()) tree.forEach(action);
     }
 
+    /** 跨区域查找第一个匹配值，未命中时返回空值。 */
     public T findAny(Predicate<? super T> filter) {
         for (BlockOctree<T> tree : regions.values()) {
             T v = tree.findAny(filter);
@@ -233,18 +266,22 @@ public final class BlockIndex<T> {
         return null;
     }
 
+    /** 当前有值的位置数。 */
     public int size() {
         return size;
     }
 
+    /** 判断索引中是否还有值。 */
     public boolean isEmpty() {
         return size == 0;
     }
 
+    /** 返回结构修改版本。调用方可比较两次取得的值判断缓存是否需要刷新。 */
     public int version() {
         return version;
     }
 
+    /** 丢弃全部数据。已有数据时推进修改版本。 */
     public void clear() {
         if (size == 0) return;
         regions.clear();

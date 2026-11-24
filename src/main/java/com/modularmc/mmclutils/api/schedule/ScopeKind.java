@@ -68,18 +68,22 @@ public final class ScopeKind<T> {
         this.roots = identity ? new Reference2ObjectLinkedOpenHashMap<>() : new Object2ObjectLinkedOpenHashMap<>();
     }
 
+    /** 创建按所有者引用身份查找的作用域类型，并返回管理生命周期的控制入口。 */
     public static <T> Control<T> byIdentity(String name) {
         return new Control<>(new ScopeKind<>(name, true));
     }
 
+    /** 创建按所有者相等性查找的作用域类型。所有者参与哈希的字段在绑定期间须稳定。 */
     public static <T> Control<T> byEquality(String name) {
         return new Control<>(new ScopeKind<>(name, false));
     }
 
+    /** 返回此类作用域的诊断名称。 */
     public String name() {
         return name;
     }
 
+    /** 注册模块并在已有作用域中挂载。模块标识必须唯一，重复时抛出异常。 */
     public void install(String id, Module<? super T> module) {
         for (var m : modules) if (m.id.equals(id)) throw new IllegalStateException("Module " + id + " already installed on scope kind " + name);
         var installed = new Installed<T>(id, module);
@@ -93,6 +97,7 @@ public final class ScopeKind<T> {
         }
     }
 
+    /** 查询所有者的活动作用域。缺失时返回空值，派生计算会订阅后续建立通知。 */
     @Nullable
     public Scope get(T owner) {
         Scope scope = live.get(owner);
@@ -101,18 +106,21 @@ public final class ScopeKind<T> {
         return scope;
     }
 
+    /** 从所有者作用域向上查找服务。所有者或服务缺失时返回空值。 */
     @Nullable
     public <V> V lookup(T owner, Key<V> key) {
         Scope scope = get(owner);
         return scope == null ? null : scope.lookup(key);
     }
 
+    /** 读取必须已登记的服务，作用域或服务缺失时抛出异常。 */
     public <V> V require(T owner, Key<V> key) {
         Scope scope = get(owner);
         if (scope == null) throw new IllegalStateException("No " + name + " scope for " + owner);
         return scope.require(key);
     }
 
+    /** 按当前登记顺序访问活动所有者和作用域。请在所属调度线程调用。 */
     public void forEach(BiConsumer<? super T, ? super Scope> action) {
         for (var owner : new ArrayList<>(live.keySet())) {
             var scope = live.get(owner);
@@ -120,6 +128,7 @@ public final class ScopeKind<T> {
         }
     }
 
+    /** 返回当前绑定的活动实例数量。 */
     public int size() {
         return live.size();
     }

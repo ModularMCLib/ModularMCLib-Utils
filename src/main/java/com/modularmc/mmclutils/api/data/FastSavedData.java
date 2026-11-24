@@ -108,7 +108,7 @@ public final class FastSavedData<T> {
         return value;
     }
 
-    /** 修改 value 后调用。已经在写盘的快照仍可完成，此次修改会进入下一次保存。 */
+    /** 在所属服务器线程修改值后调用。已经提交的写盘操作可以完成，最新数据将在下一次保存中写入。 */
     public void setDirty() {
         revision++;
     }
@@ -185,7 +185,15 @@ public final class FastSavedData<T> {
                           FileUtils.Reader<T> reader, FileUtils.Writer<T> writer,
                           @Nullable LegacyFile<T> legacy) {
 
-        /** 定义只读取当前文件格式的存档类型。 */
+        /**
+         * 定义只读取当前文件格式的存档类型。
+         *
+         * @param id           用于文件位置的稳定标识
+         * @param factory      文件不存在时提供默认值
+         * @param copyForWrite 在世界线程复制写入所需数据
+         * @param reader       解码当前文件
+         * @param writer       在后台编码交付的数据
+         */
         public Type(Identifier id, Supplier<T> factory, UnaryOperator<T> copyForWrite,
                     FileUtils.Reader<T> reader, FileUtils.Writer<T> writer) {
             this(id, factory, copyForWrite, reader, writer, null);
@@ -201,6 +209,7 @@ public final class FastSavedData<T> {
      */
     public record LegacyFile<T>(Path relativePath, LegacyReader<T> reader) {
 
+        /** 指定世界目录下的旧文件和读取器。路径须为相对路径。 */
         public LegacyFile {
             if (relativePath.isAbsolute()) throw new IllegalArgumentException("旧存档路径须相对于世界目录");
         }

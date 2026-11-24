@@ -101,14 +101,17 @@ public final class TickScheduler {
         return s;
     }
 
+    /** 提交一次性任务，安排在最早可用的一轮。返回的句柄可在任何线程取消。 */
     public Task schedule(Runnable action) {
         return schedule(0, null, action);
     }
 
+    /** 延迟指定轮数执行一次。轮内提交时，零延迟也从下一轮开始计算。 */
     public Task schedule(int delay, Runnable action) {
         return schedule(delay, null, action);
     }
 
+    /** 提交可随所有者失效的一次性任务。方块实体或实体移除、作用域结束后，任务到期时自动跳过。 */
     public Task schedule(int delay, @Nullable Object owner, Runnable action) {
         Entry e = new Entry(this, ONCE, owner, Objects.requireNonNull(action, "action"), null);
         e.delay = Math.max(0, delay);
@@ -116,6 +119,7 @@ public final class TickScheduler {
         return e;
     }
 
+    /** 按绝对轮次执行一次。若该轮已无法接受任务，顺延到最早可用的一轮。 */
     public Task scheduleAt(long tick, @Nullable Object owner, Runnable action) {
         Entry e = new Entry(this, ONCE, owner, Objects.requireNonNull(action, "action"), null);
         e.delay = -1;
@@ -124,20 +128,24 @@ public final class TickScheduler {
         return e;
     }
 
+    /** 返回当前执行的轮次，轮外返回下一轮。此时序只在调度线程上有效。 */
     public long currentTick() {
         return inRound ? round : round + 1;
     }
 
+    /** 按给定周期和相位重复执行，使用返回的句柄取消。 */
     public Task repeat(Cadence cadence, Runnable action) {
         return repeat(cadence, null, action);
     }
 
+    /** 按给定周期和相位重复执行，所有者失效时自动停止。 */
     public Task repeat(Cadence cadence, @Nullable Object owner, Runnable action) {
         RepeatEntry e = new RepeatEntry(this, owner, Objects.requireNonNull(action, "action"), null, null, cadence);
         enqueue(e);
         return e;
     }
 
+    /** 每次到期先检查可选的停止条件，再将所有者传给任务。条件满足时停止，且本轮跳过任务。 */
     @SuppressWarnings("unchecked")
     public <O> Task repeat(Cadence cadence, O owner, Consumer<? super O> action, @Nullable Predicate<? super O> until) {
         RepeatEntry e = new RepeatEntry(this, Objects.requireNonNull(owner, "owner"), null, (Consumer<Object>) Objects.requireNonNull(action, "action"),
@@ -146,10 +154,12 @@ public final class TickScheduler {
         return e;
     }
 
+    /** 把任务安排在最早可用的一轮。同一个任务排队期间的提交会合并。 */
     public void submit(CoalescedTask task) {
         task.submitTo(this, 0);
     }
 
+    /** 从首次提交计算等待轮数，后续提交与这次合并并沿用原执行轮次。 */
     public void submit(CoalescedTask task, int delay) {
         task.submitTo(this, Math.max(0, delay));
     }
@@ -162,19 +172,23 @@ public final class TickScheduler {
         return sticky;
     }
 
+    /** 判断当前线程是否与已绑定的调度线程不同。调度器尚未绑定线程时返回 {@code false}。 */
     public boolean foreign() {
         Thread driver = sticky ? affinity : roundThread;
         return driver != null && driver != Thread.currentThread();
     }
 
+    /** 返回最近一次开始执行的轮次。可从其他线程读取诊断值。 */
     public long round() {
         return round;
     }
 
+    /** 判断调度器是否已请求关闭。关闭期间仍可能在释放所属作用域。 */
     public boolean isClosed() {
         return closed;
     }
 
+    /** 使排队中的任务失效并停止接受新任务。作用域清理由调度线程完成。 */
     public void close() {
         closed = true;
         if (!sticky || inRound && onDriverThread()) return;
@@ -297,6 +311,7 @@ public final class TickScheduler {
         if (sticky && affinity == null) affinity = thread;
     }
 
+    /** 遍历此调度器直接持有的根作用域。请在调度线程调用。 */
     public void forEachScope(Consumer<? super Scope> action) {
         Scope[] rootsToVisit = Arrays.copyOf(roots, rootCount);
         for (Scope root : rootsToVisit) action.accept(root);

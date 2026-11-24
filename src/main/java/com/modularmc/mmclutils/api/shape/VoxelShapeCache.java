@@ -19,6 +19,13 @@ public final class VoxelShapeCache {
     private static final int MAX_CACHED_SHAPES = 128;
     private final Reference2ObjectLinkedOpenHashMap<VoxelShape, Capture> shapes = new Reference2ObjectLinkedOpenHashMap<>();
 
+    /**
+     * 推进指定形状的采集。再次传入相同形状实例可接着处理未完成的数据。
+     *
+     * @param shape    在所属世界线程访问的体素形状
+     * @param deadline 以 {@link System#nanoTime()} 为基准的采集截止时刻
+     * @return 已完成的数据，超过复杂度限制时返回 {@link VoxelShapeGeometry#UNSUPPORTED}，未采完时返回空值
+     */
     public @Nullable VoxelShapeGeometry capture(VoxelShape shape, long deadline) {
         if (shape == Shapes.block()) return VoxelShapeGeometry.BLOCK;
         if (shape == Shapes.empty()) return VoxelShapeGeometry.EMPTY;
@@ -31,6 +38,7 @@ public final class VoxelShapeCache {
         return capture.advance(deadline);
     }
 
+    /** 丢弃正在处理和已采集的形状。已经交给调用方的几何数据仍可读取。 */
     public void clear() {
         shapes.clear();
     }

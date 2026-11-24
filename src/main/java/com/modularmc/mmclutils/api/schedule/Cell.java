@@ -44,19 +44,23 @@ public final class Cell<T> {
         this.value = value;
     }
 
+    /** 以给定初始值创建状态单元。需要跨线程更新时使用 {@link #post}。 */
     public static <T> Cell<T> of(T initial) {
         return new Cell<>(initial);
     }
 
+    /** 读取当前值。若正在计算派生值，同时把此读取登记到依赖列表。 */
     public T get() {
         changed.track();
         return value;
     }
 
+    /** 读取当前值而跳过依赖跟踪。 */
     public T peek() {
         return value;
     }
 
+    /** 同步更新状态。值变化时发出变更信号并返回 {@code true}。 */
     public boolean set(T next) {
         if (Objects.equals(value, next)) return false;
         value = next;
@@ -64,6 +68,7 @@ public final class Cell<T> {
         return true;
     }
 
+    /** 从任意线程投递更新。跨线程投递由所属调度器合并，同一轮使用最后投递的值。 */
     public void post(T next) {
         TickScheduler lane = changed.home();
         if (lane == null) {
@@ -122,6 +127,7 @@ public final class Cell<T> {
         if (dirty) lane.schedule(0, null, changed::emit);
     }
 
+    /** 取得此状态单元共用的变更信号。 */
     public Signal changed() {
         return changed;
     }

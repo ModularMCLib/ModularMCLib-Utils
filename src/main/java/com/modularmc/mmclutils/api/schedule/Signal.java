@@ -31,12 +31,14 @@ public sealed class Signal permits Poll.PollSignal, KeyedSignal.Slot, Cell.Chang
     private boolean holes;
     private volatile @Nullable TickScheduler home;
 
+    /** 在派生值计算期间记录读取依赖。需要正常的值读取和仅观察状态两种入口时，只在前者调用。 */
     public final void track() {
         if (FRAMES.get() == 0) return;
         Tracker tracker = TRACKERS.get();
         if (tracker != null && tracker.depth > 0) tracker.frames[tracker.depth - 1].add(this);
     }
 
+    /** 向订阅者标记变更，由各订阅者所属的调度器合并并处理通知。 */
     public final void emit() {
         TickScheduler lane = home;
         if (lane == null) return;
@@ -71,6 +73,7 @@ public sealed class Signal permits Poll.PollSignal, KeyedSignal.Slot, Cell.Chang
         }
     }
 
+    /** 返回当前信号的订阅数，包括等待调度器处理的订阅。 */
     public final int subscriberCount() {
         return live;
     }

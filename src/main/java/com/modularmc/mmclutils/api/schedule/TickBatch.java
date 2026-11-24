@@ -29,20 +29,24 @@ public final class TickBatch<T> {
         this.queues = LevelStore.createWithLevel(level -> new Queue<>(this.flush, Schedulers.of(level)));
     }
 
+    /** 为同一逐项回调创建批处理入口，内部按维度保留独立队列。 */
     public static <T> TickBatch<T> create(Consumer<? super T> flush) {
         return new TickBatch<>(flush);
     }
 
+    /** 排入此维度的下一批。按引用去重，已经卸载的维度不会继续接收。 */
     public void add(Level level, T item) {
         if (LevelStore.isReleased(level)) return;
         queues.get(level).add(Objects.requireNonNull(item, "item"));
     }
 
+    /** 从待处理的下一批删除对象，返回是否成功删除。 */
     public boolean remove(Level level, T item) {
         Queue<T> q = queues.getIfPresent(level);
         return q != null && q.pending.remove(item);
     }
 
+    /** 检查同一对象是否还在该维度的待处理队列中。 */
     public boolean contains(Level level, T item) {
         Queue<T> q = queues.getIfPresent(level);
         return q != null && q.pending.contains(item);

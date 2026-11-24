@@ -17,6 +17,8 @@ import java.util.function.Consumer;
  * 由所属线程提交、轮询和取消虚拟线程任务。结果队列有容量限制，计算线程只使用 Work 上下文。
  * 结果发出后归队列所有，轮询交付后由调用方释放。
  * 作废结果可能在计算线程或所属线程释放。释放动作须支持并发调用，并可脱离 GPU 上下文执行。
+ *
+ * @param <T> 从计算线程交付的结果值类型
  */
 public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
 
@@ -31,7 +33,15 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
     private long generation;
     private boolean closed;
 
-    /** 创建队列。并发数与结果容量必须为正数，线程名前缀用于识别所属功能。 */
+    /**
+     * 建立由调用线程维护的队列。
+     *
+     * @param threadPrefix   后台虚拟线程名称的前缀
+     * @param parallelism    最多同时运行的计算数
+     * @param resultCapacity 等待领取的结果数上限，包含终止结果
+     * @param release        释放已作废结果的操作，须支持并发调用
+     * @throws IllegalArgumentException 并发数或结果容量小于一
+     */
     public BoundedVirtualTaskQueue(String threadPrefix, int parallelism, int resultCapacity, Consumer<T> release) {
         if (parallelism < 1 || resultCapacity < 1) throw new IllegalArgumentException("Task queue limits must be positive");
         this.parallelism = parallelism;
@@ -51,7 +61,13 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         return tasks.containsKey(key);
     }
 
-    /** 在所属线程提交任务。调用方须确认容量，重复的键须先取消旧任务。 */
+    /**
+     * 在所属线程提交任务。每个键在终止结果被取走或任务取消后可复用。
+     *
+     * @param key         用于取消和关联结果的任务键
+     * @param calculation 在后台线程执行的计算，可以通过工作上下文交付多条结果
+     * @throws IllegalStateException 队列已关闭、没有空余任务名额或键已在使用
+     */
     public void submit(long key, Consumer<Work<T>> calculation) {
         if (!hasCapacity() || tasks.containsKey(key) || !workers.tryAcquire()) throw new IllegalStateException("No task slot or duplicate task key: " + key);
         var ticket = new Ticket(key, generation);
@@ -94,6 +110,8 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
     /**
      * 在所属线程轮询结果。普通结果一经返回，调用方负责释放其值。
      * 终止结果可以携带计算异常。已取消或作废的结果由队列释放。
+     *
+     * @return 下一条有效结果，暂时没有可领结果时返回空值
      */
     public @Nullable Result<T> poll() {
         Envelope<T> envelope;
@@ -152,11 +170,16 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         executor.shutdownNow();
     }
 
-    /** 计算线程使用的任务键、取消状态和结果交付入口。 */
+    /**
+     * 为后台计算提供取消状态和结果交付入口。工作上下文仅在本次计算期间使用。
+     *
+     * @param <T> 本次计算交付的结果值类型
+     */
     public static final class Work<T> {
 
         private final BoundedVirtualTaskQueue<T> owner;
         private final Ticket ticket;
+        /** 与提交时相同的任务键。 */
         @Getter
         private final long key;
 
@@ -179,6 +202,9 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         /**
          * 交付一个非空结果，队列满时可中断地等待。结果一经传入即转交所有权。
          * 若交付因取消或其它异常失败，由该方法释放结果。
+         *
+         * @param value 由计算线程交出的结果值
+         * @throws CancellationException 任务已取消或计算线程被中断
          */
         public void emit(T value) {
             try {
@@ -210,7 +236,15 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         }
     }
 
-    /** 所属线程接收的结果。数据值出现在普通结果中，异常出现在失败的终止结果中。 */
+    /**
+     * 由所属线程接收的任务数据或终止通知。
+     *
+     * @param <T>      普通结果的值类型
+     * @param key      提交任务时的键
+     * @param value    普通结果的非空值，终止时为空
+     * @param failure  终止原因，计算成功时为空
+     * @param terminal 本条结果是否标记任务结束
+     */
     public record Result<T>(long key, @Nullable T value, @Nullable Throwable failure, boolean terminal) {}
 
     private record Envelope<T>(Ticket ticket, Result<T> result) {}

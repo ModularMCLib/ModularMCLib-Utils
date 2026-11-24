@@ -5,12 +5,12 @@ import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 
 /**
- * "recreations" of Java 25 scoped values using {@link AutoCloseable AutoCloseables}.
+ * 通过 {@code try} 资源语句临时覆盖状态。每个实例用于单线程上的一次覆盖，关闭时恢复初始值。
  */
 public abstract class ScopedOverride implements AutoCloseable {
 
     /**
-     * 在作用域内覆盖对象值，退出时恢复为 {@code null}。
+     * 临时覆盖对象值，关闭时恢复构造时指定的值，默认恢复为 {@code null}。
      *
      * @param <T> 对象类型
      */
@@ -20,17 +20,18 @@ public abstract class ScopedOverride implements AutoCloseable {
         private final @Nullable T initialValue;
 
         /**
-         * 当前线程的作用域值。
+         * 当前覆盖值，关闭后为配置的恢复值。
          */
         @Getter
         private @Nullable T value;
 
+        /** 创建以空值作为恢复值的对象覆盖。 */
         public Object() {
             this(null);
         }
 
         /**
-         * 在当前线程进入一层作用域，并设定该层的值。
+         * 设置当前覆盖值，返回可在资源语句中关闭的对象。
          *
          * @return 当前作用域对象
          */
@@ -46,7 +47,7 @@ public abstract class ScopedOverride implements AutoCloseable {
     }
 
     /**
-     * 在作用域内覆盖布尔值，退出外层后使用 {@link #initialValue}。
+     * 临时覆盖布尔值，关闭时恢复构造时指定的值。
      */
     @RequiredArgsConstructor
     public static final class Boolean extends ScopedOverride {
@@ -54,13 +55,13 @@ public abstract class ScopedOverride implements AutoCloseable {
         private final boolean initialValue;
 
         /**
-         * 当前线程的作用域值。
+         * 当前布尔状态，关闭后为配置的恢复值。
          */
         @Getter
         private boolean active;
 
         /**
-         * 在当前线程进入一层作用域，并设定该层的布尔值。
+         * 设置当前覆盖值，返回可在资源语句中关闭的对象。
          *
          * @return 当前作用域对象
          */
@@ -70,7 +71,7 @@ public abstract class ScopedOverride implements AutoCloseable {
         }
 
         /**
-         * 在当前线程进入一层作用域，并使用初始值的反值。
+         * 将当前状态设为初始值的反值，返回可关闭的对象。
          *
          * @return 当前作用域对象
          */
