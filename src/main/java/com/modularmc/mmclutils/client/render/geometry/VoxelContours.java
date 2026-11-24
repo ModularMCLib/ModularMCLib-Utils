@@ -84,9 +84,11 @@ public final class VoxelContours {
         if (cancelled.getAsBoolean() || Thread.currentThread().isInterrupted()) throw new CancellationException();
     }
 
+    /** 将已采集的轮廓边交给调用方，端点使用区段局部坐标。 */
     public void write(Consumer<Edge> output) {
         edges.forEach(output);
     }
 
+    /** 区段局部空间中的轮廓线段。两个端点均以方块为单位。 */
     public record Edge(float x1, float y1, float z1, float x2, float y2, float z2) {}
 }

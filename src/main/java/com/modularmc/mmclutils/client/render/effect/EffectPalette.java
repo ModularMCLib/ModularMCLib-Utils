@@ -6,8 +6,10 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.util.SplittableRandom;
 
+/** 根据基色生成可复用的粒子色板，在客户端渲染线程访问。 */
 public final class EffectPalette {
 
+    /** 每份色板的颜色数。 */
     public static final int SIZE = 24;
     private static final long SEED = 0x6A7E5L;
     private static final float HOT_CHANCE = 0.16F;
@@ -17,6 +19,12 @@ public final class EffectPalette {
 
     private EffectPalette() {}
 
+    /**
+     * 为给定基色生成固定序列的明暗与色相变化。同一基色可复用缓存结果。
+     *
+     * @param rgb 低 24 位的基色 RGB
+     * @return 共享的 RGB 色板，调用方须将其视为只读
+     */
     public static int[] shades(int rgb) {
         rgb &= 0xFFFFFF;
         var colors = CACHE.get(rgb);

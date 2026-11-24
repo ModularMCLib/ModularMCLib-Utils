@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/** 在原版客户端视野中心和半径变化后更新方块实体索引可见范围。 */
 @Mixin(ClientChunkCache.class)
 public abstract class ClientChunkCacheMixin {
 

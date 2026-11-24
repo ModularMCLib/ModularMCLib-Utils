@@ -39,18 +39,22 @@ public final class ModelUtils {
 
     private ModelUtils() {}
 
+    /** 取得当前资源版本的方块状态模型。资源重载后应重新获取。 */
     public static BlockStateModel block(BlockState state) {
         return Minecraft.getInstance().getModelManager().getBlockStateModelSet().get(state);
     }
 
+    /** 按物品模型标识查找当前已加载的模型。 */
     public static ItemModel item(Identifier model) {
         return Minecraft.getInstance().getModelManager().getItemModel(model);
     }
 
+    /** 按已注册键取得独立烘焙模型。键应已参与当前资源版本的模型加载。 */
     public static <T> T standalone(StandaloneModelKey<T> key) {
         return Minecraft.getInstance().getModelManager().getStandaloneModel(key);
     }
 
+    /** 为该栈分配渲染状态并解析显示上下文、世界和持有者驱动的模型。 */
     public static ItemStackRenderState resolveItem(ItemStack stack, ItemDisplayContext context,
                                                    @Nullable Level level, @Nullable ItemOwner owner, int seed) {
         var state = new ItemStackRenderState();
@@ -58,11 +62,13 @@ public final class ModelUtils {
         return state;
     }
 
+    /** 用当前模型解析器更新调用方提供的物品渲染状态。世界和持有者可以为空。 */
     public static void resolveItem(ItemStackRenderState output, ItemStack stack, ItemDisplayContext context,
                                    @Nullable Level level, @Nullable ItemOwner owner, int seed) {
         Minecraft.getInstance().getItemModelResolver().updateForTopItem(output, stack, context, level, owner, seed);
     }
 
+    /** 以指定显示上下文、姿态及亮度提交方块模型，提交器负责后续绘制。 */
     public static void submitBlock(BlockState block, BlockDisplayContext context, PoseStack poses, SubmitNodeCollector output,
                                    int light, int overlay, int outlineColor) {
         var state = new BlockModelRenderState();
@@ -85,6 +91,7 @@ public final class ModelUtils {
         return quads(parts);
     }
 
+    /** 收集所有部件的通用面及六个方向的剔除分组。 */
     public static ObjectList<QuadUtils.Face> quads(List<? extends BlockStateModelPart> parts) {
         var result = new ObjectArrayList<QuadUtils.Face>();
         for (BlockStateModelPart part : parts) {

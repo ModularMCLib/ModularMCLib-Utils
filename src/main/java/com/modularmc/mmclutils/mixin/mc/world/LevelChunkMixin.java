@@ -18,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Map;
 
+/** 在区块的方块实体增删、替换和清理时维护空间索引登记。 */
 @Mixin(LevelChunk.class)
 public abstract class LevelChunkMixin implements TrackedChunk {
 

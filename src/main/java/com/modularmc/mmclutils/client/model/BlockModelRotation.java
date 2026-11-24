@@ -45,6 +45,7 @@ public enum BlockModelRotation {
     EAST_NORTH(0, 90, 0),
     EAST_EAST(0, 90, 270);
 
+    /** 按原版方向编号和水平旋转编号索引的旋转表。调用方应将数组视为只读。 */
     public static final BlockModelRotation[] VALUES = values();
 
     @Getter

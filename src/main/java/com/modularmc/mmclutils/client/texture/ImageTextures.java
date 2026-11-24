@@ -24,17 +24,20 @@ public final class ImageTextures implements AutoCloseable {
     private final int capacity;
     private final Object2ObjectLinkedOpenHashMap<Identifier, DynamicTexture> entries = new Object2ObjectLinkedOpenHashMap<>();
 
+    /** 创建渲染线程使用的动态贴图缓存。容量为同时保留的贴图数，须为正数。缓存占有登记的标识。 */
     public ImageTextures(TextureManager textures, int capacity) {
         if (capacity < 1) throw new IllegalArgumentException("贴图缓存容量必须为正数");
         this.textures = textures;
         this.capacity = capacity;
     }
 
+    /** 查询缓存并更新最近使用顺序。缺失时返回空值，返回的贴图由缓存持有。 */
     public @Nullable DynamicTexture get(Identifier id) {
         RenderSystem.assertOnRenderThread();
         return entries.getAndMoveToLast(id);
     }
 
+    /** 在渲染线程从文件解码并登记 PNG，方法返回或抛出异常时关闭文件流。 */
     public DynamicTexture load(Identifier id, Path path, Limits limits) throws IOException {
         try (InputStream input = Files.newInputStream(path)) {
             return load(id, input, limits);
@@ -71,16 +74,19 @@ public final class ImageTextures implements AutoCloseable {
         return texture;
     }
 
+    /** 释放匹配标识的 GPU 贴图，并将其从缓存移除。 */
     public void invalidate(Identifier id) {
         RenderSystem.assertOnRenderThread();
         if (entries.remove(id) != null) textures.release(id);
     }
 
+    /** 在渲染线程释放缓存中的全部贴图，可在世界或资源切换时调用。 */
     public void clear() {
         RenderSystem.assertOnRenderThread();
         while (!entries.isEmpty()) invalidate(entries.firstKey());
     }
 
+    /** 释放当前贴图缓存，调用线程须为渲染线程。 */
     @Override
     public void close() {
         clear();
@@ -131,6 +137,7 @@ public final class ImageTextures implements AutoCloseable {
         private final Object2ObjectOpenHashMap<K, PendingRequest> pending = new Object2ObjectOpenHashMap<>();
         private long nextId;
 
+        /** 创建带超时和并发限制的分块接收器。 */
         public Requests(RequestLimits limits) {
             this.limits = limits;
             timeout = limits.timeout().toNanos();
@@ -190,14 +197,17 @@ public final class ImageTextures implements AutoCloseable {
             return new ReceiveResult(ReceiveStatus.FAILED, null);
         }
 
+        /** 取消相同键和编号的在途请求。存在有效请求时返回真。 */
         public synchronized boolean cancel(K key, long id) {
             return find(key, id) != null && pending.remove(key) != null;
         }
 
+        /** 依据单调时钟移除过期请求及其已接收的数据。 */
         public synchronized void expire() {
             expire(System.nanoTime());
         }
 
+        /** 取消所有请求并丢弃暂存的分块，后续请求继续使用新的编号。 */
         public synchronized void clear() {
             pending.clear();
         }
@@ -225,12 +235,19 @@ public final class ImageTextures implements AutoCloseable {
         }
     }
 
+    /** 接收或结束图片请求的结果。 */
     public enum ReceiveStatus {
+        /** 接收了一块数据，仍在等待后续分块。 */
         WAITING,
+        /** 此前已接收相同编号的分块，继续等待其他分块。 */
         DUPLICATE,
+        /** 全部分块已组装，返回完整图片。 */
         COMPLETE,
+        /** 匹配的请求以失败结束。 */
         FAILED,
+        /** 分块编号、数量或数据大小超出约定，请求已取消。 */
         REJECTED,
+        /** 响应对应的请求已经失效。 */
         IGNORED
     }
 

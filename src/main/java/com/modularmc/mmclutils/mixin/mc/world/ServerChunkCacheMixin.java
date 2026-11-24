@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/** 为异步区块查询提供仅查已加载数据的服务端来源。 */
 @Mixin(ServerChunkCache.class)
 public abstract class ServerChunkCacheMixin implements Source {
 

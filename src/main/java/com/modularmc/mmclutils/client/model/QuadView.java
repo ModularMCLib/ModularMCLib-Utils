@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 /** 读取一个四边形的四个顶点和材质。视图可以复用，回调退出后应保留副本。 */
 public interface QuadView {
 
+    /** 一个四边形的顶点数。 */
     int VERTEX_COUNT = BakedQuad.VERTEX_COUNT;
 
     /** 返回只读顶点坐标，索引范围为零至三。 */
@@ -35,10 +36,12 @@ public interface QuadView {
     /** 返回原版材质设置。 */
     MaterialInfo material();
 
+    /** 返回指定顶点的图集横坐标，范围取决于材质精灵。 */
     default float u(int vertex) {
         return UVPair.unpackU(packedUv(vertex));
     }
 
+    /** 返回指定顶点的图集纵坐标，范围取决于材质精灵。 */
     default float v(int vertex) {
         return UVPair.unpackV(packedUv(vertex));
     }

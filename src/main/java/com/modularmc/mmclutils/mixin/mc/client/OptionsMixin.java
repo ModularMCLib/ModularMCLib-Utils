@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/** 在选项序列化流程中读写组合键的主键与修饰键。 */
 @Mixin(Options.class)
 public abstract class OptionsMixin {
 

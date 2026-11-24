@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
+/** 将原版客户端区块槽位与可见范围暴露给索引可见性同步逻辑。 */
 @Mixin(targets = "net.minecraft.client.multiplayer.ClientChunkCache$Storage")
 public abstract class ClientChunkStorageMixin implements ClientChunkVisibility.View {
 

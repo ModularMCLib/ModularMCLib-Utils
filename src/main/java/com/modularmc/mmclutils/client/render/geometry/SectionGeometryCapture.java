@@ -38,6 +38,7 @@ public final class SectionGeometryCapture {
     private int queriedChunks;
     private int cursor;
 
+    /** 为一个原版打包区段创建分步采集。模式位定义在 {@link Geometry}。 */
     public SectionGeometryCapture(long section, int modes) {
         origin = BlockPos.asLong(SectionPos.sectionToBlockCoord(SectionPos.x(section)), SectionPos.sectionToBlockCoord(SectionPos.y(section)), SectionPos.sectionToBlockCoord(SectionPos.z(section)));
         baseChunkX = BlockPos.getX(origin) >> 4;
@@ -139,12 +140,15 @@ public final class SectionGeometryCapture {
     /** 区段和一格邻接范围的几何数据。构造时接管各数组，交付后调用方和后台线程均只读。 */
     public record Geometry(long origin, int modes, VoxelShapeGeometry[] shapes, int[] temperatures, int[] visibleFaces) {
 
+        /** 采集几何的同时填充区段内的温度数组。 */
         public static final int INCLUDE_TEMPERATURE = 1;
 
+        /** 查找原点相对坐标处的几何。坐标范围为 -1～16，越界时返回空几何。 */
         public VoxelShapeGeometry shape(int x, int y, int z) {
             return x < -1 || y < -1 || z < -1 || x > 16 || y > 16 || z > 16 ? VoxelShapeGeometry.EMPTY : shapes[index(x, y, z)];
         }
 
+        /** 将 -1～16 范围内的局部坐标转换为带边界的形状数组索引。 */
         public static int index(int x, int y, int z) {
             return ((y + 1) * 18 + z + 1) * 18 + x + 1;
         }

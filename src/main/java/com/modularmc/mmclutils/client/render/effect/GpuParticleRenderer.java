@@ -31,7 +31,7 @@ final class GpuParticleRenderer {
     static final int SHRINK = 0, PULSE_SIZE = 1, CONSTANT = 2;
     static final float CULL = (float) ParticleEffects.SPAWN_DISTANCE + 8;
     private static final int RECORD_BYTES = 128;
-    private static final int FRAME_COLUMNS = 64;
+    private static final int FRAME_COLUMNS = MoteSprite.MAX_FRAMES;
     private static final int FRAME_ROWS = 64;
     private static final int PROBES = 64;
 
@@ -126,7 +126,7 @@ final class GpuParticleRenderer {
 
     static boolean available() {
         if (programState < 0) {
-            boolean ok = RingRenderer.available();
+            boolean ok = TransformFeedbackProgram.supported();
             if (ok) program = TransformFeedbackProgram.load("mote.vsh");
             programState = ok && program != null ? 1 : 0;
             if (programState == 0) ModularMCLibUtils.LOGGER.info("光点采用普通顶点绘制");

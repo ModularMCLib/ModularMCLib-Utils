@@ -25,6 +25,13 @@ public final class SectionGeometryRenderer {
 
     private SectionGeometryRenderer() {}
 
+    /**
+     * 创建带并发与结果限制的网格生成队列。调用方负责关闭队列和已领走的批次。
+     *
+     * @param parallelism    并行生成任务数上限
+     * @param resultCapacity 暂存批次数量上限
+     * @return 由所属线程驱动的任务队列
+     */
     public static BoundedVirtualTaskQueue<Batch> queue(int parallelism, int resultCapacity) {
         return new BoundedVirtualTaskQueue<>("mmclutils-section-", parallelism, resultCapacity, Batch::close);
     }
@@ -111,6 +118,7 @@ public final class SectionGeometryRenderer {
     /** 面着色函数接收采集的温度值，在计算线程调用。边框使用固定 ARGB。 */
     public record Style(IntUnaryOperator surfaceColor, int outlineColor) {
 
+        /** 使用统一的表面色和轮廓色创建样式。颜色采用 ARGB 打包。 */
         public Style(int surfaceColor, int outlineColor) {
             this(ignored -> surfaceColor, outlineColor);
         }
@@ -119,6 +127,7 @@ public final class SectionGeometryRenderer {
     /** 一批顶点和区段原点的打包坐标。可在任意线程关闭，在渲染线程上传。 */
     public record Batch(long origin, MeshData mesh, ByteBufferBuilder memory) implements AutoCloseable {
 
+        /** 在渲染线程复制当前批次到独立的 GPU 网格。上传后仍须关闭批次。 */
         public StaticMesh upload(String label) {
             return StaticMesh.upload(label, mesh);
         }

@@ -19,6 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+/** 将自定义组合键的录入交给客户端绑定模型解析与保存。 */
 @Mixin(KeyBindsScreen.class)
 public abstract class KeyBindsScreenMixin {
 

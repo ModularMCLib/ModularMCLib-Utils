@@ -30,7 +30,10 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.jspecify.annotations.Nullable;
 
-/** 每帧收集环和线流命令，在世界渲染阶段批量提交。 */
+/**
+ * 在客户端渲染线程收集环形和连续粒子流，在不透明世界几何体之后批量绘制。
+ * 实体附着和球形高亮在半透明粒子之后提交，时间推进由客户端 Tick 驱动。
+ */
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID, value = Dist.CLIENT)
 public final class EffectRenderer {
 
@@ -40,7 +43,7 @@ public final class EffectRenderer {
     private static final Matrix4f MODEL_VIEW = new Matrix4f();
     private static int ringCount;
     private static long frame;
-    private static boolean collecting;
+    private static @Nullable ClientLevel collectingLevel;
     private static double frameTime;
     private static long clientTicks;
     private static @Nullable ClientLevel lastLevel;
@@ -64,35 +67,59 @@ public final class EffectRenderer {
         RingShape shape;
     }
 
+    /**
+     * 检查当前是否在指定世界的帧收集回调中。
+     *
+     * @param level 欲提交效果的世界
+     * @return 当前帧正在此世界采集时为 {@code true}
+     */
     public static boolean collecting(Level level) {
-        return collecting && level == lastLevel;
+        return open() && collectingLevel == level;
     }
 
     static boolean open() {
-        return collecting;
+        return collectingLevel != null;
     }
 
+    /**
+     * 添加跨帧使用的采集入口。相同入口只登记一次，须在采集回调之外调用。
+     *
+     * @param source 提交环形或连续粒子流的回调
+     */
     public static void addSource(Source source) {
         if (!SOURCES.contains(source)) SOURCES.add(source);
     }
 
+    /**
+     * 移除先前添加的采集入口。已经采集的命令仍可在当帧绘制。
+     *
+     * @param source 要移除的回调
+     */
     public static void removeSource(Source source) {
         SOURCES.remove(source);
     }
 
+    /**
+     * 读取客户端效果时钟，以 Tick 计并包含当前 Tick 内插值。
+     *
+     * @return 当前客户端时间，未进入世界时为 NaN
+     */
     public static double now() {
         Minecraft client = Minecraft.getInstance();
         return client.level == null ? Double.NaN : clientTicks + client.getDeltaTracker().getGameTimeDeltaPartialTick(false);
     }
 
+    /** 返回最近一次世界帧采集使用的效果时间，单位为 Tick。 */
     public static double frameTime() {
         return frameTime;
     }
 
+    /** 返回上一次提交给绘制管线的光点数。变换反馈路径以进入反馈的实例数计。 */
     public static int lastMoteCount() {
         return GpuParticleRenderer.lastDrawn();
     }
 
+    /** 返回当前帧尚未过期的光点记录数，包含连续粒子流。 */
     public static int activeTimedEffects() {
         return GpuParticleRenderer.live(frameTime);
     }
@@ -105,14 +132,45 @@ public final class EffectRenderer {
         return 0.9f + 0.1f * Mth.sin((float) (command.time * 0.21 % (2 * Math.PI)));
     }
 
+    /**
+     * 在 {@link Source#collect} 中提交完整闭环。参数遵循带 {@link RingShape} 的重载。
+     *
+     * @param ring      可复用的粒子运动数据
+     * @param style     发光精灵与光带参数
+     * @param worldX    中心世界坐标 X
+     * @param worldY    中心世界坐标 Y
+     * @param worldZ    中心世界坐标 Z
+     * @param axis      环的轴线
+     * @param time      环的动画时间，单位为 Tick
+     * @param intensity 效果强度，范围为 0～1
+     * @param baseColor 光带的 RGB
+     * @param palette   粒子色板，至少含 {@link EffectPalette#SIZE} 种颜色
+     */
     public static void ring(ParticleRing ring, RingStyle style, double worldX, double worldY, double worldZ, Direction.Axis axis,
                             double time, float intensity, int baseColor, int[] palette) {
         ring(ring, style, RingShape.CLOSED, worldX, worldY, worldZ, axis, time, intensity, baseColor, palette);
     }
 
+    /**
+     * 提交闭环或螺旋。供 {@link Source#collect} 调用，帧采集之外提交时直接返回。
+     * 渲染器在当帧读取色板，调用方须保持其内容稳定。
+     *
+     * @param ring      可复用的粒子运动数据
+     * @param style     发光精灵与光带参数
+     * @param shape     环或多股螺旋的轮廓
+     * @param worldX    原点世界坐标 X
+     * @param worldY    原点世界坐标 Y
+     * @param worldZ    原点世界坐标 Z
+     * @param axis      环的轴线
+     * @param time      环的动画时间，单位为 Tick
+     * @param intensity 效果强度，范围为 0～1
+     * @param baseColor 光带的 RGB
+     * @param palette   粒子色板，至少含 {@link EffectPalette#SIZE} 种颜色
+     * @throws IllegalArgumentException 正在采集且色板长度不足
+     */
     public static void ring(ParticleRing ring, RingStyle style, RingShape shape, double worldX, double worldY, double worldZ,
                             Direction.Axis axis, double time, float intensity, int baseColor, int[] palette) {
-        if (!collecting) return;
+        if (!open()) return;
         if (palette.length < EffectPalette.SIZE) throw new IllegalArgumentException("环的色板长度不足");
         if (ringCount == RINGS.size()) RINGS.add(new RingCommand());
         RingCommand command = RINGS.get(ringCount++);
@@ -143,13 +201,14 @@ public final class EffectRenderer {
         GpuParticleRenderer.beginFrame();
         event.getRenderState().setRenderData(FRAME, ++frame);
         Vec3 eye = camera.position();
-        collecting = true;
+        ClientLevel level = event.getLevel();
+        collectingLevel = level;
         try {
             for (int index = 0; index < SOURCES.size(); index++) {
-                SOURCES.get(index).collect(event.getLevel(), frameTime, eye.x, eye.y, eye.z);
+                SOURCES.get(index).collect(level, frameTime, eye.x, eye.y, eye.z);
             }
         } finally {
-            collecting = false;
+            collectingLevel = null;
         }
     }
 
@@ -202,6 +261,7 @@ public final class EffectRenderer {
         ringCount = 0;
     }
 
+    /** 将管线、资源重载和玩家模型层接入客户端模组总线。 */
     @ApiStatus.Internal
     public static void init(IEventBus modBus) {
         modBus.addListener(EffectRenderPipelines::init);
@@ -219,6 +279,7 @@ public final class EffectRenderer {
         RingRenderer.reload();
         PlayerAttachmentRenderer.releaseBuffers();
         SphereHighlight.release();
+        EffectRenderPipelines.releaseTextures();
     }
 
     @SubscribeEvent
@@ -233,11 +294,22 @@ public final class EffectRenderer {
         releaseRenderBuffers();
     }
 
-    /** 在客户端渲染线程提取世界状态时提交本次绘制的指令。 */
+    /**
+     * 在世界状态提取时提交一帧的绘制指令。
+     * 回调在客户端渲染线程执行，可利用世界和相机状态决定要提交的效果。
+     */
     @FunctionalInterface
     public interface Source {
 
-        /** 使用提取时的世界、动画时间与相机坐标提交效果。 */
+        /**
+         * 采集本帧的效果。请在回调返回前完成命令提交。
+         *
+         * @param level 本次绘制的客户端世界
+         * @param time  动画时间，单位为 Tick
+         * @param camX  相机世界坐标 X
+         * @param camY  相机世界坐标 Y
+         * @param camZ  相机世界坐标 Z
+         */
         void collect(ClientLevel level, double time, double camX, double camY, double camZ);
     }
 }

@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+/** 在原版强制世界保存完成后等待紧凑二进制存档队列。 */
 @Mixin(ServerLevel.class)
 public abstract class ServerLevelMixin {
 

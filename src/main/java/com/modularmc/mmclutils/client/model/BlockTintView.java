@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 public record BlockTintView(BlockAndTintGetter parent, long position, BlockState state, @Nullable BlockEntity entity)
         implements BlockAndTintGetter {
 
+    /** 将坐标转换为原版打包值，创建指定位置上的临时方块与方块实体视图。 */
     public BlockTintView(BlockAndTintGetter parent, BlockPos position, BlockState state, @Nullable BlockEntity entity) {
         this(parent, position.asLong(), state, entity);
     }

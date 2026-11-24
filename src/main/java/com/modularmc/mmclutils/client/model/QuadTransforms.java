@@ -19,6 +19,7 @@ public final class QuadTransforms {
 
     private QuadTransforms() {}
 
+    /** 生成模型局部平移，位移沿 X、Y、Z 分量表示。 */
     public static Transform offset(float x, float y, float z) {
         return quad -> {
             for (int vertex = 0; vertex < QuadView.VERTEX_COUNT; vertex++) {
@@ -52,14 +53,17 @@ public final class QuadTransforms {
         };
     }
 
+    /** 创建绕模型局部中心的旋转。旋转后重算光照面并清除剔除分组。 */
     public static Transform rotate(Quaternionfc rotation, Vector3fc center) {
         return transform(new Matrix4f().translate(center).rotate(rotation).translate(-center.x(), -center.y(), -center.z()));
     }
 
+    /** 创建相对于指定中心的轴向缩放。为保证法线可变换，各轴缩放系数须非零。 */
     public static Transform scale(float x, float y, float z, Vector3fc center) {
         return transform(new Matrix4f().translate(center).scale(x, y, z).translate(-center.x(), -center.y(), -center.z()));
     }
 
+    /** 将面上各顶点限制在给定局部包围盒内，保留原顶点属性。 */
     public static Transform clamp(AABB bounds) {
         return quad -> {
             for (int vertex = 0; vertex < QuadView.VERTEX_COUNT; vertex++) {
@@ -72,6 +76,7 @@ public final class QuadTransforms {
         };
     }
 
+    /** 为所有顶点写入同一个 ARGB。指定 {@code clearTint} 时同时清除材质染色索引。 */
     public static Transform color(int argb, boolean clearTint) {
         return quad -> {
             quad.colorAll(argb);
@@ -92,6 +97,7 @@ public final class QuadTransforms {
         };
     }
 
+    /** 用指定方向的方块局部坐标投影 UV，再映射到当前材质精灵。 */
     public static Transform lockUv(Direction face) {
         return quad -> {
             QuadUtils.bake(QuadUtils.lockToFace(quad, face), quad.material().sprite());
@@ -112,6 +118,7 @@ public final class QuadTransforms {
         };
     }
 
+    /** 用谓词决定是否保留该面。谓词只在变换期间读取当前视图。 */
     public static Transform filter(Predicate<? super QuadView> predicate) {
         return predicate::test;
     }
@@ -123,6 +130,7 @@ public final class QuadTransforms {
         /** 返回真允许该面继续执行后续变换。 */
         boolean apply(MutableQuadView quad);
 
+        /** 将两个变换按顺序组合。前一变换丢弃面时跳过后一变换。 */
         default Transform andThen(Transform next) {
             return quad -> apply(quad) && next.apply(quad);
         }

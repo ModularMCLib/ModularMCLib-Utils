@@ -11,6 +11,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 
 import org.jetbrains.annotations.ApiStatus;
 
+/** 将客户端 Post Tick 与断开事件转交给客户端调度车道。 */
 @ApiStatus.Internal
 @EventBusSubscriber(modid = ModularMCLibUtils.MOD_ID, value = Dist.CLIENT)
 public final class ClientTickScheduler {

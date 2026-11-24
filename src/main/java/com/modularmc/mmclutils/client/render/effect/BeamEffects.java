@@ -9,6 +9,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.util.SplittableRandom;
 
+/** 在客户端渲染线程提交端点之间的定点连线、循环粒子流和传播脉冲。 */
 public final class BeamEffects {
 
     private static final SplittableRandom RANDOM = new SplittableRandom(0x2545F4914F6CDD1DL);
@@ -23,6 +24,20 @@ public final class BeamEffects {
         return (z >>> 40) * 0x1.0p-24F;
     }
 
+    /**
+     * 为当帧创建沿线循环的光点流，应在 {@link EffectRenderer.Source#collect} 中每帧提交。
+     *
+     * @param x0    起点世界坐标 X
+     * @param y0    起点世界坐标 Y
+     * @param z0    起点世界坐标 Z
+     * @param x1    终点世界坐标 X
+     * @param y1    终点世界坐标 Y
+     * @param z1    终点世界坐标 Z
+     * @param rgb   光点颜色的低 24 位 RGB
+     * @param seed  固定同一束流的发射相位和扰动
+     * @param style 发射周期、行进时间和扰动参数
+     * @param look  光点外观
+     */
     public static void flow(double x0, double y0, double z0, double x1, double y1, double z1, int rgb, long seed, FlowStyle style, MoteLook look) {
         if (!EffectRenderer.open()) return;
         GpuParticleRenderer.rel(EffectRenderer.frameTime());
@@ -50,6 +65,19 @@ public final class BeamEffects {
         return Math.max(1, t);
     }
 
+    /**
+     * 向终点发送一次脉冲，并按样式生成延迟的尾迹和到达爆散。
+     *
+     * @param x0    起点世界坐标 X
+     * @param y0    起点世界坐标 Y
+     * @param z0    起点世界坐标 Z
+     * @param x1    终点世界坐标 X
+     * @param y1    终点世界坐标 Y
+     * @param z1    终点世界坐标 Z
+     * @param rgb   光点颜色的低 24 位 RGB
+     * @param style 传播和尾迹参数
+     * @param look  光点外观
+     */
     public static void pulse(double x0, double y0, double z0, double x1, double y1, double z1, int rgb, PulseStyle style, MoteLook look) {
         double now = EffectRenderer.now();
         if (Double.isNaN(now)) return;
@@ -73,6 +101,19 @@ public final class BeamEffects {
         if (arrival != null) BurstEffects.burstAt(x1, y1, z1, rgb, arrival, look, now + duration);
     }
 
+    /**
+     * 沿线段一次性生成一排短寿命的静止光点。两端重合或没有客户端世界时直接返回。
+     *
+     * @param x0    起点世界坐标 X
+     * @param y0    起点世界坐标 Y
+     * @param z0    起点世界坐标 Z
+     * @param x1    终点世界坐标 X
+     * @param y1    终点世界坐标 Y
+     * @param z1    终点世界坐标 Z
+     * @param rgb   使用固定颜色时的低 24 位 RGB
+     * @param style 间距、寿命和颜色参数
+     * @param look  光点外观
+     */
     public static void beam(double x0, double y0, double z0, double x1, double y1, double z1, int rgb, BeamStyle style, MoteLook look) {
         double now = EffectRenderer.now();
         if (Double.isNaN(now)) return;
@@ -96,12 +137,41 @@ public final class BeamEffects {
         }
     }
 
-    /** 沿直线生成的粒子间距、寿命和着色参数。 */
+    /**
+     * 沿直线生成的粒子间距、寿命和着色参数。
+     *
+     * @param spacing       间距，单位为方块，有效值至少为 0.05
+     * @param spacingJitter 单个光点沿连线的偏移范围，以间距为单位
+     * @param life          寿命，单位为 Tick，有效值至少为 1
+     * @param size          光点边长，单位为方块
+     * @param alpha         光点不透明度或亮度，范围为 0～1
+     * @param rainbow       是否沿连线使用虹彩
+     */
     public record BeamStyle(float spacing, float spacingJitter, int life, float size, float alpha, boolean rainbow) {}
 
-    /** 端点间循环移动的粒子流样式，周期和行进时间以 Tick 计。 */
+    /**
+     * 端点间循环移动的粒子流样式。
+     *
+     * @param period     相邻两次发射的间隔，单位为 Tick
+     * @param travel     光点从起点到终点耗时，单位为 Tick
+     * @param size       基础边长，单位为方块
+     * @param sizeJitter 边长随机增加的最大比例
+     * @param jitter     光点在各轴上的随机偏移范围，单位为方块
+     * @param alpha      不透明度或亮度，范围为 0～1
+     */
     public record FlowStyle(int period, int travel, float size, float sizeJitter, float jitter, float alpha) {}
 
-    /** 沿线传播的脉冲参数，可在到达端点时生成爆散。 */
+    /**
+     * 沿线传播的脉冲参数。
+     *
+     * @param speed     巡航速度，单位为方块每 Tick，应为正数
+     * @param lag       从起点加速的时间常数，单位为 Tick
+     * @param trail     尾迹粒子数量上限
+     * @param trailStep 相邻尾迹粒子的延时，单位为 Tick
+     * @param trailLife 用于计算尾迹衰减的寿命，单位为 Tick
+     * @param size      光点边长，单位为方块
+     * @param alpha     不透明度或亮度，范围为 0～1
+     * @param arrival   到达后使用的爆散样式，空值时省略爆散
+     */
     public record PulseStyle(float speed, float lag, int trail, float trailStep, float trailLife, float size, float alpha, @Nullable BurstStyle arrival) {}
 }

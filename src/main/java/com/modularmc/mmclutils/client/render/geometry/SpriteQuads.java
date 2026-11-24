@@ -13,18 +13,23 @@ import org.joml.Matrix4f;
  */
 public final class SpriteQuads {
 
+    /** 单个面的掩码，位编号使用原版方向编号。 */
     public static final int DOWN = 1, UP = 2, NORTH = 4, SOUTH = 8, WEST = 16, EAST = 32;
+    /** 水平方向的四个侧面掩码。 */
     public static final int SIDES = NORTH | SOUTH | WEST | EAST;
+    /** 六个方向的合并掩码。 */
     public static final int ALL = SIDES | UP | DOWN;
 
     private static final float P = 1F / 16F;
 
     private SpriteQuads() {}
 
+    /** 返回所给方向对应的单个面掩码。 */
     public static int bit(Direction face) {
         return 1 << face.get3DDataValue();
     }
 
+    /** 从方块模型的局部像素坐标写出选定的外侧面，面掩码可按位组合。每 16 个像素产生一格纹理。 */
     public static void box(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1,
                            int faces, int argb, int light) {
         for (var face : Direction.values()) {
@@ -32,6 +37,7 @@ public final class SpriteQuads {
         }
     }
 
+    /** 按方向写入包围盒的指定面，按每 16 像素切分顶点与图集 UV。位置使用局部像素坐标，光照为原版打包值。 */
     public static void face(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, Direction face, float x0, float y0, float z0, float x1,
                             float y1, float z1, int argb, int light) {
         switch (face) {

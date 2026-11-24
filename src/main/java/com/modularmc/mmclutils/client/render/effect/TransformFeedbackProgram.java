@@ -4,7 +4,9 @@ import com.modularmc.mmclutils.ModularMCLibUtils;
 
 import net.minecraft.client.Minecraft;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import org.jspecify.annotations.Nullable;
+import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL30;
 
@@ -27,6 +29,10 @@ final class TransformFeedbackProgram {
 
     int uniform(String name) {
         return GL20.glGetUniformLocation(id, name);
+    }
+
+    static boolean supported() {
+        return RenderSystem.getDevice().getBackendName().equalsIgnoreCase("OpenGL") && GL.getCapabilities().OpenGL33;
     }
 
     private static String source(String name) throws IOException {

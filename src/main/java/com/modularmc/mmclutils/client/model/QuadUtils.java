@@ -20,6 +20,7 @@ public final class QuadUtils {
 
     private QuadUtils() {}
 
+    /** 逐面应用变换，收集通过变换的烘焙面。变换收到可复用编辑器，应在返回前完成修改。 */
     public static ObjectList<Face> transform(Iterable<Face> source, QuadTransforms.Transform transform) {
         var output = new ObjectArrayList<Face>();
         MutableQuadView editor = null;
@@ -32,6 +33,7 @@ public final class QuadUtils {
         return new ObjectImmutableList<>(output);
     }
 
+    /** 取出同一剔除分组的烘焙面。空值选择无需邻面剔除的分组。 */
     public static ObjectList<BakedQuad> forFace(Iterable<Face> source, @Nullable Direction cullFace) {
         var output = new ObjectArrayList<BakedQuad>();
         for (Face face : source) {
@@ -75,6 +77,7 @@ public final class QuadUtils {
         return new Face(quad.bake(), onEdge ? face : null);
     }
 
+    /** 用指定材质生成包围盒的六个烘焙面。 */
     public static ObjectList<Face> box(AABB bounds, MaterialInfo material) {
         var faces = new ObjectArrayList<Face>(6);
         for (Direction direction : Direction.values()) faces.add(boxFace(bounds, direction, material));
@@ -84,6 +87,7 @@ public final class QuadUtils {
     /** 烘焙四边形及其剔除分组。空方向表示通用面。 */
     public record Face(BakedQuad quad, @Nullable Direction cullFace) {}
 
+    /** 将顶点法线写入调用方的向量。缺少独立法线时使用光照朝向。 */
     public static Vector3f vertexNormal(QuadView quad, int vertex, Vector3f output) {
         int packed = quad.packedNormal(vertex);
         if (packed != 0) {
@@ -102,6 +106,7 @@ public final class QuadUtils {
         return result.lengthSquared() == 0 ? result : result.normalize();
     }
 
+    /** 按单位法线的主要分量选择用于光照的原版方向。 */
     public static Direction lightFace(Vector3fc normal) {
         float x = Math.abs(normal.x()), y = Math.abs(normal.y()), z = Math.abs(normal.z());
         if (x > y && x >= z) return normal.x() > 0 ? Direction.EAST : Direction.WEST;
@@ -166,6 +171,7 @@ public final class QuadUtils {
         return (atlasV - sprite.getV0()) / (sprite.getV1() - sprite.getV0());
     }
 
+    /** 将面上的精灵局部 UV 原地换算为图集 UV。 */
     public static MutableQuadView bake(MutableQuadView quad, TextureAtlasSprite sprite) {
         for (int vertex = 0; vertex < QuadView.VERTEX_COUNT; vertex++) {
             quad.uv(vertex, sprite.getU(quad.u(vertex)), sprite.getV(quad.v(vertex)));
@@ -173,6 +179,7 @@ public final class QuadUtils {
         return quad;
     }
 
+    /** 将面上的图集 UV 原地换算为指定精灵的局部 UV。 */
     public static MutableQuadView unbake(MutableQuadView quad, TextureAtlasSprite sprite) {
         for (int vertex = 0; vertex < QuadView.VERTEX_COUNT; vertex++) {
             quad.uv(vertex, localU(sprite, quad.u(vertex)), localV(sprite, quad.v(vertex)));
@@ -180,6 +187,7 @@ public final class QuadUtils {
         return quad;
     }
 
+    /** 替换材质并将旧图集 UV 重映射到新精灵，保留 UV 在精灵内的位置。 */
     public static MutableQuadView replace(MutableQuadView quad, MaterialInfo material) {
         return bake(unbake(quad, quad.material().sprite()), material.sprite()).material(material);
     }
@@ -189,6 +197,7 @@ public final class QuadUtils {
         return transform(quad, turns, flipU, flipV, false);
     }
 
+    /** 撤销使用同样参数的 UV 变换，翻转与旋转按逆序应用。 */
     public static MutableQuadView inverse(MutableQuadView quad, int turns, boolean flipU, boolean flipV) {
         return transform(quad, -turns, flipU, flipV, true);
     }

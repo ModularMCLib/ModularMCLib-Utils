@@ -19,6 +19,7 @@ public final class ItemModelGenerator {
 
     private ItemModelGenerator() {}
 
+    /** 向数据生成输出登记带逐层染色的平面物品模型。材质和染色源按图层顺序一一对应。 */
     public static Identifier generated(Item item, ItemModelOutput items, BiConsumer<Identifier, ModelInstance> models,
                                        Material[] materials, ItemTintSource... tints) {
         if (materials.length == 0 || materials.length != tints.length) {

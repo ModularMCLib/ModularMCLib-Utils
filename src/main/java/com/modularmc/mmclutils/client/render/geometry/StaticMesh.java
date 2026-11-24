@@ -35,10 +35,12 @@ public final class StaticMesh implements AutoCloseable {
         }
     }
 
+    /** 返回网格在上传时使用的顶点格式。 */
     public VertexFormat format() {
         return state.format();
     }
 
+    /** 返回网格的图元模式，供调用方选择绘制管线。 */
     public VertexFormat.Mode mode() {
         return state.mode();
     }
@@ -55,6 +57,7 @@ public final class StaticMesh implements AutoCloseable {
         pass.drawIndexed(0, 0, state.indexCount(), 1);
     }
 
+    /** 在渲染线程释放网格的顶点缓冲和独立索引缓冲。 */
     @Override
     public void close() {
         RenderSystem.assertOnRenderThread();

@@ -20,7 +20,8 @@ package com.modularmc.mmclutils.client.model;
 import net.minecraft.util.Mth;
 
 /**
- * @author covers1624
+ * 在矩形的四个角之间做双线性插值。依次调用 {@link #reset} 和 {@link #setup} 设定角点，
+ * 再用 {@link #locate} 选定位置。同一位置可用于连续插值 UV 和颜色，各线程须各自持有实例。
  */
 public class QuadInterpolator {
 

@@ -17,10 +17,12 @@ public final class SpriteLookup {
     private final Node root = new Node(0, 0, 1, 0);
     private final TextureAtlasSprite missing;
 
+    /** 在当前图集上建立查询索引。资源重载后，须使用新图集重新创建。 */
     public SpriteLookup(TextureAtlas atlas) {
         this(atlas.getTextures().values(), atlas.missingSprite());
     }
 
+    /** 以给定的精灵集合建立索引，未命中时返回指定的缺失纹理。 */
     public SpriteLookup(Collection<TextureAtlasSprite> sprites, TextureAtlasSprite missing) {
         this.missing = missing;
         sprites.forEach(root::add);
@@ -32,6 +34,7 @@ public final class SpriteLookup {
                 (quad.v(0) + quad.v(1) + quad.v(2) + quad.v(3)) * 0.25f);
     }
 
+    /** 使用图集 UV 查找精灵。坐标越界或落在图集空白处时返回缺失纹理。 */
     public TextureAtlasSprite find(float u, float v) {
         if (!(u >= 0 && u < 1 && v >= 0 && v < 1)) return missing;
         TextureAtlasSprite sprite = root.find(u, v);

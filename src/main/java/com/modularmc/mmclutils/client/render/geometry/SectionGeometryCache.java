@@ -20,12 +20,14 @@ public final class SectionGeometryCache {
     private final VoxelShapeCache shapes = new VoxelShapeCache();
     private final Long2ObjectLinkedOpenHashMap<Entry> sections = new Long2ObjectLinkedOpenHashMap<>();
 
+    /** 为指定客户端世界创建一个有界缓存，容量按区段计且须为正数。 */
     public SectionGeometryCache(ClientLevel level, int capacity) {
         if (capacity < 1) throw new IllegalArgumentException("区段缓存容量必须为正数");
         this.level = level;
         this.capacity = capacity;
     }
 
+    /** 取得匹配模式且采集完成的数据，并更新该区段的访问顺序。未命中时返回空值。 */
     public @Nullable Geometry get(long section, int modes) {
         Entry entry = sections.getAndMoveToLast(section);
         return entry != null && entry.modes == modes ? entry.geometry : null;
@@ -48,6 +50,7 @@ public final class SectionGeometryCache {
         return entry.geometry;
     }
 
+    /** 移除指定区段的缓存和未完成采集。已交付的后台任务由调用方取消。 */
     public void invalidate(long section) {
         sections.remove(section);
     }
@@ -58,6 +61,7 @@ public final class SectionGeometryCache {
         forAffectedSections(position, this::invalidate);
     }
 
+    /** 遍历采集边缘可能包含该方块的区段。入参为方块打包坐标，回调接收原版区段打包坐标。 */
     public static void forAffectedSections(long position, LongConsumer action) {
         int x = BlockPos.getX(position), y = BlockPos.getY(position), z = BlockPos.getZ(position);
         for (int sx = (x - 1) >> 4; sx <= ((x + 1) >> 4); sx++) {

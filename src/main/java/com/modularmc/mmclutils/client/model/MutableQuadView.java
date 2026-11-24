@@ -24,16 +24,19 @@ public final class MutableQuadView implements QuadView {
     private @Nullable Direction cullFace;
     private MaterialInfo material;
 
+    /** 创建一个编辑器，顶点初始在原点，调制色为白色。 */
     public MutableQuadView(MaterialInfo material) {
         this.material = material;
         Arrays.fill(colors, -1);
     }
 
+    /** 复制源四边形的顶点和属性，后续编辑与源视图相互独立。 */
     public MutableQuadView(QuadView source) {
         this(source.material());
         copyFrom(source);
     }
 
+    /** 覆盖当前几何和材质，并返回当前编辑器。 */
     public MutableQuadView copyFrom(QuadView source) {
         for (int vertex = 0; vertex < VERTEX_COUNT; vertex++) {
             positions[vertex].set(source.position(vertex));
@@ -52,11 +55,13 @@ public final class MutableQuadView implements QuadView {
         return positions[vertex];
     }
 
+    /** 修改一个顶点的模型局部坐标，并返回当前编辑器。 */
     public MutableQuadView position(int vertex, float x, float y, float z) {
         positions[vertex].set(x, y, z);
         return this;
     }
 
+    /** 复制向量到指定顶点。向量随后可由调用方复用。 */
     public MutableQuadView position(int vertex, Vector3fc position) {
         positions[vertex].set(position);
         return this;
@@ -67,11 +72,13 @@ public final class MutableQuadView implements QuadView {
         return uv[vertex];
     }
 
+    /** 写入以原版格式打包的 UV，返回当前编辑器。 */
     public MutableQuadView packedUv(int vertex, long packedUv) {
         uv[vertex] = packedUv;
         return this;
     }
 
+    /** 写入 UV。烘焙时以当前值为图集坐标，使用局部 UV 时须事先映射到材质精灵。 */
     public MutableQuadView uv(int vertex, float u, float v) {
         return packedUv(vertex, UVPair.pack(u, v));
     }
@@ -81,11 +88,13 @@ public final class MutableQuadView implements QuadView {
         return normals[vertex];
     }
 
+    /** 写入 NeoForge 打包的顶点法线，零值沿用光照面。 */
     public MutableQuadView packedNormal(int vertex, int normal) {
         normals[vertex] = normal;
         return this;
     }
 
+    /** 将单位向量打包为指定顶点的法线。 */
     public MutableQuadView normal(int vertex, Vector3fc normal) {
         return packedNormal(vertex, BakedNormals.pack(normal));
     }
@@ -95,11 +104,13 @@ public final class MutableQuadView implements QuadView {
         return colors[vertex];
     }
 
+    /** 设置单个顶点的 ARGB 调制色。 */
     public MutableQuadView color(int vertex, int argb) {
         colors[vertex] = argb;
         return this;
     }
 
+    /** 为四个顶点应用相同的 ARGB 调制色。 */
     public MutableQuadView colorAll(int argb) {
         Arrays.fill(colors, argb);
         return this;
@@ -110,6 +121,7 @@ public final class MutableQuadView implements QuadView {
         return lightFace;
     }
 
+    /** 设置用于光照的朝向，保留邻面剔除分组。 */
     public MutableQuadView lightFace(Direction face) {
         lightFace = face;
         return this;
@@ -120,6 +132,7 @@ public final class MutableQuadView implements QuadView {
         return cullFace;
     }
 
+    /** 设置邻面剔除分组，空值表示不按邻面剔除。 */
     public MutableQuadView cullFace(@Nullable Direction face) {
         cullFace = face;
         return this;
@@ -130,6 +143,7 @@ public final class MutableQuadView implements QuadView {
         return material;
     }
 
+    /** 替换材质并保留原 UV。需要重映射 UV 时使用 {@link QuadUtils#replace}。 */
     public MutableQuadView material(MaterialInfo value) {
         material = value;
         return this;

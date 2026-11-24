@@ -23,8 +23,11 @@ import java.util.Optional;
 /** 环、光点和实体附着共用的原版绘制状态与纹理。 */
 public final class EffectRenderPipelines {
 
+    /** 渐隐的环形光带纹理。 */
     public static final Identifier GLOW_TEXTURE = ModularMCLibUtils.id("effect/glow");
+    /** 绘制纯色几何时使用的白色纹理。 */
     public static final Identifier WHITE_TEXTURE = ModularMCLibUtils.id("effect/white");
+    /** RGB 已按透明度渐变的光点纹理，供加法混合使用。 */
     public static final Identifier MOTE_TEXTURE = ModularMCLibUtils.id("effect/mote");
 
     private static final VertexFormat FORMAT = VertexFormat.builder()
@@ -34,8 +37,11 @@ public final class EffectRenderPipelines {
             .add("UV0", VertexFormatElement.UV0)
             .build();
 
+    /** 使用场景深度测试与深度写入绘制实体四边形。 */
     public static final RenderPipeline VOXEL = program("voxel", null, true, false);
+    /** 使用场景深度测试，以加法混合写入颜色。 */
     public static final RenderPipeline GLOW = program("glow", BlendFunction.ADDITIVE, false, false);
+    /** 以透明度混合绘制穿过场景的高亮。 */
     public static final RenderPipeline HIGHLIGHT = program("highlight", BlendFunction.TRANSLUCENT, false, true);
     private static final RenderPipeline GLOW_THROUGH = program("glow_through", BlendFunction.ADDITIVE, false, true);
     private static final RenderPipeline ATLAS = program("particle", BlendFunction.TRANSLUCENT, false, false);
@@ -50,10 +56,12 @@ public final class EffectRenderPipelines {
         }
     }
 
+    /** 选择对应遮挡规则的加法混合管线。传入真时跳过场景深度测试。 */
     public static RenderPipeline glow(boolean throughWalls) {
         return throughWalls ? GLOW_THROUGH : GLOW;
     }
 
+    /** 选择对应遮挡规则的粒子图集管线，颜色按透明度混合。 */
     public static RenderPipeline atlas(boolean throughWalls) {
         return throughWalls ? ATLAS_THROUGH : ATLAS;
     }
@@ -94,5 +102,14 @@ public final class EffectRenderPipelines {
         textures.register(MOTE_TEXTURE, new DynamicTexture(MOTE_TEXTURE::toString, mote));
         textures.register(WHITE_TEXTURE, new DynamicTexture(WHITE_TEXTURE::toString, white));
         texturesReady = true;
+    }
+
+    static void releaseTextures() {
+        if (!texturesReady) return;
+        var textures = Minecraft.getInstance().getTextureManager();
+        textures.release(GLOW_TEXTURE);
+        textures.release(WHITE_TEXTURE);
+        textures.release(MOTE_TEXTURE);
+        texturesReady = false;
     }
 }

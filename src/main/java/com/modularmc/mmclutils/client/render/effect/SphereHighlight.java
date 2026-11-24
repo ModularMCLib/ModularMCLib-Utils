@@ -12,6 +12,7 @@ import org.joml.Matrix4fc;
 /** 在当前客户端世界中绘制持续 200 个游戏 Tick 的球形高亮。 */
 public final class SphereHighlight {
 
+    /** 高亮寿命，单位为未暂停的客户端游戏 Tick。 */
     public static final int DURATION = 200;
     private static final int LATITUDES = 40;
     private static final int LONGITUDES = 50;
@@ -45,6 +46,7 @@ public final class SphereHighlight {
         if (remaining > 0) remaining--;
     }
 
+    /** 在客户端线程立即取消当前高亮。 */
     public static void clear() {
         remaining = 0;
     }

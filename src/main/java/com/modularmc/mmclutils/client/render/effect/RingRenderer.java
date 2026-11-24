@@ -5,10 +5,8 @@ import com.modularmc.mmclutils.ModularMCLibUtils;
 import net.minecraft.client.Camera;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
-import com.mojang.blaze3d.systems.RenderSystem;
 import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;
 import org.joml.Vector3f;
-import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL15;
@@ -58,12 +56,7 @@ final class RingRenderer {
 
     static boolean available() {
         if (state < 0) {
-            if (!RenderSystem.getDevice().getBackendName().equalsIgnoreCase("OpenGL")) {
-                state = 0;
-                return false;
-            }
-            var caps = GL.getCapabilities();
-            boolean supported = caps.OpenGL33;
+            boolean supported = TransformFeedbackProgram.supported();
             if (supported) {
                 voxelProgram = TransformFeedbackProgram.load("ring_voxel.vsh");
                 glowProgram = TransformFeedbackProgram.load("ring_glow.vsh");

@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
+/** 在原版方块实体中保存由方块实体索引管理的探测位掩码。 */
 @Mixin(BlockEntity.class)
 public abstract class BlockEntityMixin implements TrackedBlockEntity {
 

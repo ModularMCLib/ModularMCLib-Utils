@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
+/** 让每个维度实例持有其 LevelStore 槽位与卸载状态。 */
 @Mixin(Level.class)
 public abstract class LevelMixin implements SlotHolder {
 
