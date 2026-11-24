@@ -1,13 +1,20 @@
 package com.modularmc.mmclutils.client.render.effect;
 
+import org.joml.Matrix3f;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.SplittableRandom;
 
+/**
+ * 固定随机种子的环粒子数据，可用同一个实例在多个位置绘制。
+ * 实例保存粒子运动参数，渲染器负责缓存并释放上传到设备的数据。
+ */
 public final class ParticleRing {
 
+    /** 基础粒子边长，单位为方块。 */
     public static final float PIXEL = 1F / 16F;
+    /** 变换反馈路径中粒子数据纹理每行的像素数。 */
     public static final int DATA_WIDTH = 1024;
 
     private final float majorRadius;
@@ -27,9 +34,25 @@ public final class ParticleRing {
     private final float[] axisY;
     private final float[] axisZ;
     private final int[] tone;
-    private int dataTexture = -1;
 
+    /**
+     * 根据固定种子分布粒子。粒子运动参数生成后可重复使用。
+     *
+     * @param majorRadius 环中心到轨道中线的半径，须为有限正数
+     * @param tubeRadius  轨道横截面半径，须为有限非负数
+     * @param count       粒子数。零表示只绘制光带
+     * @param minSpeed    最小轨道线速度，单位为方块每 Tick
+     * @param maxSpeed    最大轨道线速度，单位为方块每 Tick
+     * @param seed        控制分布的随机种子
+     * @throws IllegalArgumentException 半径、粒子数或速度范围无效
+     */
     public ParticleRing(float majorRadius, float tubeRadius, int count, float minSpeed, float maxSpeed, long seed) {
+        if (!(majorRadius > 0 && Float.isFinite(majorRadius) && tubeRadius >= 0 && Float.isFinite(tubeRadius))) {
+            throw new IllegalArgumentException("环的半径超出有效范围");
+        }
+        if (count < 0 || !Float.isFinite(minSpeed) || !Float.isFinite(maxSpeed) || minSpeed > maxSpeed) {
+            throw new IllegalArgumentException("环的粒子数或速度范围无效");
+        }
         this.majorRadius = majorRadius;
         this.half = PIXEL / 2;
         this.count = count;
@@ -79,16 +102,26 @@ public final class ParticleRing {
         }
     }
 
+    /** 返回环包含的粒子数量。 */
     public int count() {
         return count;
     }
 
+    /** 返回轨道半径，单位为方块。 */
     public float majorRadius() {
         return majorRadius;
     }
 
-    double phase(int index, double time) {
-        return phase[index] + orbit[index] * time;
+    float phase(int index) {
+        return phase[index];
+    }
+
+    float orbit(int index) {
+        return orbit[index];
+    }
+
+    void spin(int index, float time, Matrix3f rotation) {
+        rotation.rotation(spin[index] * time + spinPhase[index], axisX[index], axisY[index], axisZ[index]);
     }
 
     float radial(int index, double time) {
@@ -107,20 +140,12 @@ public final class ParticleRing {
         return half;
     }
 
-    int dataTexture() {
-        return dataTexture;
-    }
-
-    void dataTexture(int id) {
-        dataTexture = id;
-    }
-
     int dataRows() {
-        return (count * 4 + DATA_WIDTH - 1) / DATA_WIDTH;
+        return Math.ceilDiv(count, DATA_WIDTH / 4);
     }
 
     ByteBuffer createData() {
-        var data = MemoryUtil.memCalloc(dataRows() * DATA_WIDTH * 16);
+        var data = MemoryUtil.memCalloc(Math.multiplyExact(dataRows(), DATA_WIDTH * 4 * Float.BYTES));
         for (int i = 0; i < count; i++) {
             data.putFloat(phase[i]).putFloat(orbit[i]).putFloat(driftFrequencyU[i]).putFloat(driftFrequencyV[i]);
             data.putFloat(driftPhaseU[i]).putFloat(driftPhaseV[i]).putFloat(amplitudeU[i]).putFloat(amplitudeV[i]);
@@ -131,14 +156,44 @@ public final class ParticleRing {
         return data;
     }
 
-    /** 环效果中精灵、光晕与亮芯各自的宽度和强度。 */
+    /**
+     * 环效果中精灵、光晕与亮芯各自的宽度和强度。
+     *
+     * @param spriteScale    发光精灵相对基础像素的半宽倍率
+     * @param spriteStrength 精灵强度，范围为 0～255
+     * @param hazeWidth      光晕带半宽，单位为方块
+     * @param hazeStrength   光晕带强度，范围为 0～255
+     * @param coreWidth      亮芯带半宽，单位为方块
+     * @param coreStrength   亮芯带强度，范围为 0～255
+     */
     public record RingStyle(float spriteScale, int spriteStrength, float hazeWidth, int hazeStrength, float coreWidth, int coreStrength) {}
 
-    /** 定义闭环或由多条螺旋组成的环轮廓。 */
+    /**
+     * 定义闭环或由多条螺旋组成的环轮廓。螺旋沿环轴从原点开始延伸。
+     *
+     * @param strands 螺旋股数，0 表示闭环，最多 192 股
+     * @param height  沿环轴的长度，单位为方块
+     * @param turns   每股绕轴旋转的圈数，可用符号改变方向
+     * @param taper   轴向分布从均匀变化到渐密的比例，范围为 0～0.95
+     * @param fadeIn  开头逐渐显现的长度比例，范围为 0～1
+     * @param fadeOut 结尾逐渐淡出的长度比例，范围为 0～1
+     */
     public record RingShape(int strands, float height, float turns, float taper, float fadeIn, float fadeOut) {
 
+        /** 在垂直于环轴的平面内闭合的环。 */
         public static final RingShape CLOSED = new RingShape(0, 0, 0, 0, 0, 0);
 
+        public RingShape {
+            if (strands < 0 || strands > RingRenderer.RIBBON_SEGMENTS) throw new IllegalArgumentException("螺旋股数超出范围");
+            if (strands == 0) {
+                height = turns = taper = fadeIn = fadeOut = 0;
+            } else if (!Float.isFinite(height) || !Float.isFinite(turns) || height == 0 && turns == 0 ||
+                    !(taper >= 0 && taper <= 0.95f && fadeIn >= 0 && fadeIn <= 1 && fadeOut >= 0 && fadeOut <= 1)) {
+                        throw new IllegalArgumentException("螺旋轮廓参数无效");
+                    }
+        }
+
+        /** 创建螺旋轮廓，渐密比例取 0～0.95，其余参数遵循 {@link RingShape} 的约定。 */
         public static RingShape helix(int strands, float height, float turns, float taper, float fadeIn, float fadeOut) {
             return new RingShape(strands, height, turns, Math.max(0, Math.min(taper, 0.95F)), fadeIn, fadeOut);
         }

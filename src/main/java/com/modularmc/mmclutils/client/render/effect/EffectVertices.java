@@ -14,7 +14,7 @@ final class EffectVertices {
     private @Nullable ByteBuffer bytes;
 
     void begin(int quads) {
-        int length = Math.max(1, quads) * 4 * EffectQuadBuffer.VERTEX_BYTES;
+        int length = Math.multiplyExact(Math.max(1, quads), 4 * EffectQuadBuffer.VERTEX_BYTES);
         if (bytes == null) bytes = MemoryUtil.memAlloc(length);
         else if (bytes.capacity() < length) bytes = MemoryUtil.memRealloc(bytes, length);
         bytes.clear();

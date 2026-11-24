@@ -6,6 +6,7 @@ import net.minecraft.client.Camera;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
+import it.unimi.dsi.fastutil.objects.Reference2IntLinkedOpenHashMap;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -18,6 +19,7 @@ import org.lwjgl.opengl.GL33;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 
 final class RingRenderer {
@@ -28,9 +30,12 @@ final class RingRenderer {
     private static final int QUAD_VERTICES = 4;
     private static final int PALETTE_ROWS = 64;
     private static final int MAX_GROUPS = 16;
+    private static final int DATA_TEXTURE_LIMIT = 64;
+    private static final Reference2IntLinkedOpenHashMap<ParticleRing> DATA_TEXTURES = new Reference2IntLinkedOpenHashMap<>();
     private static final ParticleRing[] GROUP_RING = new ParticleRing[MAX_GROUPS];
     private static final int[] GROUP_FIRST = new int[MAX_GROUPS];
     private static final int[] GROUP_SIZE = new int[MAX_GROUPS];
+    private static final int[] GROUP_TEXTURE = new int[MAX_GROUPS];
     private static final int[][] PALETTES = new int[PALETTE_ROWS][];
     private static final ByteBuffer PALETTE_PIXELS = MemoryUtil.memAlloc(EffectPalette.SIZE * PALETTE_ROWS * 4);
     private static int state = -1;
@@ -90,11 +95,18 @@ final class RingRenderer {
         return id;
     }
 
-    private static void ensureData(ParticleRing ring) {
-        if (ring.dataTexture() != -1) return;
+    private static int dataTexture(ParticleRing ring) {
+        int cached = DATA_TEXTURES.getAndMoveToLast(ring);
+        if (cached != 0) return cached;
         var data = ring.createData();
-        ring.dataTexture(texture(GL30.GL_RGBA32F, ParticleRing.DATA_WIDTH, ring.dataRows(), GL11.GL_FLOAT, data));
-        MemoryUtil.memFree(data);
+        try {
+            int id = texture(GL30.GL_RGBA32F, ParticleRing.DATA_WIDTH, ring.dataRows(), GL11.GL_FLOAT, data);
+            DATA_TEXTURES.putAndMoveToLast(ring, id);
+            if (DATA_TEXTURES.size() > DATA_TEXTURE_LIMIT) GlStateManager._deleteTexture(DATA_TEXTURES.removeFirstInt());
+            return id;
+        } finally {
+            MemoryUtil.memFree(data);
+        }
     }
 
     private static int paletteRow(int[] palette) {
@@ -152,7 +164,8 @@ final class RingRenderer {
             GROUP_FIRST[g] = first;
             first += GROUP_SIZE[g];
             GROUP_SIZE[g] = 0;
-            ensureData(GROUP_RING[g]);
+            var ring = GROUP_RING[g];
+            GROUP_TEXTURE[g] = ring.count() == 0 ? 0 : dataTexture(ring);
         }
         records = count;
         if (table.capacity() < count * RECORD_BYTES) table = MemoryUtil.memRealloc(table, count * 2 * RECORD_BYTES);
@@ -254,8 +267,9 @@ final class RingRenderer {
         int voxelCount = voxelProgram.uniform("ParticleCount");
         for (int g = 0; g < groups; g++) {
             var ring = GROUP_RING[g];
+            if (ring.count() == 0) continue;
             GlStateManager._activeTexture(GL13.GL_TEXTURE0);
-            GlStateManager._bindTexture(ring.dataTexture());
+            GlStateManager._bindTexture(GROUP_TEXTURE[g]);
             GL20.glUniform1i(voxelCount, ring.count());
             pointRing(voxelProgram, GROUP_FIRST[g], ring.count());
             voxelOffset += capture(VOXELS, voxelOffset, VOXEL_VERTICES, GROUP_SIZE[g] * ring.count());
@@ -268,8 +282,9 @@ final class RingRenderer {
         int glowCount = glowProgram.uniform("ParticleCount");
         for (int g = 0; g < groups; g++) {
             var ring = GROUP_RING[g];
+            if (ring.count() == 0) continue;
             GlStateManager._activeTexture(GL13.GL_TEXTURE0);
-            GlStateManager._bindTexture(ring.dataTexture());
+            GlStateManager._bindTexture(GROUP_TEXTURE[g]);
             GL20.glUniform1i(glowCount, ring.count());
             pointRing(glowProgram, GROUP_FIRST[g], ring.count());
             glowOffset += capture(GLOWS, glowOffset, QUAD_VERTICES, GROUP_SIZE[g] * ring.count());
@@ -290,7 +305,7 @@ final class RingRenderer {
     static void draw(List<EffectRenderer.RingCommand> commands, int count, Camera camera) {
         if (count == 0) return;
         if (!available()) {
-            RingGeometry.draw(commands, count, camera, GLOWS);
+            RingGeometry.draw(commands, count, camera, VOXELS, GLOWS);
             return;
         }
         if (count > MAX_GROUPS) {
@@ -313,6 +328,10 @@ final class RingRenderer {
         if (simulateVao != -1) GL30.glDeleteVertexArrays(simulateVao);
         if (tableBuffer != -1) GlStateManager._glDeleteBuffers(tableBuffer);
         if (paletteTexture != -1) GlStateManager._deleteTexture(paletteTexture);
+        DATA_TEXTURES.values().forEach(GlStateManager::_deleteTexture);
+        DATA_TEXTURES.clear();
+        Arrays.fill(GROUP_RING, null);
+        Arrays.fill(PALETTES, null);
         voxelProgram = glowProgram = ribbonProgram = null;
         state = simulateVao = tableBuffer = paletteTexture = -1;
         VOXELS.close();

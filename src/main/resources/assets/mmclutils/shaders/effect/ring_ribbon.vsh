@@ -36,11 +36,16 @@ void main() {
         b = ribbonPoint(basis, segment + 1, sideB, width);
     } else {
         int strands = int(Ring5.x + 0.5);
-        int perStrand = Segments / strands;
-        int strand = min(segment / perStrand, strands - 1);
-        int piece = segment - strand * perStrand;
-        a = helixRibbonPoint(float(strand), float(piece) / float(perStrand), sideA, width);
-        b = helixRibbonPoint(float(strand), float(piece + 1) / float(perStrand), sideB, width);
+        int base = Segments / strands;
+        int extra = Segments % strands;
+        int boundary = extra * (base + 1);
+        bool longer = segment < boundary;
+        int count = longer ? base + 1 : base;
+        int offset = longer ? segment : segment - boundary;
+        int strand = offset / count + (longer ? 0 : extra);
+        int piece = offset % count;
+        a = helixRibbonPoint(float(strand), float(piece) / float(count), sideA, width);
+        b = helixRibbonPoint(float(strand), float(piece + 1) / float(count), sideB, width);
     }
     vec3 quad[4] = vec3[](a + sideA, a - sideA, b - sideB, b + sideB);
     vec2 uv[4] = vec2[](vec2(0.0, 0.5), vec2(1.0, 0.5), vec2(1.0, 0.5), vec2(0.0, 0.5));

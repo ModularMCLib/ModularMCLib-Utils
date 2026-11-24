@@ -40,9 +40,8 @@ float helixFade(float along) {
 
 float helixAlong(float sweep) {
     float taper = Ring5.w;
-    if (taper < 0.0001) return sweep;
     float lead = 1.0 + taper;
-    return (lead - sqrt(max(lead * lead - 4.0 * taper * sweep, 0.0))) / (2.0 * taper);
+    return 2.0 * sweep / (lead + sqrt(max(lead * lead - 4.0 * taper * sweep, 0.0)));
 }
 
 vec3 helixPoint(float strand, float sweep, float radial, float lift) {
@@ -59,7 +58,7 @@ vec3 ringPoint(vec4 motion, vec4 drift) {
         return Ring0.xyz + ringBasis(Ring2.x) * vec3(cos(theta) * radial, lift, sin(theta) * radial);
     }
     float slot = motion.x / TAU * Ring5.x;
-    float strand = floor(slot);
+    float strand = min(floor(slot), Ring5.x - 1.0);
     float sweep = fract(slot - strand + motion.y * Ring2.y / helixLength() * time);
     pathScale = helixFade(helixAlong(sweep));
     return helixPoint(strand, sweep, radial, lift);
