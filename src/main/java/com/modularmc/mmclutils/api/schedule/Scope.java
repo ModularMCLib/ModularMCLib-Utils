@@ -59,7 +59,7 @@ import java.util.function.Supplier;
  * 层；每一种在首次发生时带调用栈告警并记进最近摘要，之后只计数；系统属性 mmclutils.strictScopes 为 true 时误用直接抛 IllegalStateException</li>
  * </ul>
  */
-public abstract sealed class Scope permits Scope.Owned, Scope.Inner {
+public abstract sealed class Scope {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final AtomicInteger LIVE = new AtomicInteger();
