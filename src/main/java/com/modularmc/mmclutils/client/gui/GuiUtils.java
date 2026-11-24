@@ -19,11 +19,13 @@ public final class GuiUtils {
 
     private GuiUtils() {}
 
+    /** 用原版 GUI 管线提交从左到右的 ARGB 渐变。矩形使用当前姿态和裁剪范围。 */
     public static void fillHorizontalGradient(GuiGraphicsExtractor graphics, int left, int top, int right, int bottom,
                                               int leftColor, int rightColor) {
         fillGradient(graphics, RenderPipelines.GUI, left, top, right, bottom, leftColor, leftColor, rightColor, rightColor);
     }
 
+    /** 使用指定的位置和颜色管线提交水平渐变。调用方传入两侧的 ARGB 颜色。 */
     public static void fillHorizontalGradient(GuiGraphicsExtractor graphics, RenderPipeline pipeline, int left, int top,
                                               int right, int bottom, int leftColor, int rightColor) {
         fillGradient(graphics, pipeline, left, top, right, bottom, leftColor, leftColor, rightColor, rightColor);
@@ -60,6 +62,7 @@ public final class GuiUtils {
         }
     }
 
+    /** 把零到一的列表进度换算成整像素宽度，最大值比行宽少一像素以保留行边界。 */
     public static int listProgressWidth(int rowWidth, float progress) {
         if (!Float.isFinite(progress) || progress < 0.0F || progress > 1.0F) {
             throw new IllegalArgumentException("进度应当在零与一之间");
@@ -67,6 +70,7 @@ public final class GuiUtils {
         return (int) Math.floor(progress * (rowWidth - 1));
     }
 
+    /** 用轨道高度将六像素的最小滑块换算为百分比。轨道高度为零时直接返回原比例。 */
     public static float scrollbarThumbPercent(float naturalPercent, float trackHeight, boolean overflowing) {
         if (!Float.isFinite(naturalPercent) || naturalPercent < 0.0F || naturalPercent > 100.0F) {
             throw new IllegalArgumentException("滚动条比例应当在零与一百之间");

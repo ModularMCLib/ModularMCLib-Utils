@@ -183,6 +183,7 @@ public final class ParticleRing {
         /** 在垂直于环轴的平面内闭合的环。 */
         public static final RingShape CLOSED = new RingShape(0, 0, 0, 0, 0, 0);
 
+        /** 创建环形轮廓并规范化无螺旋时的各项参数。 */
         public RingShape {
             if (strands < 0 || strands > RingRenderer.RIBBON_SEGMENTS) throw new IllegalArgumentException("螺旋股数超出范围");
             if (strands == 0) {

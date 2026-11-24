@@ -25,6 +25,20 @@ public final class VoxelContours {
     private final ObjectOpenHashSet<Edge> edges = new ObjectOpenHashSet<>();
     private final DoubleArrayList cuts = new DoubleArrayList();
 
+    /**
+     * 按沿线的体素占用变化分段，将并集边界上的部分纳入轮廓。
+     *
+     * @param bx 来源方块的区段局部 X 坐标
+     * @param by 来源方块的区段局部 Y 坐标
+     * @param bz 来源方块的区段局部 Z 坐标
+     * @param x1 候选线段起点 X
+     * @param y1 候选线段起点 Y
+     * @param z1 候选线段起点 Z
+     * @param x2 候选线段终点 X
+     * @param y2 候选线段终点 Y
+     * @param z2 候选线段终点 Z
+     * @throws CancellationException 计算已被取消或中断
+     */
     public void add(int bx, int by, int bz, float x1, float y1, float z1, float x2, float y2, float z2) {
         checkCancelled();
         Direction.Axis axis = x1 != x2 ? Direction.Axis.X : y1 != y2 ? Direction.Axis.Y : Direction.Axis.Z;
@@ -89,6 +103,15 @@ public final class VoxelContours {
         edges.forEach(output);
     }
 
-    /** 区段局部空间中的轮廓线段。两个端点均以方块为单位。 */
+    /**
+     * 区段局部空间中的轴对齐轮廓线段。两个端点均以方块为单位。
+     *
+     * @param x1 起点 X
+     * @param y1 起点 Y
+     * @param z1 起点 Z
+     * @param x2 终点 X
+     * @param y2 终点 Y
+     * @param z2 终点 Z
+     */
     public record Edge(float x1, float y1, float z1, float x2, float y2, float z2) {}
 }

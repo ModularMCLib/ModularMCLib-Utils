@@ -109,6 +109,7 @@ public final class ImageTextures implements AutoCloseable {
     /** 分别限制压缩数据、单边像素和总像素数。 */
     public record Limits(int bytes, int dimension, long pixels) {
 
+        /** 创建图片解码限制。容量须为正数，字节上限还需保留一字节用于检测溢出输入。 */
         public Limits {
             if (bytes < 1 || bytes == Integer.MAX_VALUE || dimension < 1 || pixels < 1) {
                 throw new IllegalArgumentException("贴图读取上限超出范围");
@@ -119,6 +120,7 @@ public final class ImageTextures implements AutoCloseable {
     /** 限制等待中的请求数、单张图片的分块数、单块大小与组装总大小。 */
     public record RequestLimits(int requests, int parts, int partBytes, int imageBytes, Duration timeout) {
 
+        /** 创建分块请求限制。各容量和超时长度均须为正。 */
         public RequestLimits {
             if (requests < 1 || parts < 1 || partBytes < 1 || imageBytes < 1 || timeout.toNanos() <= 0) {
                 throw new IllegalArgumentException("图片请求的容量与超时必须为正数");

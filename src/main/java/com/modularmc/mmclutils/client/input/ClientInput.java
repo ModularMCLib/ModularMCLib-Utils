@@ -13,18 +13,25 @@ import org.lwjgl.glfw.GLFW;
 /** 在客户端线程读取键盘和鼠标的当前状态。 */
 public final class ClientInput {
 
+    /** 表示物理 Ctrl 修饰键的位。 */
     public static final int CONTROL = 1;
+    /** 表示 Shift 修饰键的位。 */
     public static final int SHIFT = 2;
+    /** 表示 Alt 或 Option 修饰键的位。 */
     public static final int ALT = 4;
+    /** 表示使用 Command 的平台上的命令修饰位。 */
     public static final int COMMAND = 8;
+    /** 本库识别的全部修饰位。 */
     public static final int ALL_MODIFIERS = CONTROL | SHIFT | ALT | COMMAND;
 
     private ClientInput() {}
 
+    /** 读取当前按下的全部修饰键并组成位掩码。请在客户端线程调用。 */
     public static int modifiers() {
         return (KeyModifier.CONTROL.isActive(KeyConflictContext.UNIVERSAL) ? CONTROL : 0) | (KeyModifier.SHIFT.isActive(KeyConflictContext.UNIVERSAL) ? SHIFT : 0) | (KeyModifier.ALT.isActive(KeyConflictContext.UNIVERSAL) ? ALT : 0) | (InputQuirks.REPLACE_CTRL_KEY_WITH_CMD_KEY && KeyModifier.CONTROL_OR_COMMAND.isActive(KeyConflictContext.UNIVERSAL) ? COMMAND : 0);
     }
 
+    /** 将 NeoForge 修饰键转换成当前平台的掩码位。无修饰键则返回零。 */
     public static int modifierBit(KeyModifier modifier) {
         return switch (modifier) {
             case CONTROL -> CONTROL;
@@ -35,6 +42,7 @@ public final class ClientInput {
         };
     }
 
+    /** 把输入键转换成对应修饰位。普通输入键或不受支持的 Command 键返回零。 */
     public static int keyModifierBit(InputConstants.Key key) {
         int code = key.getValue();
         if (key.getType() == InputConstants.Type.KEYSYM && (code == GLFW.GLFW_KEY_LEFT_SUPER || code == GLFW.GLFW_KEY_RIGHT_SUPER)) {

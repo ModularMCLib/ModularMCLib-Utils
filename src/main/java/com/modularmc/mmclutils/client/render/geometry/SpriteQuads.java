@@ -24,12 +24,32 @@ public final class SpriteQuads {
 
     private SpriteQuads() {}
 
-    /** 返回所给方向对应的单个面掩码。 */
+    /**
+     * 将方向转为可与其他面掩码按位组合的标记。
+     *
+     * @param face 选中的方块面
+     * @return 原版方向编号对应的单个位
+     */
     public static int bit(Direction face) {
         return 1 << face.get3DDataValue();
     }
 
-    /** 从方块模型的局部像素坐标写出选定的外侧面，面掩码可按位组合。每 16 个像素产生一格纹理。 */
+    /**
+     * 写入盒体选定的外侧面。每 16 个局部像素平铺一格纹理，边缘只取对应的 UV 子范围。
+     *
+     * @param buffer 接收四边形顶点的缓冲区，须支持位置、颜色、UV、覆盖层、光照和法线
+     * @param pose   将局部方块坐标变换到目标空间的矩阵
+     * @param sprite 用于平铺的图集精灵
+     * @param x0     盒体西侧的局部像素坐标
+     * @param y0     盒体底部的局部像素坐标
+     * @param z0     盒体北侧的局部像素坐标
+     * @param x1     盒体东侧的局部像素坐标
+     * @param y1     盒体顶部的局部像素坐标
+     * @param z1     盒体南侧的局部像素坐标
+     * @param faces  用 {@link #bit(Direction)} 组合的面掩码
+     * @param argb   应用于各顶点的 ARGB 颜色
+     * @param light  原版打包光照
+     */
     public static void box(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1,
                            int faces, int argb, int light) {
         for (var face : Direction.values()) {
@@ -37,7 +57,22 @@ public final class SpriteQuads {
         }
     }
 
-    /** 按方向写入包围盒的指定面，按每 16 像素切分顶点与图集 UV。位置使用局部像素坐标，光照为原版打包值。 */
+    /**
+     * 写入盒体的一个外侧面。顶点顺序和法线朝外，纹理按每 16 像素平铺。
+     *
+     * @param buffer 接收四边形顶点的缓冲区
+     * @param pose   将局部方块坐标变换到目标空间的矩阵
+     * @param sprite 用于平铺的图集精灵
+     * @param face   要写入的面的朝向
+     * @param x0     盒体西侧的局部像素坐标
+     * @param y0     盒体底部的局部像素坐标
+     * @param z0     盒体北侧的局部像素坐标
+     * @param x1     盒体东侧的局部像素坐标
+     * @param y1     盒体顶部的局部像素坐标
+     * @param z1     盒体南侧的局部像素坐标
+     * @param argb   应用于各顶点的 ARGB 颜色
+     * @param light  原版打包光照
+     */
     public static void face(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, Direction face, float x0, float y0, float z0, float x1,
                             float y1, float z1, int argb, int light) {
         switch (face) {

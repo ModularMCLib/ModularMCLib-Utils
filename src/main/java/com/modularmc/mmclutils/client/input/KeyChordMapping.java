@@ -19,16 +19,19 @@ public final class KeyChordMapping extends KeyMapping {
     private static final KeyModifier[] DISPLAY_ORDER = { KeyModifier.ALT, KeyModifier.SHIFT, KeyModifier.CONTROL,
             KeyModifier.CONTROL_OR_COMMAND };
     private final int defaultModifiers;
+    /** 当前组合要求的完整修饰键掩码。 */
     @Getter
     @Accessors(fluent = true)
     private int modifiers;
 
+    /** 用主键和修饰掩码创建绑定，自动去掉掩码中与主键重复的修饰位。 */
     public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Key key, int modifiers) {
         super(name, context, primary(normalize(key, modifiers)), key, category);
         defaultModifiers = normalize(key, modifiers);
         this.modifiers = defaultModifiers;
     }
 
+    /** 用输入类型和按键编号创建组合。编号的解释遵循对应的原版输入类型。 */
     public KeyChordMapping(String name, Category category, IKeyConflictContext context, InputConstants.Type type, int key, int modifiers) {
         this(name, category, context, type.getOrCreate(key), modifiers);
     }
