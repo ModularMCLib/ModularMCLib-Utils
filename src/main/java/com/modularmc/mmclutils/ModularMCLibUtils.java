@@ -58,7 +58,7 @@ public class ModularMCLibUtils {
     /**
      * 在所属服务器主线程执行命令，并抑制命令反馈。
      *
-     * @param server 要执行命令的服务器
+     * @param server  要执行命令的服务器
      * @param command 不带斜杠前缀的命令文本
      */
     public static void runCommandSilent(MinecraftServer server, String command) {

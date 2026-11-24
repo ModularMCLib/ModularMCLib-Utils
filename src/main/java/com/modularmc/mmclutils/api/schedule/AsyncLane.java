@@ -44,10 +44,10 @@ public final class AsyncLane {
     /**
      * 创建并登记全局唯一标识的异步车道。
      *
-     * @param id 用于诊断和区分车道的标识
+     * @param id       用于诊断和区分车道的标识
      * @param executor 提交异步调度轮次的执行器，生命周期由调用方管理
      * @return 新登记的车道
-     * @throws NullPointerException 标识或执行器为空
+     * @throws NullPointerException     标识或执行器为空
      * @throws IllegalArgumentException 已有车道使用相同标识
      */
     public static synchronized AsyncLane create(String id, Executor executor) {

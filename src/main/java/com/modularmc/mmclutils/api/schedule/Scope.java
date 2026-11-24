@@ -594,7 +594,7 @@ public abstract sealed class Scope {
          * 将键值资源挂载至子作用域。
          *
          * @param scope 管理挂载资源的子作用域
-         * @param key 资源标识键
+         * @param key   资源标识键
          * @param value 与键对应的资源值
          */
         void mount(Scope scope, K key, V value);

@@ -27,7 +27,7 @@ public final class SharedPool<K, V> {
          * 在资源自己的作用域内创建值。
          *
          * @param pooled 接收资源作用域与需求状态的池条目
-         * @param key 共享资源的键
+         * @param key    共享资源的键
          * @return 新建的非空资源值
          */
         V create(Pooled pooled, K key);

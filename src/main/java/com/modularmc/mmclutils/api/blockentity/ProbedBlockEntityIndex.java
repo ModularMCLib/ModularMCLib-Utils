@@ -48,7 +48,7 @@ public final class ProbedBlockEntityIndex {
      * 创建按类型分类并按需探测的方块实体索引。
      *
      * @param classifier 将方块实体类型分类为不收录、候选或按需探测
-     * @param probe 匹配查询触达的待探测实体时执行的能力检查
+     * @param probe      匹配查询触达的待探测实体时执行的能力检查
      * @return 新的索引，登记在创建后出现的索引条目上
      */
     public static ProbedBlockEntityIndex create(Function<Class<?>, Kind> classifier, Predicate<? super BlockEntity> probe) {
@@ -59,8 +59,8 @@ public final class ProbedBlockEntityIndex {
      * 创建具有额外登记过滤条件的按需探测索引。
      *
      * @param classifier 将方块实体类型分类为不收录、候选或按需探测
-     * @param probe 查询触达待探测实体时的能力检查
-     * @param admit 登记或实体状态变化时的候选过滤条件，可以为空
+     * @param probe      查询触达待探测实体时的能力检查
+     * @param admit      登记或实体状态变化时的候选过滤条件，可以为空
      * @return 新的按需探测索引
      */
     public static ProbedBlockEntityIndex create(Function<Class<?>, Kind> classifier, Predicate<? super BlockEntity> probe,
@@ -73,11 +73,11 @@ public final class ProbedBlockEntityIndex {
     /**
      * 在指定范围查找候选，并把匹配项追加至输出集合。
      *
-     * @param level 要查询的维度
+     * @param level  要查询的维度
      * @param center 范围中心
-     * @param range 球形或长方体范围
+     * @param range  球形或长方体范围
      * @param filter 可选的最终结果过滤条件
-     * @param out 接收匹配方块实体的集合
+     * @param out    接收匹配方块实体的集合
      * @return 追加到集合中的条目数
      */
     public int query(Level level, BlockPos center, BlockRange range, @Nullable Predicate<? super BlockEntity> filter, Collection<? super BlockEntity> out) {

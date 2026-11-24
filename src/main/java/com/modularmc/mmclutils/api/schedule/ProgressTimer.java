@@ -17,8 +17,8 @@ public class ProgressTimer implements DoubleSupplier {
      * 创建指定周期长度和进度范围的计时器。
      *
      * @param ticksPerCycle 一个周期包含的 Tick 数，必须为正数
-     * @param maxValue 归一化前使用的正整数范围
-     * @param countDown 为 {@code true} 时进度从一递减到零
+     * @param maxValue      归一化前使用的正整数范围
+     * @param countDown     为 {@code true} 时进度从一递减到零
      * @throws IllegalArgumentException 周期长度或进度范围不是正数
      */
     public ProgressTimer(int ticksPerCycle, int maxValue, boolean countDown) {

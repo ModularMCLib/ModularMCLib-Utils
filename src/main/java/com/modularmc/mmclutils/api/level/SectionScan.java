@@ -58,7 +58,7 @@ public final class SectionScan {
          * 检查一个单格值。
          *
          * @param value 单格方块状态或统一区段值
-         * @param pos 扫描器复用的坐标，只在本次调用期间有效
+         * @param pos   扫描器复用的坐标，只在本次调用期间有效
          * @return 是否收集该坐标
          */
         boolean test(T value, BlockPos pos);

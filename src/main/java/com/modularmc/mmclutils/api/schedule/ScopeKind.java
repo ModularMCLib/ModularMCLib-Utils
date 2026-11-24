@@ -182,7 +182,7 @@ public final class ScopeKind<T> {
          * 同一拥有者的既有实例会先结束。
          *
          * @param owner 新实例的拥有者
-         * @param lane 驱动实例中任务与清理的调度车道
+         * @param lane  驱动实例中任务与清理的调度车道
          * @return 新打开的拥有者作用域
          */
         public Scope open(T owner, TickScheduler lane) {

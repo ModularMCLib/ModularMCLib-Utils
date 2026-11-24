@@ -56,7 +56,7 @@ public final class BlockEntityTracking {
     /**
      * 切换整个区块在空间索引中的可见性，并同步处理当前保存的方块实体。
      *
-     * @param chunk 要更新的区块
+     * @param chunk   要更新的区块
      * @param visible 区块应参与索引查询时为 {@code true}
      */
     public static void setVisible(LevelChunk chunk, boolean visible) {

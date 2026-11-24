@@ -22,13 +22,13 @@ public class StreamCodecs {
      * 创建带条目数前缀的映射编解码器，每个值的编码器由其键选择。
      * 解码时将容量限制为不超过 65536 后交给映射工厂，重复键如何处理由映射实现决定。
      *
-     * @param <B> 字节缓冲区类型
-     * @param <K> 映射键类型
-     * @param <V> 映射值类型
-     * @param <M> 目标映射类型
+     * @param <B>                 字节缓冲区类型
+     * @param <K>                 映射键类型
+     * @param <V>                 映射值类型
+     * @param <M>                 目标映射类型
      * @param mapCreationFunction 根据初始容量创建空映射
-     * @param keyCodec 键的编解码器
-     * @param valueFunction 根据键选择对应值编解码器
+     * @param keyCodec            键的编解码器
+     * @param valueFunction       根据键选择对应值编解码器
      * @return 映射的流编解码器
      */
     public static <B extends ByteBuf, K, V, M extends Map<K, V>> StreamCodec<B, M> dispatchMap(
@@ -64,32 +64,32 @@ public class StreamCodecs {
      * 创建包含八个字段的组合编解码器。
      * 字段按照参数顺序写入和读取，解码后的八个值按相同顺序传给构造函数。
      *
-     * @param <B> 字节缓冲区类型
-     * @param <C> 编解码对象类型
-     * @param <T1> 第一个字段类型
-     * @param <T2> 第二个字段类型
-     * @param <T3> 第三个字段类型
-     * @param <T4> 第四个字段类型
-     * @param <T5> 第五个字段类型
-     * @param <T6> 第六个字段类型
-     * @param <T7> 第七个字段类型
-     * @param <T8> 第八个字段类型
-     * @param codec1 第一个字段的编解码器
-     * @param getter1 从对象取得第一个字段
-     * @param codec2 第二个字段的编解码器
-     * @param getter2 从对象取得第二个字段
-     * @param codec3 第三个字段的编解码器
-     * @param getter3 从对象取得第三个字段
-     * @param codec4 第四个字段的编解码器
-     * @param getter4 从对象取得第四个字段
-     * @param codec5 第五个字段的编解码器
-     * @param getter5 从对象取得第五个字段
-     * @param codec6 第六个字段的编解码器
-     * @param getter6 从对象取得第六个字段
-     * @param codec7 第七个字段的编解码器
-     * @param getter7 从对象取得第七个字段
-     * @param codec8 第八个字段的编解码器
-     * @param getter8 从对象取得第八个字段
+     * @param <B>         字节缓冲区类型
+     * @param <C>         编解码对象类型
+     * @param <T1>        第一个字段类型
+     * @param <T2>        第二个字段类型
+     * @param <T3>        第三个字段类型
+     * @param <T4>        第四个字段类型
+     * @param <T5>        第五个字段类型
+     * @param <T6>        第六个字段类型
+     * @param <T7>        第七个字段类型
+     * @param <T8>        第八个字段类型
+     * @param codec1      第一个字段的编解码器
+     * @param getter1     从对象取得第一个字段
+     * @param codec2      第二个字段的编解码器
+     * @param getter2     从对象取得第二个字段
+     * @param codec3      第三个字段的编解码器
+     * @param getter3     从对象取得第三个字段
+     * @param codec4      第四个字段的编解码器
+     * @param getter4     从对象取得第四个字段
+     * @param codec5      第五个字段的编解码器
+     * @param getter5     从对象取得第五个字段
+     * @param codec6      第六个字段的编解码器
+     * @param getter6     从对象取得第六个字段
+     * @param codec7      第七个字段的编解码器
+     * @param getter7     从对象取得第七个字段
+     * @param codec8      第八个字段的编解码器
+     * @param getter8     从对象取得第八个字段
      * @param constructor 根据解码出的字段构造对象
      * @return 八字段组合编解码器
      */
@@ -144,44 +144,44 @@ public class StreamCodecs {
      * 创建包含十二个字段的组合编解码器。
      * 字段按照参数顺序写入和读取，解码后的十二个值按相同顺序传给构造函数。
      *
-     * @param <B> 字节缓冲区类型
-     * @param <C> 编解码对象类型
-     * @param <T1> 第一个字段类型
-     * @param <T2> 第二个字段类型
-     * @param <T3> 第三个字段类型
-     * @param <T4> 第四个字段类型
-     * @param <T5> 第五个字段类型
-     * @param <T6> 第六个字段类型
-     * @param <T7> 第七个字段类型
-     * @param <T8> 第八个字段类型
-     * @param <T9> 第九个字段类型
-     * @param <T10> 第十个字段类型
-     * @param <T11> 第十一个字段类型
-     * @param <T12> 第十二个字段类型
-     * @param codec1 第一个字段的编解码器
-     * @param getter1 从对象取得第一个字段
-     * @param codec2 第二个字段的编解码器
-     * @param getter2 从对象取得第二个字段
-     * @param codec3 第三个字段的编解码器
-     * @param getter3 从对象取得第三个字段
-     * @param codec4 第四个字段的编解码器
-     * @param getter4 从对象取得第四个字段
-     * @param codec5 第五个字段的编解码器
-     * @param getter5 从对象取得第五个字段
-     * @param codec6 第六个字段的编解码器
-     * @param getter6 从对象取得第六个字段
-     * @param codec7 第七个字段的编解码器
-     * @param getter7 从对象取得第七个字段
-     * @param codec8 第八个字段的编解码器
-     * @param getter8 从对象取得第八个字段
-     * @param codec9 第九个字段的编解码器
-     * @param getter9 从对象取得第九个字段
-     * @param codec10 第十个字段的编解码器
-     * @param getter10 从对象取得第十个字段
-     * @param codec11 第十一个字段的编解码器
-     * @param getter11 从对象取得第十一个字段
-     * @param codec12 第十二个字段的编解码器
-     * @param getter12 从对象取得第十二个字段
+     * @param <B>         字节缓冲区类型
+     * @param <C>         编解码对象类型
+     * @param <T1>        第一个字段类型
+     * @param <T2>        第二个字段类型
+     * @param <T3>        第三个字段类型
+     * @param <T4>        第四个字段类型
+     * @param <T5>        第五个字段类型
+     * @param <T6>        第六个字段类型
+     * @param <T7>        第七个字段类型
+     * @param <T8>        第八个字段类型
+     * @param <T9>        第九个字段类型
+     * @param <T10>       第十个字段类型
+     * @param <T11>       第十一个字段类型
+     * @param <T12>       第十二个字段类型
+     * @param codec1      第一个字段的编解码器
+     * @param getter1     从对象取得第一个字段
+     * @param codec2      第二个字段的编解码器
+     * @param getter2     从对象取得第二个字段
+     * @param codec3      第三个字段的编解码器
+     * @param getter3     从对象取得第三个字段
+     * @param codec4      第四个字段的编解码器
+     * @param getter4     从对象取得第四个字段
+     * @param codec5      第五个字段的编解码器
+     * @param getter5     从对象取得第五个字段
+     * @param codec6      第六个字段的编解码器
+     * @param getter6     从对象取得第六个字段
+     * @param codec7      第七个字段的编解码器
+     * @param getter7     从对象取得第七个字段
+     * @param codec8      第八个字段的编解码器
+     * @param getter8     从对象取得第八个字段
+     * @param codec9      第九个字段的编解码器
+     * @param getter9     从对象取得第九个字段
+     * @param codec10     第十个字段的编解码器
+     * @param getter10    从对象取得第十个字段
+     * @param codec11     第十一个字段的编解码器
+     * @param getter11    从对象取得第十一个字段
+     * @param codec12     第十二个字段的编解码器
+     * @param getter12    从对象取得第十二个字段
      * @param constructor 根据解码出的字段构造对象
      * @return 十二字段组合编解码器
      */
@@ -252,47 +252,47 @@ public class StreamCodecs {
      * 创建包含十三个字段的组合编解码器。
      * 字段按照参数顺序写入和读取，解码后的十三个值按相同顺序传给构造函数。
      *
-     * @param <B> 字节缓冲区类型
-     * @param <C> 编解码对象类型
-     * @param <T1> 第一个字段类型
-     * @param <T2> 第二个字段类型
-     * @param <T3> 第三个字段类型
-     * @param <T4> 第四个字段类型
-     * @param <T5> 第五个字段类型
-     * @param <T6> 第六个字段类型
-     * @param <T7> 第七个字段类型
-     * @param <T8> 第八个字段类型
-     * @param <T9> 第九个字段类型
-     * @param <T10> 第十个字段类型
-     * @param <T11> 第十一个字段类型
-     * @param <T12> 第十二个字段类型
-     * @param <T13> 第十三个字段类型
-     * @param codec1 第一个字段的编解码器
-     * @param getter1 从对象取得第一个字段
-     * @param codec2 第二个字段的编解码器
-     * @param getter2 从对象取得第二个字段
-     * @param codec3 第三个字段的编解码器
-     * @param getter3 从对象取得第三个字段
-     * @param codec4 第四个字段的编解码器
-     * @param getter4 从对象取得第四个字段
-     * @param codec5 第五个字段的编解码器
-     * @param getter5 从对象取得第五个字段
-     * @param codec6 第六个字段的编解码器
-     * @param getter6 从对象取得第六个字段
-     * @param codec7 第七个字段的编解码器
-     * @param getter7 从对象取得第七个字段
-     * @param codec8 第八个字段的编解码器
-     * @param getter8 从对象取得第八个字段
-     * @param codec9 第九个字段的编解码器
-     * @param getter9 从对象取得第九个字段
-     * @param codec10 第十个字段的编解码器
-     * @param getter10 从对象取得第十个字段
-     * @param codec11 第十一个字段的编解码器
-     * @param getter11 从对象取得第十一个字段
-     * @param codec12 第十二个字段的编解码器
-     * @param getter12 从对象取得第十二个字段
-     * @param codec13 第十三个字段的编解码器
-     * @param getter13 从对象取得第十三个字段
+     * @param <B>         字节缓冲区类型
+     * @param <C>         编解码对象类型
+     * @param <T1>        第一个字段类型
+     * @param <T2>        第二个字段类型
+     * @param <T3>        第三个字段类型
+     * @param <T4>        第四个字段类型
+     * @param <T5>        第五个字段类型
+     * @param <T6>        第六个字段类型
+     * @param <T7>        第七个字段类型
+     * @param <T8>        第八个字段类型
+     * @param <T9>        第九个字段类型
+     * @param <T10>       第十个字段类型
+     * @param <T11>       第十一个字段类型
+     * @param <T12>       第十二个字段类型
+     * @param <T13>       第十三个字段类型
+     * @param codec1      第一个字段的编解码器
+     * @param getter1     从对象取得第一个字段
+     * @param codec2      第二个字段的编解码器
+     * @param getter2     从对象取得第二个字段
+     * @param codec3      第三个字段的编解码器
+     * @param getter3     从对象取得第三个字段
+     * @param codec4      第四个字段的编解码器
+     * @param getter4     从对象取得第四个字段
+     * @param codec5      第五个字段的编解码器
+     * @param getter5     从对象取得第五个字段
+     * @param codec6      第六个字段的编解码器
+     * @param getter6     从对象取得第六个字段
+     * @param codec7      第七个字段的编解码器
+     * @param getter7     从对象取得第七个字段
+     * @param codec8      第八个字段的编解码器
+     * @param getter8     从对象取得第八个字段
+     * @param codec9      第九个字段的编解码器
+     * @param getter9     从对象取得第九个字段
+     * @param codec10     第十个字段的编解码器
+     * @param getter10    从对象取得第十个字段
+     * @param codec11     第十一个字段的编解码器
+     * @param getter11    从对象取得第十一个字段
+     * @param codec12     第十二个字段的编解码器
+     * @param getter12    从对象取得第十二个字段
+     * @param codec13     第十三个字段的编解码器
+     * @param getter13    从对象取得第十三个字段
      * @param constructor 根据解码出的字段构造对象
      * @return 十三字段组合编解码器
      */

@@ -37,7 +37,7 @@ public final class CoalescedTask {
     /**
      * 创建带所有者的合并任务，供崩溃报告识别任务来源。
      *
-     * @param owner 可选任务所有者
+     * @param owner  可选任务所有者
      * @param action 被调度的操作
      * @throws NullPointerException 操作为空
      */

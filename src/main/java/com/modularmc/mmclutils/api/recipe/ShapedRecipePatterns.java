@@ -32,8 +32,8 @@ public final class ShapedRecipePatterns {
      * 按材料首次出现顺序从 A 开始分配字符并构建配方行。
      *
      * @param ingredients 按行排列的可选材料
-     * @param width 配方宽度
-     * @param height 配方高度
+     * @param width       配方宽度
+     * @param height      配方高度
      * @return 稳定的配方行与只读字符表
      * @throws IllegalArgumentException 配方尺寸无效，或不同材料多于可用字符数
      */
@@ -54,9 +54,9 @@ public final class ShapedRecipePatterns {
      * 用已有字符表重建配方行。同一材料对应多个字符时使用映射迭代顺序中最先出现的字符。
      *
      * @param ingredients 按行排列的可选材料
-     * @param width 配方宽度
-     * @param height 配方高度
-     * @param keys 字符到材料的映射，空格字符保留给空槽
+     * @param width       配方宽度
+     * @param height      配方高度
+     * @param keys        字符到材料的映射，空格字符保留给空槽
      * @return 按配方行顺序生成的字符串列表
      * @throws IllegalArgumentException 配方尺寸无效、字符表包含空格键或缺少材料映射
      */
