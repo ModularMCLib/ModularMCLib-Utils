@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.mixin.level;
 
-import com.modularmc.mmclutils.level.LoadedChunkSource;
-import com.modularmc.mmclutils.level.RecentChunks;
+import com.modularmc.mmclutils.api.level.LoadedChunkSource;
+import com.modularmc.mmclutils.api.level.RecentChunks;
 
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ChunkResult;

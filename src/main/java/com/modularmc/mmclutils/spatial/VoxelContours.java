@@ -1,5 +1,6 @@
 package com.modularmc.mmclutils.spatial;
 
+import com.modularmc.mmclutils.api.shape.VoxelShapeGeometry;
 import com.modularmc.mmclutils.client.level.SectionGeometryData;
 
 import net.minecraft.core.Direction;
@@ -73,7 +74,7 @@ public final class VoxelContours {
         double x = axis == Direction.Axis.X ? along : u;
         double y = axis == Direction.Axis.Y ? along : axis == Direction.Axis.X ? u : v;
         double z = axis == Direction.Axis.Z ? along : v;
-        VoxelContoursShape source = geometry.shape(bx, by, bz);
+        VoxelShapeGeometry source = geometry.shape(bx, by, bz);
         if (source.contains(x - bx, y - by, z - bz)) return true;
         int nx = Mth.floor(x), ny = Mth.floor(y), nz = Mth.floor(z);
         return geometry.shape(nx, ny, nz).contains(x - nx, y - ny, z - nz);

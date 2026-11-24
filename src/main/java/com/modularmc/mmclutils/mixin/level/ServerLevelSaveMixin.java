@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.mixin.level;
 
-import com.modularmc.mmclutils.persistence.FastSavedData;
+import com.modularmc.mmclutils.api.data.FastSavedData;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.ProgressListener;

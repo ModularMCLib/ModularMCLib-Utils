@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.mixin.spatial;
 
-import com.modularmc.mmclutils.spatial.BlockEntityTracking;
-import com.modularmc.mmclutils.spatial.TrackedChunk;
+import com.modularmc.mmclutils.api.blockentity.BlockEntityTracking;
+import com.modularmc.mmclutils.api.blockentity.TrackedChunk;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;

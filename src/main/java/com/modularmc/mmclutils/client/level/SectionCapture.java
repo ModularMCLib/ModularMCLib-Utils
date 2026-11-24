@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.client.level;
 
-import com.modularmc.mmclutils.spatial.VoxelContoursShape;
-import com.modularmc.mmclutils.spatial.VoxelShapes;
+import com.modularmc.mmclutils.api.shape.VoxelShapeCache;
+import com.modularmc.mmclutils.api.shape.VoxelShapeGeometry;
 import com.modularmc.mmclutils.utils.DirectionUtils;
 import com.modularmc.mmclutils.utils.TemperatureUtils;
 
@@ -26,7 +26,7 @@ public final class SectionCapture {
     private final int modes;
     private final int baseChunkX;
     private final int baseChunkZ;
-    private final VoxelContoursShape[] shapes = new VoxelContoursShape[18 * 18 * 18];
+    private final VoxelShapeGeometry[] shapes = new VoxelShapeGeometry[18 * 18 * 18];
     private final int[] temperatures = new int[4096];
     private final int[] visible = new int[4096];
     private final BlockPos.MutableBlockPos position = new BlockPos.MutableBlockPos();
@@ -46,7 +46,7 @@ public final class SectionCapture {
     }
 
     /** 在同一客户端世界线程恢复采集，时限使用 System.nanoTime 计时。 */
-    public @Nullable SectionGeometryData advance(ClientLevel level, VoxelShapes cache, long deadline) {
+    public @Nullable SectionGeometryData advance(ClientLevel level, VoxelShapeCache cache, long deadline) {
         if (world == null) world = level;
         else if (world != level) throw new IllegalArgumentException("区段采集已经绑定到另一世界");
         if (result != null) return result;
@@ -59,31 +59,31 @@ public final class SectionCapture {
             if (pending == null) {
                 LevelChunk chunk = loadedChunk(level, position.getX() >> 4, position.getZ() >> 4);
                 if (chunk == null) {
-                    shapes[cursor++] = VoxelContoursShape.EMPTY;
+                    shapes[cursor++] = VoxelShapeGeometry.EMPTY;
                     continue;
                 }
                 BlockState state = chunk.getBlockState(position);
                 if (state.isAir()) {
-                    shapes[cursor++] = VoxelContoursShape.EMPTY;
+                    shapes[cursor++] = VoxelShapeGeometry.EMPTY;
                     continue;
                 }
                 pending = new PendingBlock(state, state.getShape(level, position));
             }
             BlockState state = pending.state();
-            VoxelContoursShape shape = cache.capture(pending.shape(), deadline);
+            VoxelShapeGeometry shape = cache.capture(pending.shape(), deadline);
             if (shape == null) return null;
             pending = null;
-            if (shape == VoxelContoursShape.UNSUPPORTED) {
+            if (shape == VoxelShapeGeometry.UNSUPPORTED) {
                 shapes[cursor++] = shape;
                 continue;
             }
             var fluid = state.getFluidState();
-            if (shape.empty() && !fluid.isEmpty()) shape = VoxelContoursShape.box(fluid.getHeight(level, position));
+            if (shape.empty() && !fluid.isEmpty()) shape = VoxelShapeGeometry.box(fluid.getHeight(level, position));
             shapes[cursor++] = shape;
             if (x < 0 || y < 0 || z < 0 || x > 15 || y > 15 || z > 15) continue;
             int index = (y * 16 + z) * 16 + x;
             visible[index] = exposedFaces(level, position, state);
-            if ((modes & SectionGeometryData.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelContoursShape.BLOCK)) temperatures[index] = TemperatureUtils.temperature(state, level, position);
+            if ((modes & SectionGeometryData.INCLUDE_TEMPERATURE) != 0 && (visible[index] != 0 || shape != VoxelShapeGeometry.BLOCK)) temperatures[index] = TemperatureUtils.temperature(state, level, position);
         }
         if (cursor != shapes.length) return null;
         Arrays.fill(chunks, null);

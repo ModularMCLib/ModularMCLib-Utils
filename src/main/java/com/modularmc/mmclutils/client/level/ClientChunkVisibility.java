@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.client.level;
 
-import com.modularmc.mmclutils.spatial.BlockEntityTracking;
+import com.modularmc.mmclutils.api.blockentity.BlockEntityTracking;
 
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.chunk.LevelChunk;

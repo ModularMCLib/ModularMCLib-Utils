@@ -1,9 +1,9 @@
 package com.modularmc.mmclutils.client.render.geometry;
 
+import com.modularmc.mmclutils.api.schedule.BoundedVirtualTaskQueue;
+import com.modularmc.mmclutils.api.shape.VoxelShapeGeometry;
 import com.modularmc.mmclutils.client.level.SectionGeometryData;
-import com.modularmc.mmclutils.concurrent.BoundedVirtualTaskQueue;
 import com.modularmc.mmclutils.spatial.VoxelContours;
-import com.modularmc.mmclutils.spatial.VoxelContoursShape;
 
 import net.minecraft.core.Direction;
 
@@ -62,7 +62,7 @@ public final class SectionGeometryRenderer {
         }
     }
 
-    private static void emitBlock(Buffer surfaces, @Nullable VoxelContours contours, VoxelContoursShape shape,
+    private static void emitBlock(Buffer surfaces, @Nullable VoxelContours contours, VoxelShapeGeometry shape,
                                   int x, int y, int z, int visible, int color, BooleanSupplier cancelled) {
         double[] xs = shape.x(), ys = shape.y(), zs = shape.z();
         for (int i = 0; i < xs.length - 1; i++) {

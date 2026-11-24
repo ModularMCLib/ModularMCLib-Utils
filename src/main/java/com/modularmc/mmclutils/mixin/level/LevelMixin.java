@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.mixin.level;
 
-import com.modularmc.mmclutils.level.LevelSlotHolder;
+import com.modularmc.mmclutils.api.level.LevelSlotHolder;
 
 import net.minecraft.world.level.Level;
 

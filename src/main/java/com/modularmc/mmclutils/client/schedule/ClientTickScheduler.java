@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.client.schedule;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
-import com.modularmc.mmclutils.schedule.Schedulers;
+import com.modularmc.mmclutils.api.schedule.Schedulers;
 
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;

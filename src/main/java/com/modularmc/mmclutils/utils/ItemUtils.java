@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.utils;
 
-import com.modularmc.mmclutils.item.ItemStackStrategies;
+import com.modularmc.mmclutils.api.inventory.ItemStackStrategy;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -57,7 +57,7 @@ public final class ItemUtils {
     }
 
     public static Object2IntMap<ItemStack> createStackCountMap(boolean linked) {
-        ItemStackStrategies strategy = ItemStackStrategies.comparingAllButCount();
+        ItemStackStrategy strategy = ItemStackStrategy.comparingAllButCount();
         return linked ? new Object2IntLinkedOpenCustomHashMap<>(strategy) : new Object2IntOpenCustomHashMap<>(strategy);
     }
 }

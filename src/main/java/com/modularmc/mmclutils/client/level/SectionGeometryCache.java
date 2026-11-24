@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.client.level;
 
-import com.modularmc.mmclutils.spatial.VoxelShapes;
+import com.modularmc.mmclutils.api.shape.VoxelShapeCache;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
@@ -16,7 +16,7 @@ public final class SectionGeometryCache {
 
     private final ClientLevel level;
     private final int capacity;
-    private final VoxelShapes shapes = new VoxelShapes();
+    private final VoxelShapeCache shapes = new VoxelShapeCache();
     private final Long2ObjectLinkedOpenHashMap<Entry> sections = new Long2ObjectLinkedOpenHashMap<>();
 
     public SectionGeometryCache(ClientLevel level, int capacity) {

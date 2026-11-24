@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.utils;
 
-import com.modularmc.mmclutils.fluid.FluidStackStrategies;
+import com.modularmc.mmclutils.api.inventory.FluidStackStrategy;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
@@ -46,7 +46,7 @@ public final class FluidUtils {
     }
 
     public static Object2IntMap<FluidStack> createStackCountMap(boolean linked) {
-        FluidStackStrategies strategy = FluidStackStrategies.comparingAllButAmount();
+        FluidStackStrategy strategy = FluidStackStrategy.comparingAllButAmount();
         return linked ? new Object2IntLinkedOpenCustomHashMap<>(strategy) : new Object2IntOpenCustomHashMap<>(strategy);
     }
 }

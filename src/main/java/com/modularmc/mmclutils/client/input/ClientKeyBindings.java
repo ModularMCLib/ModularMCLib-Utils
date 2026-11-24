@@ -1,8 +1,8 @@
 package com.modularmc.mmclutils.client.input;
 
 import com.modularmc.mmclutils.ModularMCLibUtils;
-import com.modularmc.mmclutils.input.SyncedKeyMappings.ChangeSet;
-import com.modularmc.mmclutils.input.SyncedKeyMappings.Key;
+import com.modularmc.mmclutils.api.input.SyncedKeyMappings.ChangeSet;
+import com.modularmc.mmclutils.api.input.SyncedKeyMappings.Key;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
