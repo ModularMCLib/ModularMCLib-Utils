@@ -3,9 +3,11 @@ package com.modularmc.mmclutils.collection.map.hash;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.SafeMath;
 import it.unimi.dsi.fastutil.chars.*;
-import it.unimi.dsi.fastutil.chars.CharBinaryOperator;
 import it.unimi.dsi.fastutil.objects.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Spliterator;
@@ -20,6 +22,17 @@ import static it.unimi.dsi.fastutil.HashCommon.maxFill;
 public final class Object2CharOpenCustomCachedHashMap<K> extends Object2CharOpenCustomHashMap<K> {
 
     private int[] hash;
+
+    @Serial
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        // fastutil 按读入后的槽位重建哈希表，缓存哈希要与新的槽位对齐。
+        hash = new int[n + 1];
+        for (int i = 0; i < n; i++) {
+            K entry = key[i];
+            if (entry != null) hash[i] = strategy.hashCode(entry);
+        }
+    }
 
     public Object2CharOpenCustomCachedHashMap(final int expected, final float f, final Strategy<? super K> strategy) {
         super(expected, f, strategy);

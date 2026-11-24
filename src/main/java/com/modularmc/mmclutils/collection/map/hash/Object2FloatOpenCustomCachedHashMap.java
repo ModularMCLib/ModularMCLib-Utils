@@ -3,9 +3,11 @@ package com.modularmc.mmclutils.collection.map.hash;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.SafeMath;
 import it.unimi.dsi.fastutil.floats.*;
-import it.unimi.dsi.fastutil.floats.FloatBinaryOperator;
 import it.unimi.dsi.fastutil.objects.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Spliterator;
@@ -20,6 +22,17 @@ import static it.unimi.dsi.fastutil.HashCommon.maxFill;
 public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOpenCustomHashMap<K> {
 
     private int[] hash;
+
+    @Serial
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        // fastutil 按读入后的槽位重建哈希表，缓存哈希要与新的槽位对齐。
+        hash = new int[n + 1];
+        for (int i = 0; i < n; i++) {
+            K entry = key[i];
+            if (entry != null) hash[i] = strategy.hashCode(entry);
+        }
+    }
 
     public Object2FloatOpenCustomCachedHashMap(final int expected, final float f, final Strategy<? super K> strategy) {
         super(expected, f, strategy);
@@ -814,8 +827,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
             if (e.getValue() == null || !(e.getValue() instanceof Float)) return false;
             final K k = ((K) e.getKey());
             final float v = ((Float) (e.getValue())).floatValue();
-            if (strategy.equals(k, null))
-                return Object2FloatOpenCustomCachedHashMap.this.containsNullKey && (Float.floatToRawIntBits(value[n]) == Float.floatToRawIntBits(v));
+            if (strategy.equals(k, null)) return Object2FloatOpenCustomCachedHashMap.this.containsNullKey && (Float.floatToRawIntBits(value[n]) == Float.floatToRawIntBits(v));
             K curr;
             final K[] key = Object2FloatOpenCustomCachedHashMap.this.key;
             final int mask = Object2FloatOpenCustomCachedHashMap.this.mask;
@@ -824,8 +836,7 @@ public final class Object2FloatOpenCustomCachedHashMap<K> extends Object2FloatOp
             if (strategy.equals(k, curr)) return (Float.floatToRawIntBits(value[pos]) == Float.floatToRawIntBits(v));
             while (true) {
                 if (((curr = key[pos = (pos + 1) & mask]) == null)) return false;
-                if (strategy.equals(k, curr))
-                    return (Float.floatToRawIntBits(value[pos]) == Float.floatToRawIntBits(v));
+                if (strategy.equals(k, curr)) return (Float.floatToRawIntBits(value[pos]) == Float.floatToRawIntBits(v));
             }
         }
 

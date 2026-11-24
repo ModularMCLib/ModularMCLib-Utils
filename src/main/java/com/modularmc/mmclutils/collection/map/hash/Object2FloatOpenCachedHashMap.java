@@ -3,9 +3,11 @@ package com.modularmc.mmclutils.collection.map.hash;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.SafeMath;
 import it.unimi.dsi.fastutil.floats.*;
-import it.unimi.dsi.fastutil.floats.FloatBinaryOperator;
 import it.unimi.dsi.fastutil.objects.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -21,6 +23,17 @@ import static it.unimi.dsi.fastutil.HashCommon.maxFill;
 public final class Object2FloatOpenCachedHashMap<K> extends Object2FloatOpenHashMap<K> {
 
     private int[] hash;
+
+    @Serial
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        // fastutil 按读入后的槽位重建哈希表，缓存哈希要与新的槽位对齐。
+        hash = new int[n + 1];
+        for (int i = 0; i < n; i++) {
+            K entry = key[i];
+            if (entry != null) hash[i] = entry.hashCode();
+        }
+    }
 
     public Object2FloatOpenCachedHashMap(final int expected, final float f) {
         super(expected, f);
@@ -811,8 +824,7 @@ public final class Object2FloatOpenCachedHashMap<K> extends Object2FloatOpenHash
             if (e.getValue() == null || !(e.getValue() instanceof Float)) return false;
             final K k = ((K) e.getKey());
             final float v = ((Float) (e.getValue())).floatValue();
-            if (((k) == null))
-                return Object2FloatOpenCachedHashMap.this.containsNullKey && (Float.floatToRawIntBits(value[n]) == Float.floatToRawIntBits(v));
+            if (((k) == null)) return Object2FloatOpenCachedHashMap.this.containsNullKey && (Float.floatToRawIntBits(value[n]) == Float.floatToRawIntBits(v));
             K curr;
             final K[] key = Object2FloatOpenCachedHashMap.this.key;
             final int mask = Object2FloatOpenCachedHashMap.this.mask;

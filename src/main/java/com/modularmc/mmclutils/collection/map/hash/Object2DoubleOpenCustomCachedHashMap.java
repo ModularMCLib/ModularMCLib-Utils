@@ -4,6 +4,9 @@ import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.doubles.*;
 import it.unimi.dsi.fastutil.objects.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Spliterator;
@@ -20,6 +23,17 @@ import static it.unimi.dsi.fastutil.HashCommon.maxFill;
 public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2DoubleOpenCustomHashMap<K> {
 
     private int[] hash;
+
+    @Serial
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        // fastutil 按读入后的槽位重建哈希表，缓存哈希要与新的槽位对齐。
+        hash = new int[n + 1];
+        for (int i = 0; i < n; i++) {
+            K entry = key[i];
+            if (entry != null) hash[i] = strategy.hashCode(entry);
+        }
+    }
 
     public Object2DoubleOpenCustomCachedHashMap(final int expected, final float f, final Strategy<? super K> strategy) {
         super(expected, f, strategy);
@@ -814,19 +828,16 @@ public final class Object2DoubleOpenCustomCachedHashMap<K> extends Object2Double
             if (e.getValue() == null || !(e.getValue() instanceof Double)) return false;
             final K k = ((K) e.getKey());
             final double v = ((Double) (e.getValue())).doubleValue();
-            if (strategy.equals(k, null))
-                return Object2DoubleOpenCustomCachedHashMap.this.containsNullKey && (Double.doubleToRawLongBits(value[n]) == Double.doubleToRawLongBits(v));
+            if (strategy.equals(k, null)) return Object2DoubleOpenCustomCachedHashMap.this.containsNullKey && (Double.doubleToRawLongBits(value[n]) == Double.doubleToRawLongBits(v));
             K curr;
             final K[] key = Object2DoubleOpenCustomCachedHashMap.this.key;
             final int mask = Object2DoubleOpenCustomCachedHashMap.this.mask;
             int pos;
             if (((curr = key[pos = (HashCommon.mix(strategy.hashCode(k))) & mask]) == null)) return false;
-            if (strategy.equals(k, curr))
-                return (Double.doubleToRawLongBits(value[pos]) == Double.doubleToRawLongBits(v));
+            if (strategy.equals(k, curr)) return (Double.doubleToRawLongBits(value[pos]) == Double.doubleToRawLongBits(v));
             while (true) {
                 if (((curr = key[pos = (pos + 1) & mask]) == null)) return false;
-                if (strategy.equals(k, curr))
-                    return (Double.doubleToRawLongBits(value[pos]) == Double.doubleToRawLongBits(v));
+                if (strategy.equals(k, curr)) return (Double.doubleToRawLongBits(value[pos]) == Double.doubleToRawLongBits(v));
             }
         }
 

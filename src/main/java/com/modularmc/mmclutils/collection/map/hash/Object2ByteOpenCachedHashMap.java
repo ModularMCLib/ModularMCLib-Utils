@@ -3,9 +3,11 @@ package com.modularmc.mmclutils.collection.map.hash;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.SafeMath;
 import it.unimi.dsi.fastutil.bytes.*;
-import it.unimi.dsi.fastutil.bytes.ByteBinaryOperator;
 import it.unimi.dsi.fastutil.objects.*;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
@@ -21,6 +23,17 @@ import static it.unimi.dsi.fastutil.HashCommon.maxFill;
 public final class Object2ByteOpenCachedHashMap<K> extends Object2ByteOpenHashMap<K> {
 
     private int[] hash;
+
+    @Serial
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        // fastutil 按读入后的槽位重建哈希表，缓存哈希要与新的槽位对齐。
+        hash = new int[n + 1];
+        for (int i = 0; i < n; i++) {
+            K entry = key[i];
+            if (entry != null) hash[i] = entry.hashCode();
+        }
+    }
 
     public Object2ByteOpenCachedHashMap(final int expected, final float f) {
         super(expected, f);
