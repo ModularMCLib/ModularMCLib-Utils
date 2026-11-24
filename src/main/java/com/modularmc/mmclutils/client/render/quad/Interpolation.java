@@ -41,7 +41,7 @@ public class Interpolation {
     private int p01;
 
     /**
-     * Resets the interpolation helper with the given quad. Does not care what order the vertices are in.
+     * 用沿两轴对齐的四边形重置插值数据。以第一个顶点为原点，其余顶点可按任意顺序传入。
      */
     public void reset(float dx0, float dy0, float dx1, float dy1, float dx2, float dy2, float dx3, float dy3) {
         float[] vec0 = this.posCache[0];
@@ -61,10 +61,10 @@ public class Interpolation {
     }
 
     /**
-     * Call when you are ready to use the interpolation helper.
+     * 在开始插值前结束顶点坐标采集。
      */
     public void setup() {
-        this.p00 = 0; // Bottom Left is always first.
+        this.p00 = 0; // 第一个顶点为插值原点。
         this.x0 = this.posCache[this.p00][0];
         this.y0 = this.posCache[this.p00][1];
 
@@ -73,25 +73,25 @@ public class Interpolation {
             float y = this.posCache[i][1];
 
             if (this.y0 == y) {
-                // Bottom right.
+                // 右下。
                 this.p10 = i;
                 this.x1 = x;
             } else if (this.x0 == x) {
-                // Top left.
+                // 左上。
                 this.p01 = i;
                 this.y1 = y;
             } else {
-                // Top right.
+                // 右上。
                 this.p11 = i;
             }
         }
     }
 
     /**
-     * Computes the coefficients for the interpolation.
+     * 按给定点计算双线性插值权重。
      *
-     * @param x X interpolation location.
-     * @param y Y interpolation location.
+     * @param x 插值点的横坐标
+     * @param y 插值点的纵坐标
      */
     public void locate(float x, float y) {
         this.rX = Mth.inverseLerp(x, this.x0, this.x1);
@@ -99,13 +99,13 @@ public class Interpolation {
     }
 
     /**
-     * Interpolates using the already computed coefficients.
+     * 使用已计算的系数插值。
      *
-     * @param q0 Value at dx0 dy0
-     * @param q1 Value at dx1 dy1
-     * @param q2 Value at dx2 dy2
-     * @param q3 Value at dx3 dy3
-     * @return The result.
+     * @param q0 第一个顶点的数值
+     * @param q1 第二个顶点的数值
+     * @param q2 第三个顶点的数值
+     * @param q3 第四个顶点的数值
+     * @return 插值结果
      */
     public float interpolate(float q0, float q1, float q2, float q3) {
         this.valCache[0] = q0;

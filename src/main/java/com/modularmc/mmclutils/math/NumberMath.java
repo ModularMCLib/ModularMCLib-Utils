@@ -8,8 +8,8 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import com.mojang.datafixers.util.Pair;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
@@ -87,15 +87,15 @@ public class NumberMath {
 
     public static int ceilDiv(int x, int y) {
         final int q = x / y;
-        // if the signs are the same and modulo not zero, round up
+        // 同号且存在余数时向上取整。
         if ((x ^ y) >= 0 && (q * y != x)) {
             return q + 1;
         }
         return q;
     }
 
-    public static float min(float @NotNull... values) {
-        // noinspection ConstantValue
+    public static float min(float @NonNull... values) {
+        // noinspection ConstantValue JSpecify 将数组声明为非空，保留范围检查。
         if (values == null || values.length == 0) throw new IllegalArgumentException();
         if (values.length == 1) return values[0];
         if (values.length == 2) return Math.min(values[0], values[1]);
@@ -108,8 +108,8 @@ public class NumberMath {
         return min;
     }
 
-    public static float max(float @NotNull... values) {
-        // noinspection ConstantValue
+    public static float max(float @NonNull... values) {
+        // noinspection ConstantValue JSpecify 将数组声明为非空，保留范围检查。
         if (values == null || values.length == 0) throw new IllegalArgumentException();
         if (values.length == 1) return values[0];
         if (values.length == 2) return Math.max(values[0], values[1]);

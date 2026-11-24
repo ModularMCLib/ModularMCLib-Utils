@@ -5,13 +5,12 @@ import net.minecraft.core.Direction;
 import lombok.Getter;
 
 /**
- * All possible rotations for a fully orientable block.
+ * 记录可定向方块的全部正交旋转。
  * <p>
- * This code is from
+ * 旋转表源自
  * <a href=
  * "https://github.com/AppliedEnergistics/Applied-Energistics-2/blob/forge/1.20.1/src/main/java/appeng/api/orientation/BlockOrientation.java">Applied
- * Energistics 2</a>,
- * licensed as LGPL 3.0.
+ * Energistics 2</a>，采用 LGPL 3.0 许可。
  */
 public enum BlockModelRotations {
 
@@ -62,7 +61,7 @@ public enum BlockModelRotations {
     }
 
     /**
-     * Gets the block orientation in which the block's front and top are facing the specified directions.
+     * 查找前方和顶部与给定方向对应的方块旋转。
      */
     public static BlockModelRotations get(Direction frontFacing, Direction upwardsFacing) {
         return VALUES[frontFacing.get3DDataValue() * 4 + upwardsFacing.get2DDataValue()];

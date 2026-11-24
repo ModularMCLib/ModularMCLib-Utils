@@ -22,7 +22,7 @@ final class CacheReferenceQueue {
                 }
                 sweep();
             }
-        }, "FastCollection Cache Drainer");
+        }, "mmclutils-cache-drainer");
         thread.setDaemon(true);
         thread.setPriority(Thread.MIN_PRIORITY);
         thread.start();

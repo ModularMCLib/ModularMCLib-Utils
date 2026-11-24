@@ -11,9 +11,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import javax.annotation.ParametersAreNonnullByDefault;
-
-@ParametersAreNonnullByDefault
+/** 按对象身份比较键。键被回收后，由后续访问清理对应的映射。 */
 @NullMarked
 public class ConcurrentWeakIdentityHashMap<K, V> extends AbstractMap<K, V> implements ConcurrentMap<K, V> {
 
@@ -68,7 +66,7 @@ public class ConcurrentWeakIdentityHashMap<K, V> extends AbstractMap<K, V> imple
     }
 
     @Override
-    public V remove(Object key) {
+    public @Nullable V remove(Object key) {
         return map.remove(new Key<>(key, null));
     }
 

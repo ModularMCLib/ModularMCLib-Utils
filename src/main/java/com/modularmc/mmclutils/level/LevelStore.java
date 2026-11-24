@@ -4,7 +4,7 @@ import net.minecraft.world.level.Level;
 
 import com.mojang.logging.LogUtils;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.lang.invoke.MethodHandles;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
  * <li>{@link #create}/{@link #createWithLevel}：新建一种存放，分配一个全局唯一的槽位号，可带释放回调；通常声明成静态常量，任何时候都能创建</li>
  * <li>{@link #get}：取该维度的对象，没有就用工厂创建，多个线程同时首次访问也只创建一份；{@link #getIfPresent}：只读，没有时返回 null，不创建</li>
  * <li>{@link #set}：直接放入或清空（传 null）该维度的对象，不调用释放回调</li>
- * <li>{@link #release}：丢弃该维度的这一份并调用释放回调；{@link #releaseAll}：维度卸载时由 GTOUtils 统一调用，逐个调用释放回调后丢弃全部，之后 {@link #isReleased}
+ * <li>{@link #release}：丢弃该维度的这一份并调用释放回调；{@link #releaseAll}：维度卸载时逐个调用释放回调后丢弃全部，之后 {@link #isReleased}
  * 为真</li>
  * <li>按维度实例区分，客户端和服务端的维度互不影响；任何线程都能读写，存放的对象本身是否线程安全由使用方负责</li>
  * </ul>
@@ -183,7 +183,7 @@ public final class LevelStore<T> {
         try {
             onRelease.accept(value);
         } catch (Throwable t) {
-            LOGGER.error("GTOUtils: level store release callback failed", t);
+            LOGGER.error("维度存储的释放回调失败", t);
         }
     }
 }

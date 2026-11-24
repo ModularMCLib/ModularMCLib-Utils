@@ -184,7 +184,7 @@ public class TagExpression {
             BinExpr result = null;
             while (match(TokenType.And) || match(TokenType.Or) || match(TokenType.Xor)) {
                 if (result == null) {
-                    // noinspection DataFlowIssue can't.
+                    // noinspection DataFlowIssue 前一次 match 成功时赋值。
                     result = new BinExpr(prev, lhs, unary());
                 } else {
                     result = new BinExpr(prev, result, unary());
@@ -201,7 +201,7 @@ public class TagExpression {
         @Nullable
         private MatchExpr unary() {
             if (match(TokenType.Not)) {
-                // noinspection DataFlowIssue it gets set in match()
+                // noinspection DataFlowIssue 前一次 match 成功时赋值。
                 return new UnaryExpr(prev, id());
             }
 
@@ -218,7 +218,7 @@ public class TagExpression {
             }
 
             if (match(TokenType.String)) {
-                // noinspection DataFlowIssue it gets set in match()
+                // noinspection DataFlowIssue 前一次 match 成功时赋值。
                 return new StringExpr(prev.lexeme);
             }
 
@@ -237,7 +237,7 @@ public class TagExpression {
                     continue;
                 }
 
-                // Parse strings
+                // 读取标签文本。
                 {
                     int stringLen = 0;
                     while (cur != '(' && cur != ')' && cur != '!' && cur != '&' && cur != '|' && cur != '^' &&
@@ -258,7 +258,7 @@ public class TagExpression {
                     }
                 }
 
-                // Parse operators
+                // 读取运算符。
                 switch (cur) {
                     case '!' -> result.add(new Token(TokenType.Not));
                     case '&' -> result.add(new Token(TokenType.And));
@@ -276,21 +276,21 @@ public class TagExpression {
     }
 
     /**
-     * Parses the given expression and puts them into the given list.
+     * 将标签表达式解析为匹配节点。
      *
-     * @param expression expr to parse
-     * @return The parsed expression tree
+     * @param expression 待解析的表达式
+     * @return 解析结果
      */
     public static TagExprParser.@Nullable MatchExpr parseExpression(String expression) {
         return new TagExprParser().parse(expression);
     }
 
     /**
-     * Matches the given item against a list of rules
+     * 判断物品是否满足标签表达式。
      *
-     * @param expr  to check against
-     * @param stack item to check
-     * @return if any of the item's tags matches the rules
+     * @param expr  匹配表达式
+     * @param stack 待检查物品栈
+     * @return 物品的标签是否符合表达式
      */
     public static boolean tagsMatch(TagExprParser.@Nullable MatchExpr expr, ItemStack stack) {
         Set<String> tags = stack.typeHolder().tags()

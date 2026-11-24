@@ -8,12 +8,10 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 /**
- * Formats Trinity and AE2 amounts with GregTech-MoreMachine's decimal compact-unit convention.
+ * 用紧凑的十进制单位显示整数。
  *
  * <p>
- * Values advance by powers of one thousand through the same extended unit sequence used by both maintained
- * GregTech-MoreMachine branches. Values beyond {@code Att} use scientific notation, so arbitrary-precision Trinity
- * capacities remain representable without falling back to AE2's binary byte units.
+ * 每增加三个数量级切换一次单位，超出 {@code Att} 时采用科学计数法。
  * </p>
  */
 public final class NumberFormats {
@@ -31,11 +29,10 @@ public final class NumberFormats {
     private NumberFormats() {}
 
     /**
-     * Formats a non-negative planning duration with a compact unit selected from microseconds, milliseconds, and
-     * seconds.
+     * 格式化非负时长，根据大小选择微秒、毫秒或秒。
      *
-     * @param nanos duration measured with {@link System#nanoTime()}
-     * @return duration rounded to one decimal place with a dynamically selected unit
+     * @param nanos 以 {@link System#nanoTime()} 测得的时长
+     * @return 保留一位小数且附带单位的时长
      */
     public static String formatDuration(long nanos) {
         if (nanos < 0L) {
@@ -59,10 +56,10 @@ public final class NumberFormats {
     }
 
     /**
-     * Parses and formats one signed decimal integer.
+     * 解析并格式化十进制有符号整数。
      *
-     * @param value signed decimal integer, with surrounding whitespace permitted
-     * @return compact display text
+     * @param value 允许含首尾空白的十进制整数
+     * @return 紧凑的显示文本
      */
     public static String format(String value) {
         if (value.isBlank()) {
@@ -72,45 +69,45 @@ public final class NumberFormats {
     }
 
     /**
-     * Formats one signed {@code long} without converting through {@code double}.
+     * 使用整数运算格式化有符号 {@code long}。
      *
-     * @param value amount to format
-     * @return compact display text
+     * @param value 待格式化数量
+     * @return 紧凑的显示文本
      */
     public static String format(long value) {
         return format(BigInteger.valueOf(value));
     }
 
     /**
-     * Formats one arbitrary-precision signed integer.
+     * 格式化任意精度有符号整数。
      *
-     * @param value amount to format
-     * @return compact display text
+     * @param value 待格式化数量
+     * @return 紧凑的显示文本
      */
     public static String format(BigInteger value) {
         return formatParts(value).text();
     }
 
-    /** Formats an exact amount expressed in display units, including fractional fluid units. */
+    /** 格式化以显示单位表示的精确数量，支持带小数的流体量。 */
     public static String format(BigDecimal value) {
         return formatParts(value).text();
     }
 
     /**
-     * Formats one {@code long} while keeping the numeric and unit portions separate for AE2 tooltip coloring.
+     * 格式化 {@code long}，将数字和单位分开以支持各自的提示文本样式。
      *
-     * @param value amount to format
-     * @return separated numeric text and compact unit
+     * @param value 待格式化数量
+     * @return 数字文本和单位
      */
     public static FormattedAmount formatParts(long value) {
         return formatParts(BigInteger.valueOf(value));
     }
 
     /**
-     * Formats one arbitrary-precision integer while keeping its suffix separate.
+     * 格式化任意精度整数，并单独保留单位后缀。
      *
-     * @param value amount to format
-     * @return separated numeric text and compact unit
+     * @param value 待格式化数量
+     * @return 数字文本和单位
      */
     public static FormattedAmount formatParts(BigInteger value) {
         return formatParts(new BigDecimal(value));
@@ -151,17 +148,17 @@ public final class NumberFormats {
     }
 
     /**
-     * One compact value split so AE2 callers can retain their separate number and unit styles.
+     * 数字和单位分开存放，便于分别应用样式。
      *
-     * @param digits formatted numeric portion, including a sign when negative
-     * @param unit   compact suffix, or an empty string for unscaled/scientific values
+     * @param digits 格式化后的数字，负数带符号
+     * @param unit   单位后缀，未缩放或使用科学计数法时为空字符串
      */
     public record FormattedAmount(String digits, String unit) {
 
         /**
-         * Joins the numeric portion and suffix for plain-text controls.
+         * 拼接数字与单位，供纯文本控件显示。
          *
-         * @return complete formatted value
+         * @return 完整的格式化文本
          */
         public String text() {
             return this.digits + this.unit;

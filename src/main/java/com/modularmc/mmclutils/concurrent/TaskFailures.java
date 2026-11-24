@@ -1,27 +1,24 @@
 package com.modularmc.mmclutils.concurrent;
 
 /**
- * Defines the process-level boundary between recoverable third-party failures and fatal JVM failures.
+ * 在调用边界保留可处理的异常，并让 JVM 致命错误继续传播。
  *
  * <p>
- * Integration code uses this utility after catching {@link Throwable}. Recoverable failures remain available to the
- * caller for logging, rollback, or endpoint isolation, while failures that must terminate the current execution are
- * rethrown unchanged.
+ * 适用于捕获 {@link Throwable} 的集成边界。
+ * 调用方可对普通失败记录日志、回滚或隔离当前操作。
  */
 public final class TaskFailures {
 
     private TaskFailures() {}
 
     /**
-     * Rethrows fatal JVM failures and preserves interruption before a recoverable failure is handled.
+     * 重新抛出致命错误，并恢复中断异常携带的线程中断标记。
      *
      * <p>
-     * {@link VirtualMachineError} is never an integration failure and therefore must retain its original identity and
-     * propagation semantics. A sneaky {@link InterruptedException} is recoverable at the integration boundary, but
-     * its thread interruption signal must not be lost.
+     * 边界可以处理已捕获的 {@link InterruptedException}，线程中断标记仍应交还给调用方。
      *
-     * @param throwable failure caught while invoking third-party code
-     * @throws VirtualMachineError when {@code throwable} is a fatal JVM failure
+     * @param throwable 调用过程中捕获的异常
+     * @throws VirtualMachineError 捕获异常属于 JVM 致命错误
      */
     public static void rethrowIfFatal(Throwable throwable) {
         if (throwable instanceof VirtualMachineError virtualMachineError) {

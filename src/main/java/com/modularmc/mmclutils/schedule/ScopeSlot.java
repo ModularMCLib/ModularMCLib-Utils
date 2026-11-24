@@ -1,6 +1,6 @@
 package com.modularmc.mmclutils.schedule;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
@@ -15,8 +15,7 @@ import java.util.function.Consumer;
  * <li>{@link #open(Object, TickScheduler, Object, BiConsumer)}：同上，体额外收一个实参，体可以写成不捕获的静态常量，省掉每次打开新建的转接 lambda</li>
  * <li>返回的作用域与 {@link #current} 都不是 {@link OwnedScope}，强转后结束不了，只能经 {@link #close} 或再次 open 结束</li>
  * <li>{@link #close}：结束槽里的作用域；幂等，槽空、作用域已自行结束、车道已关闭时什么也不做；在别的线程上调用按 {@link OwnedScope#dispose} 的规矩转投</li>
- * <li>{@link #current}/{@link #isOpen}：槽里仍在活动的作用域，没有时为 null；槽字段是 volatile，别的线程上读到的是车道线程最近一次写入的作用域（写入用
- * release，不加全屏障）</li>
+ * <li>{@link #current}/{@link #isOpen}：查询槽内仍在活动的作用域。槽位以发布语义写入，其它线程可通过 volatile 读取取得该值</li>
  * </ul>
  */
 public final class ScopeSlot {

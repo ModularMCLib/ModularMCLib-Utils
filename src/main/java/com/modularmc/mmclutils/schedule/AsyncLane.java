@@ -107,7 +107,7 @@ public final class AsyncLane {
 
         Runner(AsyncLane lane) {
             this.lane = lane;
-            this.scheduler = new TickScheduler(false, (error, owner) -> LOGGER.error("GTOUtils: async task on lane {} failed, owner {}", lane.id, owner, error));
+            this.scheduler = new TickScheduler(false, (error, owner) -> LOGGER.error("异步调度 {} 执行任务失败，所有者为 {}", lane.id, owner, error));
         }
 
         void kick() {

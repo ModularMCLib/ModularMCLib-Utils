@@ -26,9 +26,9 @@ public class MatrixTransforms {
             .synchronizedTable(HashBasedTable.create());
 
     /**
-     * @param from the original vector
-     * @param to   the wanted vector
-     * @return the angle of rotation to make {@code from} point in the direction of {@code to}
+     * @param from 原始向量
+     * @param to   目标向量
+     * @return 将原始向量转向目标所需的角度
      */
     @Contract(pure = true)
     public static float getRotationAngle(final Vector3fc from, final Vector3fc to) {
@@ -36,20 +36,20 @@ public class MatrixTransforms {
     }
 
     /**
-     * This method isn't pure, {@code from} will be modified!
+     * 原地修改 {@code from}，将它用于存放计算出的旋转轴。
      *
-     * @param from the original vector
-     * @param to   the wanted vector
-     * @return the axis of rotation to make {@code from} point in the direction of {@code to}
+     * @param from 原始向量
+     * @param to   目标向量
+     * @return 将原始向量转向目标所需的旋转轴
      */
     public static Vector3f getRotationAxis(Vector3f from, final Vector3fc to) {
         return getRotationAxis(from, to, from);
     }
 
     /**
-     * @param from the original vector
-     * @param to   the wanted vector
-     * @param dest the vector to save the result to
+     * @param from 原始向量
+     * @param to   目标向量
+     * @param dest 接收结果的向量
      * @return {@code dest}
      */
     public static Vector3f getRotationAxis(final Vector3fc from, final Vector3fc to, Vector3f dest) {
@@ -57,9 +57,9 @@ public class MatrixTransforms {
     }
 
     /**
-     * @param from the original vector
-     * @param to   the wanted vector
-     * @return the quaternion to make {@code from} point in the direction of {@code to}
+     * @param from 原始向量
+     * @param to   目标向量
+     * @return 将原始向量转向目标的四元数
      */
     @Contract(pure = true)
     public static Quaternionf getRotation(final Vector3fc from, final Vector3fc to) {
@@ -67,9 +67,9 @@ public class MatrixTransforms {
     }
 
     /**
-     * @param from the original direction
-     * @param to   the wanted direction
-     * @return the quaternion to make a vector based on {@code from} point towards {@code to}
+     * @param from 原始方向
+     * @param to   目标方向
+     * @return 将原始方向转向目标的四元数
      */
     @Contract(pure = true)
     public static Quaternionf getRotation(final Direction from, final Direction to) {
@@ -77,13 +77,12 @@ public class MatrixTransforms {
     }
 
     /**
-     * Transforms the {@code matrix} and all {@code additional} vectors such that the {@code from} vector will be on the
-     * {@code to} vector's axis
+     * 旋转矩阵及所有附加向量，使 {@code from} 转向 {@code to}。
      *
-     * @param matrix     the matrix to transform
-     * @param from       the original vector
-     * @param to         the destination vector
-     * @param additional additional vectors to transform
+     * @param matrix     原地修改的矩阵
+     * @param from       原始向量
+     * @param to         目标向量
+     * @param additional 应同步旋转的向量
      */
     public static void rotateMatrix(Matrix4f matrix, Vector3f from, Vector3fc to, Vector3f... additional) {
         if (from.equals(to)) {
@@ -99,10 +98,10 @@ public class MatrixTransforms {
     }
 
     /**
-     * @param matrix     the matrix to transform
-     * @param angle      the angle of rotation (radians)
-     * @param axis       axis of rotation
-     * @param additional additional vectors to transform
+     * @param matrix     原地修改的矩阵
+     * @param angle      旋转角度，单位为弧度
+     * @param axis       旋转轴
+     * @param additional 应同步旋转的向量
      */
     public static void rotateMatrix(Matrix4f matrix, float angle, Vector3fc axis, Vector3f... additional) {
         matrix.rotate(angle, axis);
@@ -112,8 +111,8 @@ public class MatrixTransforms {
     }
 
     /**
-     * @param upward the {@code upwardFacing} of the machine
-     * @return the angle of rotation (in radians) along the front face axis to get the correct orientation
+     * @param upward 局部上方对应的方向
+     * @return 以前面法线为轴的旋转角度，单位为弧度
      */
     public static float upwardFacingAngle(Direction upward) {
         return switch (upward) {
@@ -126,14 +125,14 @@ public class MatrixTransforms {
     }
 
     public static Vector3f rotateMatrixToFront(Matrix4f matrix, Direction frontFace) {
-        // rotate frontFacing to correct cardinal direction
+        // 将局部前方旋到指定世界方向。
         var front = frontFace.step();
         rotateMatrix(matrix, Direction.NORTH.step(), getDirectionAxis(frontFace), front);
         return front;
     }
 
     public static void rotateMatrixToUp(Matrix4f matrix, Vector3f front, Direction upwardsFace) {
-        // rotate upwards face to the correct orientation
+        // 围绕前方轴调整局部上方。
         rotateMatrix(matrix, upwardFacingAngle(upwardsFace), front);
     }
 

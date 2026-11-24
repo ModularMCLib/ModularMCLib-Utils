@@ -8,22 +8,21 @@ import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * A configurable generator of hashing strategies, allowing for consideration of select properties of FluidStacks when
- * considering equality.
+ * 按流体、数量和数据组件配置流体栈的哈希与相等策略。
  */
 public interface FluidStackStrategies extends Hash.Strategy<FluidStack> {
 
     /**
-     * @return a builder object for producing a custom FluidStackStrategies.
+     * @return 可组合比较字段的构建器
      */
     static FluidStackStrategies.FluidStackHashStrategyBuilder builder() {
         return new FluidStackStrategies.FluidStackHashStrategyBuilder();
     }
 
     /**
-     * Generates an FluidStackHash configured to compare every aspect of FluidStacks.
+     * 对流体、数量和组件都进行比较。
      *
-     * @return the FluidStackStrategies as described above.
+     * @return 全字段比较策略
      */
     static FluidStackStrategies comparingAll() {
         return builder().compareFluid(true)
@@ -33,10 +32,9 @@ public interface FluidStackStrategies extends Hash.Strategy<FluidStack> {
     }
 
     /**
-     * Generates an FluidStackHash configured to compare every aspect of FluidStacks except the amount
-     * of fluid in the stack.
+     * 仅比较流体和数据组件。
      *
-     * @return the FluidStackStrategies as described above.
+     * @return 忽略数量的比较策略
      */
     static FluidStackStrategies comparingAllButAmount() {
         return builder().compareFluid(true)
@@ -45,17 +43,17 @@ public interface FluidStackStrategies extends Hash.Strategy<FluidStack> {
     }
 
     /**
-     * Builder pattern class for generating customized FluidStackStrategies
+     * 配置流体栈策略的比较字段。
      */
     class FluidStackHashStrategyBuilder {
 
         private boolean fluid, amount, components;
 
         /**
-         * Defines whether the Fluid type should be considered for equality.
+         * 选择是否比较流体类型。
          *
-         * @param choice {@code true} to consider this property, {@code false} to ignore it.
-         * @return {@code this}
+         * @param choice 是否参与比较
+         * @return 当前构建器
          */
         public FluidStackStrategies.FluidStackHashStrategyBuilder compareFluid(boolean choice) {
             fluid = choice;
@@ -63,10 +61,10 @@ public interface FluidStackStrategies extends Hash.Strategy<FluidStack> {
         }
 
         /**
-         * Defines whether stack amount should be considered for equality.
+         * 选择是否比较流体量。
          *
-         * @param choice {@code true} to consider this property, {@code false} to ignore it.
-         * @return {@code this}
+         * @param choice 是否参与比较
+         * @return 当前构建器
          */
         public FluidStackStrategies.FluidStackHashStrategyBuilder compareCount(boolean choice) {
             amount = choice;
@@ -74,10 +72,10 @@ public interface FluidStackStrategies extends Hash.Strategy<FluidStack> {
         }
 
         /**
-         * Defines whether Data Components should be considered for equality.
+         * 选择是否比较数据组件。
          *
-         * @param choice {@code true} to consider this property, {@code false} to ignore it.
-         * @return {@code this}
+         * @param choice 是否参与比较
+         * @return 当前构建器
          */
         public FluidStackStrategies.FluidStackHashStrategyBuilder compareComponents(boolean choice) {
             components = choice;
@@ -85,7 +83,7 @@ public interface FluidStackStrategies extends Hash.Strategy<FluidStack> {
         }
 
         /**
-         * @return the FluidStackStrategies as configured by "compare" methods.
+         * @return 按当前比较字段生成的流体栈策略
          */
         public FluidStackStrategies build() {
             return new FluidStackStrategies() {

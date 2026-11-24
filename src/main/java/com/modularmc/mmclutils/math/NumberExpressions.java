@@ -11,18 +11,18 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 
-/** Shared numeric-input parser; integer quantities remain exact while decimal settings use DECIMAL128 division. */
+/** 解析通用数值输入。整数数量保持精确，小数除法采用 DECIMAL128。 */
 @NullMarked
 public final class NumberExpressions {
 
     private NumberExpressions() {}
 
-    /** Accepts a positive integral amount, including unit suffixes and arithmetic; invalid input returns empty. */
+    /** 接受带单位后缀和算式的正整数，输入无效时返回空结果。 */
     public static OptionalLong parse(String input) {
         return parseLong(input, 1, Long.MAX_VALUE);
     }
 
-    /** Accepts any positive exact integral quantity without narrowing it to a primitive numeric type. */
+    /** 接受任意精度的正整数数量。 */
     public static Optional<BigInteger> parseUnboundedPositiveInteger(String input) {
         var result = evaluate(input, MathContext.UNLIMITED);
         if (result.isEmpty()) return Optional.empty();
@@ -36,8 +36,8 @@ public final class NumberExpressions {
     }
 
     /**
-     * Stock settings allow zero for clearing and retain fractional resource units only when they represent whole base
-     * units. The unit size must be positive; invalid input returns empty.
+     * 库存设置允许用零清除。带小数的单位数量须能换算成整数个基础单位。
+     * 单位大小必须为正数。输入无效时返回空结果。
      */
     public static OptionalLong parseStockAmount(String input, long amountPerUnit) {
         if (amountPerUnit <= 0) throw new IllegalArgumentException("Amount per unit must be positive");
@@ -45,20 +45,20 @@ public final class NumberExpressions {
         return result.map(bigDecimal -> boundedLong(bigDecimal.multiply(BigDecimal.valueOf(amountPerUnit)), 0, Long.MAX_VALUE)).orElseGet(OptionalLong::empty);
     }
 
-    /** Evaluates a signed integral expression within inclusive bounds; reversed bounds are a caller error. */
+    /** 计算带符号的整数表达式，范围含两个端点。边界顺序颠倒时抛出异常。 */
     public static OptionalLong parseLong(String input, long minimum, long maximum) {
         if (minimum > maximum) throw new IllegalArgumentException("Minimum amount exceeds maximum");
         var result = evaluate(input, MathContext.UNLIMITED);
         return result.map(bigDecimal -> boundedLong(bigDecimal, minimum, maximum)).orElseGet(OptionalLong::empty);
     }
 
-    /** Evaluates a signed integral expression within the caller's inclusive int bounds. */
+    /** 计算位于调用方指定 int 闭区间内的带符号整数。 */
     public static OptionalInt parseInt(String input, int minimum, int maximum) {
         var value = parseLong(input, minimum, maximum);
         return value.isPresent() ? OptionalInt.of((int) value.getAsLong()) : OptionalInt.empty();
     }
 
-    /** Evaluates a decimal expression and rejects non-finite double results. */
+    /** 计算小数表达式，结果须为有限 double。 */
     public static OptionalDouble parseDouble(String input) {
         var result = evaluate(input, MathContext.DECIMAL128);
         if (result.isEmpty()) return OptionalDouble.empty();
@@ -66,7 +66,7 @@ public final class NumberExpressions {
         return Double.isFinite(value) ? OptionalDouble.of(value) : OptionalDouble.empty();
     }
 
-    /** Evaluates a decimal expression within the finite float range. */
+    /** 计算小数表达式，结果须位于有限 float 范围内。 */
     public static Optional<Float> parseFloat(String input) {
         var result = evaluate(input, MathContext.DECIMAL128);
         if (result.isEmpty()) return Optional.empty();

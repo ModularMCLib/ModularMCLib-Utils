@@ -1,19 +1,19 @@
 package com.modularmc.mmclutils.schedule;
 
 /**
- * Computes the largest constant-state progress segment before a machine reaches its next work boundary.
+ * 计算状态维持不变的一段推进量，并在本次完成边界处停下。
  */
 public final class BatchProgress {
 
     private BatchProgress() {}
 
     /**
-     * Advances progress to either the end of the available tick budget or the next completion boundary.
+     * 推进到可用 Tick 用完或本轮完成。
      *
-     * @param progress       current progress in {@code [0, duration)}
-     * @param duration       positive ticks required for one completion
-     * @param availableTicks positive ticks available in the current batch
-     * @return elapsed ticks, next progress, and whether a completion boundary was reached
+     * @param progress       当前进度，范围为 {@code [0, duration)}
+     * @param duration       完成一次所需的正数 Tick 数
+     * @param availableTicks 本批次可用的正数 Tick 数
+     * @return 消耗的 Tick 数、推进后的进度及是否到达完成边界
      */
     public static Segment advanceToBoundary(int progress, int duration, int availableTicks) {
         if (duration <= 0) {
@@ -34,7 +34,7 @@ public final class BatchProgress {
     }
 
     /**
-     * One constant-state progression segment.
+     * 一次状态连续的推进结果。
      */
     public record Segment(int elapsedTicks, int progress, boolean reachedBoundary) {}
 }

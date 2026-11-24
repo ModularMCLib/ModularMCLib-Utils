@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.function.LongSupplier;
 
 /**
- * Limits a rate/throughput across a certain amount of time, without needing an active tick subscription
+ * 以滑动时间窗口约束操作速率，按访问时刻推进窗口。
  */
 public class SlidingWindowCounter {
 

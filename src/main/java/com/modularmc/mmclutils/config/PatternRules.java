@@ -7,7 +7,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/** Parses and evaluates reusable regular-expression configuration rules. */
+/** 解析并匹配可复用的正则表达式配置规则。 */
 public final class PatternRules {
 
     private PatternRules() {}

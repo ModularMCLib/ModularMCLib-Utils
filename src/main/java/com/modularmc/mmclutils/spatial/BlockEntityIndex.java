@@ -6,14 +6,14 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * 按类型自动维护的方块实体索引：区块放入、替换、移除方块实体和区块卸载时由 GTOUtils 登记注销，使用方不用在方块实体里写钩子。
+ * 按类型维护方块实体索引。区块放入、替换、移除方块实体以及区块卸载时会自动更新。
  * 必须在模组加载阶段创建（声明成静态常量，并在模组构造时触发所在类初始化），维度开始加载方块实体后再创建会抛异常。功能：
  * <ul>
  * <li>{@link #create(Class)}：收录运行时类是该类型子类型的方块实体；{@link #create(Class, Predicate)}：另在登记时判一次条件，只收录通过的</li>

@@ -8,32 +8,30 @@ import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 
 /**
- * A configurable generator of hashing strategies, allowing for consideration of select properties of ItemStacks when
- * considering equality.
+ * 按物品、数量和数据组件配置物品栈的哈希与相等策略。
  */
 public interface ItemStackStrategies extends Hash.Strategy<ItemStack> {
 
     /**
-     * @return a builder object for producing a custom ItemStackStrategies.
+     * @return 可组合比较字段的构建器
      */
     static ItemStackHashStrategyBuilder builder() {
         return new ItemStackHashStrategyBuilder();
     }
 
     /**
-     * Generates an ItemStackHash configured to compare every aspect of ItemStacks.
+     * 对物品、数量和组件都进行比较。
      *
-     * @return the ItemStackStrategies as described above.
+     * @return 全字段比较策略
      */
     static ItemStackStrategies comparingAll() {
         return ItemStackHashStrategyBuilder.ALL;
     }
 
     /**
-     * Generates an ItemStackHash configured to compare every aspect of ItemStacks except the number
-     * of items in the stack.
+     * 仅比较物品和数据组件。
      *
-     * @return the ItemStackStrategies as described above.
+     * @return 忽略数量的比较策略
      */
     static ItemStackStrategies comparingAllButCount() {
         return ItemStackHashStrategyBuilder.ITEM_AND_TAG;
@@ -44,7 +42,7 @@ public interface ItemStackStrategies extends Hash.Strategy<ItemStack> {
     }
 
     /**
-     * Builder pattern class for generating customized ItemStackStrategies
+     * 配置物品栈策略的比较字段。
      */
     class ItemStackHashStrategyBuilder {
 
@@ -60,10 +58,10 @@ public interface ItemStackStrategies extends Hash.Strategy<ItemStack> {
         private boolean item, count, components;
 
         /**
-         * Defines whether the Item type should be considered for equality.
+         * 选择是否比较物品类型。
          *
-         * @param choice {@code true} to consider this property, {@code false} to ignore it.
-         * @return {@code this}
+         * @param choice 是否参与比较
+         * @return 当前构建器
          */
         public ItemStackHashStrategyBuilder compareItem(boolean choice) {
             item = choice;
@@ -71,10 +69,10 @@ public interface ItemStackStrategies extends Hash.Strategy<ItemStack> {
         }
 
         /**
-         * Defines whether stack size should be considered for equality.
+         * 选择是否比较堆叠数量。
          *
-         * @param choice {@code true} to consider this property, {@code false} to ignore it.
-         * @return {@code this}
+         * @param choice 是否参与比较
+         * @return 当前构建器
          */
         public ItemStackHashStrategyBuilder compareCount(boolean choice) {
             count = choice;
@@ -82,10 +80,10 @@ public interface ItemStackStrategies extends Hash.Strategy<ItemStack> {
         }
 
         /**
-         * Defines whether Data Components should be considered for equality.
+         * 选择是否比较数据组件。
          *
-         * @param choice {@code true} to consider this property, {@code false} to ignore it.
-         * @return {@code this}
+         * @param choice 是否参与比较
+         * @return 当前构建器
          */
         public ItemStackHashStrategyBuilder compareComponents(boolean choice) {
             components = choice;
@@ -93,7 +91,7 @@ public interface ItemStackStrategies extends Hash.Strategy<ItemStack> {
         }
 
         /**
-         * @return the ItemStackStrategies as configured by "compare" methods.
+         * @return 按当前比较字段生成的物品栈策略
          */
         public ItemStackStrategies build() {
             return new ItemStackStrategies() {

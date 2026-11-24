@@ -3,22 +3,21 @@ package com.modularmc.mmclutils.item;
 import net.minecraft.world.item.crafting.Ingredient;
 
 /**
- * Describes one item ingredient and the number of matching items consumed by a recipe.
+ * 以物品谓词和消耗数量表达一项配方需求。
  *
  * <p>
- * Implementations own their validation and persistence format. This contract only supplies the common matching
- * view used by recipe machines; it does not define a physical slot or a reservation lifetime.
+ * 实现方负责输入校验与存储。匹配器可以先合并同类物品，再据此契约计算实际槽位用量。
  * </p>
  */
 public interface CountedItemRequirement {
 
     /**
-     * Returns the ingredient predicate applied to an aggregated item stack.
+     * 返回对归并后的物品栈生效的匹配谓词。
      */
     Ingredient ingredient();
 
     /**
-     * Returns the positive number of items consumed for this requirement.
+     * 返回该项需求消耗的正数物品数量。
      */
     int count();
 }

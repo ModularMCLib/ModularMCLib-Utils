@@ -7,14 +7,13 @@ import java.math.BigInteger;
 public class RedstoneSignals {
 
     /**
-     * Compares a value against a min and max, with an option to invert the logic
+     * 将数值映射到最小值和最大值之间的红石信号，支持反转。
      *
-     * @param value      value to be compared
-     * @param maxValue   the max that the value can be
-     * @param minValue   the min that the value can be
-     * @param isInverted whether to invert the logic of this method
-     * @return an int from 0 (value <= min) to 15 (value >= max) normally, with a ratio when the value is between min
-     *         and max
+     * @param value      待映射数值
+     * @param maxValue   最大值
+     * @param minValue   最小值
+     * @param isInverted 是否反转输出
+     * @return 数值在边界内时按比例返回 0 至 15 的信号，越界时取端点信号
      */
 
     public static int computeRedstoneBetweenValues(float value, float maxValue, float minValue, boolean isInverted) {
@@ -41,19 +40,19 @@ public class RedstoneSignals {
     }
 
     /**
-     * Compares a value against a min and max, with an option to invert the logic. Has latching functionality.
+     * 使用最小值和最大值构成迟滞区间，并在区间内维持输出。
      *
-     * @param value    value to be compared
-     * @param maxValue the max that the value can be
-     * @param minValue the min that the value can be
-     * @param output   the output value the function modifies
-     * @return returns the modified output value
+     * @param value    待比较数值
+     * @param maxValue 上阈值
+     * @param minValue 下阈值
+     * @param output   当前的输出信号
+     * @return 更新后的输出信号
      */
     public static int computeLatchedRedstoneBetweenValues(float value, float maxValue, float minValue,
                                                           boolean isInverted, int output) {
         if (value >= maxValue) output = isInverted ? 15 : 0; // value above maxValue should normally be 0, otherwise 15
         else if (value <= minValue) output = isInverted ? 0 : 15; // value below minValue should normally be 15,
-                                                                  // otherwise 0
+                                                                  // 其余情况清空信号。
         return output;
     }
 
@@ -65,13 +64,13 @@ public class RedstoneSignals {
     }
 
     /**
-     * Compares a current against max, with an option to invert the logic.
+     * 按当前值占上限的比例计算红石信号，支持反转。
      *
-     * @param current    value to be compared
-     * @param max        the max that value can be
-     * @param isInverted whether to invert the logic of this method
-     * @return value 0 to 15; A value of <em>at least</em> 1 is returned if current > 0
-     * @throws ArithmeticException when max is 0
+     * @param current    当前值
+     * @param max        最大值
+     * @param isInverted 是否反转输出
+     * @return 0 至 15 的信号。当前值为正数时，反转前至少为 1
+     * @throws ArithmeticException 除数为零
      */
     public static int computeRedstoneValue(long current, long max, boolean isInverted) throws ArithmeticException {
         var output = (int) (14f * current / max) + (current > 0 ? 1 : 0);

@@ -1,31 +1,26 @@
 package com.modularmc.mmclutils.function;
 
 import java.util.function.BiConsumer;
-import java.util.function.BinaryOperator;
 
 /**
- * A type-specific {@link BinaryOperator}; provides methods operating both on objects and on
- * primitives.
- *
- * @see BinaryOperator
- * @since 8.5.0
+ * 接收原始 int 和对象的消费端。可直接用于按索引处理对象的循环，避免装箱。
+ * 并发访问与输入是否可空由具体消费端的契约决定。
  */
 @FunctionalInterface
 public interface IntObjectConsumer<T> extends BiConsumer<Integer, T> {
 
     /**
-     * Computes the operator on the given inputs.
+     * 对两个输入执行消费动作。
      *
-     * @param t the first input.
-     * @param u the second input.
-     * @return the output of the operator on the given inputs.
+     * @param t 第一个输入
+     * @param u 第二个输入
      */
     void accept(int t, T u);
 
     /**
      * {@inheritDoc}
      *
-     * @deprecated Please use the corresponding type-specific method instead.
+     * @deprecated 优先调用原始类型重载
      */
     @Deprecated
     @Override

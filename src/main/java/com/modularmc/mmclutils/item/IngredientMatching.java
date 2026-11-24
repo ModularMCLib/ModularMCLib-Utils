@@ -13,14 +13,12 @@ import java.util.Comparator;
 import java.util.function.BiFunction;
 
 /**
- * Matches counted item requirements against physical input slots.
+ * 将带计数的物品需求匹配到实际输入槽。
  *
  * <p>
- * This item-only matcher aggregates stacks with the same item and data components before matching. Fluid and AE key
- * resources are matched by their own resource-key aggregation in the recipe implementations. The matcher keeps the
- * physical slot amounts in its result so a caller can reserve or consume the exact source slots after the logical
- * match succeeds. Every non-empty item input must still be accepted by at least one requirement; an accepted extra
- * stack may remain in the machine when the logical requirement was already satisfied by another stack.
+ * 先按相同物品及组件归并，再将消耗量分配回来源槽位。
+ * 每个非空输入都须至少命中一项需求。
+ * 某类物品的需求由其它槽位满足时，允许其余匹配的物品保留在原槽。
  * </p>
  */
 public final class IngredientMatching {
@@ -28,10 +26,9 @@ public final class IngredientMatching {
     private IngredientMatching() {}
 
     /**
-     * Matches all counted requirements and returns the physical amounts consumed from each input slot.
+     * 匹配全部需求，并返回各来源槽实际应消耗的数量。
      *
-     * @return a non-empty assignment for a successful non-empty recipe, an empty assignment when both sides have no
-     *         item inputs, or {@code null} when the requirements cannot be satisfied without an unrecognized input
+     * @return 匹配成功时返回分配结果。双方均为空时返回空列表，匹配失败时返回 {@code null}
      */
     public static @Nullable ObjectList<Assignment> match(
                                                          Iterable<? extends CountedItemRequirement> requirements,
@@ -111,14 +108,14 @@ public final class IngredientMatching {
     }
 
     /**
-     * Matches one ingredient whose required amount may be split across several physical slots.
+     * 匹配一项需求，数量可来自多个输入槽。
      */
     public static @Nullable ObjectList<Assignment> match(Ingredient ingredient, int count,
                                                          ObjectList<ItemStack> inputs) {
         return match(ObjectLists.singleton(new Requirement(ingredient, count)), inputs);
     }
 
-    /** Maps physical assignments to a recipe-specific slot type without copying the assignment list twice. */
+    /** 一步把实际槽位分配映射成配方使用的类型。 */
     public static @Nullable <T> ObjectList<T> mapAssignments(
                                                              @Nullable ObjectList<Assignment> assignments,
                                                              BiFunction<Integer, Integer, T> factory) {
@@ -142,7 +139,7 @@ public final class IngredientMatching {
     }
 
     /**
-     * One ingredient and the total number of items required for it.
+     * 一项物品谓词及其需求总数。
      */
     public record Requirement(Ingredient ingredient, int count) implements CountedItemRequirement {
 
@@ -157,7 +154,7 @@ public final class IngredientMatching {
     }
 
     /**
-     * One physical input slot and the amount consumed from it.
+     * 一个输入槽位及其消耗的物品数量。
      */
     public record Assignment(int inputIndex, int amount) {
 

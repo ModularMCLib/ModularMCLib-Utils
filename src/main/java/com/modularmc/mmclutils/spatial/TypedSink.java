@@ -4,7 +4,7 @@ import com.modularmc.mmclutils.level.LevelSlotHolder;
 
 import net.minecraft.core.BlockPos;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.function.Predicate;
 

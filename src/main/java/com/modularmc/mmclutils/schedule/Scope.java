@@ -1,7 +1,7 @@
 package com.modularmc.mmclutils.schedule;
 
 import com.mojang.logging.LogUtils;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -135,7 +135,7 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
         AtomicInteger seen = FAILURE_SITES.get(site);
         if (seen == null) {
             if (FAILURE_SITES.size() >= FAILURE_SITE_LIMIT) {
-                LOGGER.error("GTOUtils: {} failed in {}", what, place, error);
+                LOGGER.error("作用域 {} 的操作 {} 失败", place, what, error);
                 return;
             }
             AtomicInteger made = new AtomicInteger();
@@ -143,8 +143,8 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
             if (seen == null) seen = made;
         }
         int n = seen.incrementAndGet();
-        if (n == 1) LOGGER.error("GTOUtils: {} failed in {}; later failures of this kind are only counted", what, place, error);
-        else if (n % FAILURE_SUMMARY_EVERY == 0) LOGGER.error("GTOUtils: {} failed {} times so far, latest in {}: {}", what, n, place, String.valueOf(error));
+        if (n == 1) LOGGER.error("作用域 {} 的操作 {} 首次失败，后续同类失败按次数汇总", place, what, error);
+        else if (n % FAILURE_SUMMARY_EVERY == 0) LOGGER.error("操作 {} 已失败 {} 次，最近一次发生在作用域 {}，原因为 {}", what, n, place, String.valueOf(error));
     }
 
     private static String failureSite(String what, Throwable error) {
@@ -155,10 +155,10 @@ public abstract sealed class Scope permits OwnedScope, Scope.Inner {
 
     static void anomaly(String what, @Nullable Object where) {
         ANOMALIES.incrementAndGet();
-        if (STRICT || strictOverride) throw new IllegalStateException("GTOUtils scope misuse: " + what + " @ " + where);
+        if (STRICT || strictOverride) throw new IllegalStateException("作用域使用错误：" + what + " @ " + where);
         if (REPORTED.putIfAbsent(what, Boolean.TRUE) != null) return;
         String place = String.valueOf(where);
-        LOGGER.warn("GTOUtils: {} ({}) on thread {}; later occurrences are only counted", what, place, Thread.currentThread().getName(), new Throwable("call site"));
+        LOGGER.warn("线程 {} 在作用域 {} 上执行了无效操作 {}，后续同类操作按次数汇总", Thread.currentThread().getName(), place, what, new Throwable("调用位置"));
         remember(what + " @ " + place);
     }
 

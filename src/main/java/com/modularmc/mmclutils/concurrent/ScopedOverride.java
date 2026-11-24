@@ -10,9 +10,9 @@ import org.jspecify.annotations.Nullable;
 public abstract class ScopedOverride implements AutoCloseable {
 
     /**
-     * Scoped object value. Resets to {@code null} when exiting scope.
+     * 在作用域内覆盖对象值，退出时恢复为 {@code null}。
      *
-     * @param <T> The type of the object.
+     * @param <T> 对象类型
      */
     @RequiredArgsConstructor
     public static final class Object<T> extends ScopedOverride {
@@ -20,7 +20,7 @@ public abstract class ScopedOverride implements AutoCloseable {
         private final @Nullable T initialValue;
 
         /**
-         * Current value in this scope
+         * 当前线程的作用域值。
          */
         @Getter
         private @Nullable T value;
@@ -30,9 +30,9 @@ public abstract class ScopedOverride implements AutoCloseable {
         }
 
         /**
-         * Set {@code current} to {@code value} within this scope.
+         * 在当前线程进入一层作用域，并设定该层的值。
          *
-         * @return this
+         * @return 当前作用域对象
          */
         public Object<T> with(T value) {
             this.value = value;
@@ -46,7 +46,7 @@ public abstract class ScopedOverride implements AutoCloseable {
     }
 
     /**
-     * Scoped boolean value. Resets to {@link #initialValue} when exiting scope.
+     * 在作用域内覆盖布尔值，退出外层后使用 {@link #initialValue}。
      */
     @RequiredArgsConstructor
     public static final class Boolean extends ScopedOverride {
@@ -54,15 +54,15 @@ public abstract class ScopedOverride implements AutoCloseable {
         private final boolean initialValue;
 
         /**
-         * Current value in this scope
+         * 当前线程的作用域值。
          */
         @Getter
         private boolean active;
 
         /**
-         * Set {@code current} to {@code value} within this scope.
+         * 在当前线程进入一层作用域，并设定该层的布尔值。
          *
-         * @return this
+         * @return 当前作用域对象
          */
         public Boolean with(boolean value) {
             this.active = value;
@@ -70,9 +70,9 @@ public abstract class ScopedOverride implements AutoCloseable {
         }
 
         /**
-         * Shortcut method that sets {@code current} to {@code !initial}
+         * 在当前线程进入一层作用域，并使用初始值的反值。
          *
-         * @return this
+         * @return 当前作用域对象
          */
         public Boolean active() {
             return with(!this.initialValue);

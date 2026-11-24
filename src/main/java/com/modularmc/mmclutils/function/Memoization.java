@@ -2,6 +2,7 @@ package com.modularmc.mmclutils.function;
 
 import com.modularmc.mmclutils.collection.cache.ConcurrentWeakIdentityHashMap;
 
+import com.google.common.base.Suppliers;
 import lombok.Getter;
 import org.apache.commons.lang3.function.TriFunction;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,11 +17,10 @@ import java.util.function.Supplier;
 public class Memoization {
 
     /**
-     * This method doesn't return a thread-safe memoization of the delegate, if you need thread-safety you should use
-     * {@link com.google.common.base.Suppliers#memoize(com.google.common.base.Supplier) memoize}
+     * 返回供单线程使用的记忆化 Supplier。并发访问时可使用 Guava 的 {@link Suppliers#memoize memoize}。
      *
-     * @param delegate the supplier to memoize
-     * @return memoized supplier for the delegate
+     * @param delegate 需要记忆化的 Supplier
+     * @return 记忆化后的 Supplier
      */
     public static <T> MemoizedSupplier<T> memoize(Supplier<T> delegate) {
         return new MemoizedSupplier<>(delegate);

@@ -8,8 +8,8 @@ import java.util.function.Predicate;
 /**
  * 按整数方块坐标存值的稀疏八叉树，每个坐标至多一个值，全部数据放在扁平数组里。功能：
  * <ul>
- * <li>{@link #insert}/{@link #get}/{@link #contains}/{@link #remove}：按坐标增删查，O(深度)；同一坐标重复插入返回 false，越界坐标返回
- * false/null</li>
+ * <li>{@link #insert}/{@link #get}/{@link #contains}/{@link #remove} 按坐标增删查，复杂度为 O(深度)。重复插入返回 false。越界返回 false 或
+ * null</li>
  * <li>{@link #query(int, int, int, BlockRange, Predicate, Consumer)} 与收集到 {@link Collection} 的重载：按
  * {@link BlockRange}（球形或长方体）查范围内全部值，可带过滤器，不分配内存；
  * 与范围不相交的子树整棵跳过，整体落在范围内的子树不再逐个判距离</li>

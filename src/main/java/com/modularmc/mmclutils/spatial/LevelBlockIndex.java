@@ -5,7 +5,7 @@ import com.modularmc.mmclutils.level.LevelStore;
 
 import net.minecraft.world.level.Level;
 
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * 由使用方自己登记、注销的按维度索引：每个维度实例各有一份 {@link BlockIndex}，存放在 {@link LevelStore} 里，通常声明成静态常量。
@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
  * <ul>
  * <li>{@link #create()}：新建一类索引</li>
  * <li>{@link #get}：取该维度的索引，没有就创建；{@link #getIfPresent}：只读，没有时返回 null，不创建</li>
- * <li>{@link #release}：丢弃该维度的索引；维度卸载时 GTOUtils 通过 {@link LevelStore#releaseAll} 统一丢弃，使用方不用自己清理</li>
+ * <li>{@link #release}：丢弃该维度的索引。维度卸载时通过 {@link LevelStore#releaseAll} 统一释放</li>
  * <li>索引随维度实例一起回收，不经过全局表；单个 {@link BlockIndex} 只在拥有该维度的线程上使用</li>
  * </ul>
  */

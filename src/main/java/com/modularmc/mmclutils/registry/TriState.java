@@ -6,7 +6,7 @@ import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
 import com.mojang.serialization.Lifecycle;
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Locale;
@@ -14,28 +14,26 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 /**
- * Represents a boolean value that can be {@code true}, {@code false} or refer to a default value.
+ * 包含真、假和使用默认值的三态布尔值。
  */
 public enum TriState implements StringRepresentable {
 
     /**
-     * Represents the boolean value {@code true}.
+     * 真。
      */
     TRUE,
     /**
-     * Represents a "default" value, often used as a fallback.
+     * 使用调用方指定的默认值。
      */
     DEFAULT,
     /**
-     * Represents the boolean value {@code false}.
+     * 假。
      */
     FALSE;
 
     public static final Codec<TriState> CODEC = Codec.either(Codec.BOOL, StringRepresentable.fromEnum(TriState::values))
             .xmap(either -> either.map(TriState::of, Function.identity()),
                     triState -> triState != DEFAULT ? Either.left(triState.isTrue()) : Either.right(DEFAULT));
-
-    // Helper methods
 
     public boolean isTrue() {
         return this == TRUE;
@@ -59,7 +57,7 @@ public enum TriState implements StringRepresentable {
 
     public static TriState of(DataResult<Boolean> value) {
         if (value.result().isPresent()) return of(value.result().get());
-        // throw out parsing errors and return default
+        // 解析失败时采用默认值。
         else return DEFAULT;
     }
 
@@ -87,7 +85,7 @@ public enum TriState implements StringRepresentable {
         };
     }
 
-    public boolean toBooleanOrElseGet(final @NotNull BooleanSupplier supplier) {
+    public boolean toBooleanOrElseGet(final @NonNull BooleanSupplier supplier) {
         return switch (this) {
             case TRUE -> true;
             case FALSE -> false;
@@ -96,7 +94,7 @@ public enum TriState implements StringRepresentable {
     }
 
     @Override
-    public @NotNull String getSerializedName() {
+    public @NonNull String getSerializedName() {
         return this.name().toLowerCase(Locale.ROOT);
     }
 }

@@ -14,10 +14,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * Single-owner task admission with bounded, streamed results from virtual threads. The owner alone submits,
- * polls and cancels; workers only use their Work context. Emitted values transfer ownership to the queue,
- * then to the polling caller. Invalidated values are released on the emitting or owner thread, so release
- * must be thread-safe and must not require a GPU context. No Minecraft world or renderer is retained here.
+ * 由所属线程提交、轮询和取消虚拟线程任务。结果队列有容量限制，计算线程只使用 Work 上下文。
+ * 结果发出后归队列所有，轮询交付后由调用方释放。
+ * 作废结果可能在计算线程或所属线程释放。释放动作须支持并发调用，并可脱离 GPU 上下文执行。
  */
 public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
 
@@ -32,7 +31,7 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
     private long generation;
     private boolean closed;
 
-    /** Creates a queue with positive concurrency/capacity limits; thread names identify the owning subsystem. */
+    /** 创建队列。并发数与结果容量必须为正数，线程名前缀用于识别所属功能。 */
     public BoundedVirtualTaskQueue(String threadPrefix, int parallelism, int resultCapacity, Consumer<T> release) {
         if (parallelism < 1 || resultCapacity < 1) throw new IllegalArgumentException("Task queue limits must be positive");
         this.parallelism = parallelism;
@@ -42,17 +41,17 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         executor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name(threadPrefix, 0).factory());
     }
 
-    /** Owner-thread admission check; completed but unconsumed tasks retain their slot to bound memory. */
+    /** 在所属线程查询提交容量。已完成的任务在终止结果被取走之前仍占用名额。 */
     public boolean hasCapacity() {
         return !closed && tasks.size() < parallelism && workers.availablePermits() > 0;
     }
 
-    /** Reports whether the owner still has a current task for this primitive key. */
+    /** 查询指定原始类型键当前是否有任务。 */
     public boolean contains(long key) {
         return tasks.containsKey(key);
     }
 
-    /** Starts one current task. The caller must have capacity and must cancel an older task with the same key. */
+    /** 在所属线程提交任务。调用方须确认容量，重复的键须先取消旧任务。 */
     public void submit(long key, Consumer<Work<T>> calculation) {
         if (!hasCapacity() || tasks.containsKey(key) || !workers.tryAcquire()) throw new IllegalStateException("No task slot or duplicate task key: " + key);
         var ticket = new Ticket(key, generation);
@@ -93,8 +92,8 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
     }
 
     /**
-     * Polls without waiting. Nonterminal values belong to the caller, who must release them after use.
-     * Terminal results contain no value and may contain a worker failure; cancelled generations are discarded.
+     * 在所属线程轮询结果。普通结果一经返回，调用方负责释放其值。
+     * 终止结果可以携带计算异常。已取消或作废的结果由队列释放。
      */
     public @Nullable Result<T> poll() {
         Envelope<T> envelope;
@@ -122,7 +121,7 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         return null;
     }
 
-    /** Invalidates a key and interrupts its worker without waiting. Unpolled values are released immediately. */
+    /** 作废指定键并中断计算，立即释放尚未取走的结果。 */
     public void cancel(long key) {
         if (!tasks.containsKey(key)) return;
         Ticket ticket = tasks.remove(key);
@@ -139,13 +138,13 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         }
     }
 
-    /** Advances the lifecycle generation, cancels every task and releases queued values without joining workers. */
+    /** 切换到下一代，取消全部任务并释放队列中的结果。 */
     public void clear() {
         generation++;
         for (long key : tasks.keySet().toLongArray()) cancel(key);
     }
 
-    /** Permanently closes admission and interrupts workers; never blocks the owner waiting for termination. */
+    /** 关闭任务入口并中断计算线程。所属线程可立即返回。 */
     @Override
     public void close() {
         clear();
@@ -153,7 +152,7 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         executor.shutdownNow();
     }
 
-    /** A worker's immutable task key and its privately owned cancellation/handoff context. */
+    /** 计算线程使用的任务键、取消状态和结果交付入口。 */
     public static final class Work<T> {
 
         private final BoundedVirtualTaskQueue<T> owner;
@@ -167,19 +166,19 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
             key = ticket.key;
         }
 
-        /** Cooperative cancellation predicate for bounded loops; has no side effects. */
+        /** 供计算循环检查取消或中断状态。 */
         public boolean cancelled() {
             return ticket.cancelled.get() || Thread.currentThread().isInterrupted();
         }
 
-        /** Throws CancellationException when a task revision was invalidated or its thread was interrupted. */
+        /** 任务作废或计算线程中断时抛出取消异常。 */
         public void checkCancelled() {
             if (cancelled()) throw new CancellationException();
         }
 
         /**
-         * Transfers a nonnull value, waiting interruptibly for result capacity. On cancellation or rejection,
-         * this method releases the supplied value before throwing; the worker must never release it again.
+         * 交付一个非空结果，队列满时可中断地等待。结果一经传入即转交所有权。
+         * 若交付因取消或其它异常失败，由该方法释放结果。
          */
         public void emit(T value) {
             try {
@@ -211,7 +210,7 @@ public final class BoundedVirtualTaskQueue<T> implements AutoCloseable {
         }
     }
 
-    /** Owner-thread delivery; value is present only for data, failure only for terminal failure. */
+    /** 所属线程接收的结果。数据值出现在普通结果中，异常出现在失败的终止结果中。 */
     public record Result<T>(long key, @Nullable T value, @Nullable Throwable failure, boolean terminal) {}
 
     private record Envelope<T>(Ticket ticket, Result<T> result) {}
