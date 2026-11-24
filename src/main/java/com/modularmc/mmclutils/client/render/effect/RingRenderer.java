@@ -58,7 +58,7 @@ final class RingRenderer {
                 return false;
             }
             var caps = GL.getCapabilities();
-            boolean supported = caps.OpenGL33 || caps.GL_ARB_instanced_arrays;
+            boolean supported = caps.OpenGL33;
             if (supported) {
                 voxelProgram = TransformFeedbackProgram.load("ring_voxel.vsh");
                 glowProgram = TransformFeedbackProgram.load("ring_glow.vsh");

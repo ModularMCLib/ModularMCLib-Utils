@@ -50,13 +50,13 @@ final class TransformFeedbackProgram {
             GL20.glDeleteShader(vertexShader);
             GL20.glDeleteShader(fragmentShader);
             if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == 0) {
-                ModularMCLibUtils.LOGGER.error("ModularMCLibUtils program {} failed to link: {}", vertex, GL20.glGetProgramInfoLog(program, 32768));
+                ModularMCLibUtils.LOGGER.error("反馈程序 {} 链接失败，驱动信息为 {}", vertex, GL20.glGetProgramInfoLog(program, 32768));
                 GL20.glDeleteProgram(program);
                 return null;
             }
             return new TransformFeedbackProgram(program);
         } catch (IOException e) {
-            ModularMCLibUtils.LOGGER.error("ModularMCLibUtils program {} failed to load", vertex, e);
+            ModularMCLibUtils.LOGGER.error("反馈程序 {} 加载失败", vertex, e);
             return null;
         }
     }
@@ -66,7 +66,7 @@ final class TransformFeedbackProgram {
         GL20.glShaderSource(shader, code);
         GL20.glCompileShader(shader);
         if (GL20.glGetShaderi(shader, GL20.GL_COMPILE_STATUS) == 0) {
-            ModularMCLibUtils.LOGGER.error("ModularMCLibUtils shader {} failed to compile: {}", name, GL20.glGetShaderInfoLog(shader, 32768));
+            ModularMCLibUtils.LOGGER.error("着色器 {} 编译失败，驱动信息为 {}", name, GL20.glGetShaderInfoLog(shader, 32768));
         }
         return shader;
     }
