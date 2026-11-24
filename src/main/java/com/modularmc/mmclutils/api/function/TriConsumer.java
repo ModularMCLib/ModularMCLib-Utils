@@ -4,5 +4,6 @@ package com.modularmc.mmclutils.api.function;
 @FunctionalInterface
 public interface TriConsumer<A, B, C> {
 
+    /** 按声明顺序接收三个输入。空值约束和副作用由调用此接口的 API 定义。 */
     void accept(A a, B b, C c);
 }

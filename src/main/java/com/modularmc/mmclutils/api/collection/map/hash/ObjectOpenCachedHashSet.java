@@ -28,51 +28,61 @@ public final class ObjectOpenCachedHashSet<K> extends ObjectOpenHashSet<K> {
         }
     }
 
+    /** 按预计元素数分配空集合，使用指定负载因子。 */
     public ObjectOpenCachedHashSet(final int expected, final float f) {
         super(expected, f);
         hash = new int[n + 1];
     }
 
+    /** 按预计元素数分配空集合，使用默认负载因子。 */
     public ObjectOpenCachedHashSet(final int expected) {
         super(expected, DEFAULT_LOAD_FACTOR);
         hash = new int[n + 1];
     }
 
+    /** 使用默认初始容量和负载因子创建空集合。 */
     public ObjectOpenCachedHashSet() {
         super(DEFAULT_INITIAL_SIZE, DEFAULT_LOAD_FACTOR);
         hash = new int[n + 1];
     }
 
+    /** 复制普通集合的元素，以指定负载因子分配容量。 */
     public ObjectOpenCachedHashSet(final Collection<? extends K> c, final float f) {
         super(c.size(), f);
         hash = new int[n + 1];
         addAll(c);
     }
 
+    /** 复制普通集合的元素，使用默认负载因子。 */
     public ObjectOpenCachedHashSet(final Collection<? extends K> c) {
         this(c, DEFAULT_LOAD_FACTOR);
     }
 
+    /** 复制 fastutil 集合的元素，使用指定负载因子。 */
     public ObjectOpenCachedHashSet(final ObjectCollection<? extends K> c, final float f) {
         super(c.size(), f);
         hash = new int[n + 1];
         addAll(c);
     }
 
+    /** 复制 fastutil 集合的元素，使用默认负载因子。 */
     public ObjectOpenCachedHashSet(final ObjectCollection<? extends K> c) {
         this(c, DEFAULT_LOAD_FACTOR);
     }
 
+    /** 消耗迭代器的剩余元素，使用指定负载因子。 */
     public ObjectOpenCachedHashSet(final Iterator<? extends K> i, final float f) {
         super(DEFAULT_INITIAL_SIZE, f);
         hash = new int[n + 1];
         while (i.hasNext()) add(i.next());
     }
 
+    /** 消耗迭代器的剩余元素，使用默认负载因子。 */
     public ObjectOpenCachedHashSet(final Iterator<? extends K> i) {
         this(i, DEFAULT_LOAD_FACTOR);
     }
 
+    /** 复制数组的一段连续区间，使用指定负载因子。偏移和长度须在数组范围内。 */
     public ObjectOpenCachedHashSet(final K[] a, final int offset, final int length, final float f) {
         super(Math.max(length, 0), f);
         hash = new int[n + 1];
@@ -80,14 +90,17 @@ public final class ObjectOpenCachedHashSet<K> extends ObjectOpenHashSet<K> {
         for (int i = 0; i < length; i++) add(a[offset + i]);
     }
 
+    /** 复制数组的一段连续区间，使用默认负载因子。 */
     public ObjectOpenCachedHashSet(final K[] a, final int offset, final int length) {
         this(a, offset, length, DEFAULT_LOAD_FACTOR);
     }
 
+    /** 复制整个数组，使用指定负载因子。 */
     public ObjectOpenCachedHashSet(final K[] a, final float f) {
         this(a, 0, a.length, f);
     }
 
+    /** 复制整个数组，使用默认负载因子。 */
     public ObjectOpenCachedHashSet(final K[] a) {
         this(a, 0, a.length, DEFAULT_LOAD_FACTOR);
     }

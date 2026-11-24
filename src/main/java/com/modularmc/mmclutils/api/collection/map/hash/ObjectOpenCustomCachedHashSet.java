@@ -29,51 +29,61 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
         }
     }
 
+    /** 按预计元素数分配空集合，使用指定负载因子。 */
     public ObjectOpenCustomCachedHashSet(final int expected, final float f, final Hash.Strategy<? super K> strategy) {
         super(expected, f, strategy);
         hash = new int[n + 1];
     }
 
+    /** 按预计元素数分配空集合，使用默认负载因子。 */
     public ObjectOpenCustomCachedHashSet(final int expected, final Hash.Strategy<? super K> strategy) {
         super(expected, DEFAULT_LOAD_FACTOR, strategy);
         hash = new int[n + 1];
     }
 
+    /** 使用给定散列策略和默认容量参数创建空集合。 */
     public ObjectOpenCustomCachedHashSet(final Hash.Strategy<? super K> strategy) {
         super(DEFAULT_INITIAL_SIZE, DEFAULT_LOAD_FACTOR, strategy);
         hash = new int[n + 1];
     }
 
+    /** 复制普通集合的元素，以指定负载因子分配容量。 */
     public ObjectOpenCustomCachedHashSet(final Collection<? extends K> c, final float f, final Hash.Strategy<? super K> strategy) {
         super(c.size(), f, strategy);
         hash = new int[n + 1];
         addAll(c);
     }
 
+    /** 复制普通集合的元素，使用默认负载因子。 */
     public ObjectOpenCustomCachedHashSet(final Collection<? extends K> c, final Hash.Strategy<? super K> strategy) {
         this(c, DEFAULT_LOAD_FACTOR, strategy);
     }
 
+    /** 复制 fastutil 集合的元素，使用指定负载因子。 */
     public ObjectOpenCustomCachedHashSet(final ObjectCollection<? extends K> c, final float f, final Hash.Strategy<? super K> strategy) {
         super(c.size(), f, strategy);
         hash = new int[n + 1];
         addAll(c);
     }
 
+    /** 复制 fastutil 集合的元素，使用默认负载因子。 */
     public ObjectOpenCustomCachedHashSet(final ObjectCollection<? extends K> c, final Hash.Strategy<? super K> strategy) {
         this(c, DEFAULT_LOAD_FACTOR, strategy);
     }
 
+    /** 消耗迭代器的剩余元素，使用指定负载因子。 */
     public ObjectOpenCustomCachedHashSet(final Iterator<? extends K> i, final float f, final Hash.Strategy<? super K> strategy) {
         super(DEFAULT_INITIAL_SIZE, f, strategy);
         hash = new int[n + 1];
         while (i.hasNext()) add(i.next());
     }
 
+    /** 消耗迭代器的剩余元素，使用默认负载因子。 */
     public ObjectOpenCustomCachedHashSet(final Iterator<? extends K> i, final Hash.Strategy<? super K> strategy) {
         this(i, DEFAULT_LOAD_FACTOR, strategy);
     }
 
+    /** 复制数组的一段连续区间，使用指定负载因子。偏移和长度须在数组范围内。 */
     public ObjectOpenCustomCachedHashSet(final K[] a, final int offset, final int length, final float f, final Hash.Strategy<? super K> strategy) {
         super(Math.max(length, 0), f, strategy);
         hash = new int[n + 1];
@@ -81,14 +91,17 @@ public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHash
         for (int i = 0; i < length; i++) add(a[offset + i]);
     }
 
+    /** 复制数组的一段连续区间，使用默认负载因子。 */
     public ObjectOpenCustomCachedHashSet(final K[] a, final int offset, final int length, final Hash.Strategy<? super K> strategy) {
         this(a, offset, length, DEFAULT_LOAD_FACTOR, strategy);
     }
 
+    /** 复制整个数组，使用指定负载因子。 */
     public ObjectOpenCustomCachedHashSet(final K[] a, final float f, final Hash.Strategy<? super K> strategy) {
         this(a, 0, a.length, f, strategy);
     }
 
+    /** 复制整个数组，使用默认负载因子。 */
     public ObjectOpenCustomCachedHashSet(final K[] a, final Hash.Strategy<? super K> strategy) {
         this(a, 0, a.length, DEFAULT_LOAD_FACTOR, strategy);
     }

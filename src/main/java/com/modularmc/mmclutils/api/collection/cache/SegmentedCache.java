@@ -7,6 +7,7 @@ abstract class SegmentedCache<SEG extends HashSegment<?>> {
 
     static final int DEFAULT_CONCURRENCY = Runtime.getRuntime().availableProcessors();
 
+    /** 构造时一次性创建的分段。散列计算决定键由哪一段存储。 */
     protected final SEG[] segments;
     private final int segmentShift;
     private final int segmentMask;
@@ -27,16 +28,19 @@ abstract class SegmentedCache<SEG extends HashSegment<?>> {
         }
     }
 
+    /** 使用混合后的哈希选择对应分段。 */
     protected final SEG segmentFor(int mix) {
         return segments[(mix >>> segmentShift) & segmentMask];
     }
 
+    /** 逐段移除全部条目。并发写入期间各段独立清理。 */
     protected final void clearSegments() {
         for (var segment : segments) {
             segment.clear();
         }
     }
 
+    /** 统计各分段条目数，并发修改时返回各段读取结果的合计。 */
     public final int size() {
         int total = 0;
         for (var segment : segments) {

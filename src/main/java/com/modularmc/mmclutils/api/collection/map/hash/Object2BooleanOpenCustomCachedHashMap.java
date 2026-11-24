@@ -33,37 +33,81 @@ public final class Object2BooleanOpenCustomCachedHashMap<K> extends Object2Boole
         }
     }
 
+    /**
+     * 创建空映射。
+     *
+     * @param expected 预计存放的键数
+     * @param f        触发扩容的负载因子
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final int expected, final float f, final Strategy<? super K> strategy) {
         super(expected, f, strategy);
         hash = new int[n + 1];
     }
 
+    /**
+     * 创建空映射。 使用默认负载因子。
+     *
+     * @param expected 预计存放的键数
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final int expected, final Strategy<? super K> strategy) {
         super(expected, DEFAULT_LOAD_FACTOR, strategy);
         hash = new int[n + 1];
     }
 
+    /**
+     * 创建空映射。 使用默认负载因子。
+     *
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final Strategy<? super K> strategy) {
         super(DEFAULT_INITIAL_SIZE, DEFAULT_LOAD_FACTOR, strategy);
         hash = new int[n + 1];
     }
 
+    /**
+     * 从给定映射复制条目。
+     *
+     * @param m        复制条目的来源映射
+     * @param f        触发扩容的负载因子
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final Map<? extends K, ? extends Boolean> m, final float f, final Strategy<? super K> strategy) {
         super(m.size(), f, strategy);
         hash = new int[n + 1];
         putAll(m);
     }
 
+    /**
+     * 从给定映射复制条目。 使用默认负载因子。
+     *
+     * @param m        复制条目的来源映射
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final Map<? extends K, ? extends Boolean> m, final Strategy<? super K> strategy) {
         this(m, DEFAULT_LOAD_FACTOR, strategy);
     }
 
+    /**
+     * 从给定映射复制条目。
+     *
+     * @param m        复制条目的来源映射
+     * @param f        触发扩容的负载因子
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final Object2BooleanMap<K> m, final float f, final Strategy<? super K> strategy) {
         super(m.size(), f, strategy);
         hash = new int[n + 1];
         putAll(m);
     }
 
+    /**
+     * 从给定映射复制条目。 使用默认负载因子。
+     *
+     * @param m        复制条目的来源映射
+     * @param strategy 键的散列与相等性策略
+     */
     public Object2BooleanOpenCustomCachedHashMap(final Object2BooleanMap<K> m, final Strategy<? super K> strategy) {
         this(m, DEFAULT_LOAD_FACTOR, strategy);
     }

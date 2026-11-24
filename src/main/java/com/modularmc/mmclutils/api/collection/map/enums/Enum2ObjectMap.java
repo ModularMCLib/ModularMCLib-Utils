@@ -25,14 +25,14 @@ public final class Enum2ObjectMap<K extends Enum<K>, V> extends AbstractReferenc
     private final ReferenceSet<K> keySet = new KeySet();
     private final ReferenceCollection<V> values = new Values();
 
-    /** 根据参数构造容器。 */
+    /** 为该枚举的全部常量分配槽位。 */
     public Enum2ObjectMap(Class<K> keyType) {
         this.keyType = keyType;
         this.keys = EnumMaps.universe(keyType);
         this.vals = new Object[keys.length];
     }
 
-    /** 复制映射的数据和配置。 */
+    /** 复制槽位中的条目，使用新映射的初始默认返回值。 */
     public Enum2ObjectMap(Enum2ObjectMap<K, V> map) {
         this.keyType = map.keyType;
         this.keys = map.keys;

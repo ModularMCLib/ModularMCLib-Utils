@@ -4,12 +4,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** 按键保存可复用的值。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 按键的值相等性保存强引用值。计算依赖同一缓存内的其他键时使用递归加载入口。
+ *
+ * @param <K> 缓存键类型
+ * @param <V> 缓存值类型
+ */
 public final class HashCache<K, V> implements LoadingCache<K, V> {
 
     private final ConcurrentHashMap<K, V> map;
     private final Function<? super K, ? extends V> createFunction;
 
+    /** 使用键的相等性创建无默认加载器的缓存。缺失值可由调用处提供加载函数。 */
     public HashCache() {
         this(null);
     }

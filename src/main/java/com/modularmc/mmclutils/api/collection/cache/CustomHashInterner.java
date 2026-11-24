@@ -5,7 +5,11 @@ import it.unimi.dsi.fastutil.HashCommon;
 
 import java.util.function.UnaryOperator;
 
-/** 按相等策略驻留或查找对象。驻留条目由该实例持有。 */
+/**
+ * 按调用方提供的哈希与相等策略驻留对象。驻留条目由该实例强引用。
+ *
+ * @param <T> 驻留对象类型
+ */
 public final class CustomHashInterner<T> extends SegmentedCache<CustomHashInterner.Segment<T>> implements Interner<T> {
 
     private final Hash.Strategy<? super T> strategy;

@@ -26,14 +26,14 @@ public final class Enum2DoubleMap<K extends Enum<K>> extends AbstractReference2D
     private final ReferenceSet<K> keySet = new KeySet();
     private final DoubleCollection values = new Values();
 
-    /** 根据参数构造容器。 */
+    /** 为该枚举的全部常量分配槽位。 */
     public Enum2DoubleMap(Class<K> keyType) {
         this.keyType = keyType;
         this.keys = EnumMaps.universe(keyType);
         this.vals = new double[keys.length];
     }
 
-    /** 复制映射的数据和配置。 */
+    /** 复制槽位中的条目，使用新映射的初始默认返回值。 */
     public Enum2DoubleMap(Enum2DoubleMap<K> map) {
         this.keyType = map.keyType;
         this.keys = map.keys;
@@ -232,6 +232,13 @@ public final class Enum2DoubleMap<K extends Enum<K>> extends AbstractReference2D
         return newValue;
     }
 
+    /**
+     * 将增量加到现有值上并返回旧值。缺失项从默认返回值开始累加，结果为零时清除该项。
+     *
+     * @param key  要更新的枚举常量
+     * @param incr 增量，允许为负
+     * @return 累加前的值，缺少该键时返回默认值
+     */
     public double addTo(K key, double incr) {
         int i = key.ordinal();
         double old = vals[i];

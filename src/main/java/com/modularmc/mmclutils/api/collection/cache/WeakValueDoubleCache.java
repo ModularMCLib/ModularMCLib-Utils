@@ -6,7 +6,13 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.function.DoubleFunction;
 
-/** 按键保存弱引用值，无外部引用的值可由回收线程移除。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 使用原始类型 {@code double} 作为键，弱引用缓存值。值失去外部强引用后，后续查找可能重新创建。
+ * 计算函数在分段锁外运行，并发写入在锁内合并。
+ * 浮点键区分正负零，同一类型的 NaN 使用相同的键。
+ *
+ * @param <V> 缓存值类型
+ */
 public final class WeakValueDoubleCache<V> extends WeakSegmentedCache<WeakValueDoubleCache.Segment<V>> implements ReclaimableCache {
 
     private final DoubleFunction<? extends V> createFunction;

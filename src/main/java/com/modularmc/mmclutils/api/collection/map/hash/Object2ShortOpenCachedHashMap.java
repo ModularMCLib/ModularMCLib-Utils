@@ -35,37 +35,71 @@ public final class Object2ShortOpenCachedHashMap<K> extends Object2ShortOpenHash
         }
     }
 
+    /**
+     * 创建空映射。
+     *
+     * @param expected 预计存放的键数
+     * @param f        触发扩容的负载因子
+     */
     public Object2ShortOpenCachedHashMap(final int expected, final float f) {
         super(expected, f);
         hash = new int[n + 1];
     }
 
+    /**
+     * 创建空映射。 使用默认负载因子。
+     *
+     * @param expected 预计存放的键数
+     */
     public Object2ShortOpenCachedHashMap(final int expected) {
         super(expected, DEFAULT_LOAD_FACTOR);
         hash = new int[n + 1];
     }
 
+    /** 创建空映射。 使用默认负载因子。 */
     public Object2ShortOpenCachedHashMap() {
         super(DEFAULT_INITIAL_SIZE, DEFAULT_LOAD_FACTOR);
         hash = new int[n + 1];
     }
 
+    /**
+     * 从给定映射复制条目。
+     *
+     * @param m 复制条目的来源映射
+     * @param f 触发扩容的负载因子
+     */
     public Object2ShortOpenCachedHashMap(final Map<? extends K, ? extends Short> m, final float f) {
         super(m.size(), f);
         hash = new int[n + 1];
         putAll(m);
     }
 
+    /**
+     * 从给定映射复制条目。 使用默认负载因子。
+     *
+     * @param m 复制条目的来源映射
+     */
     public Object2ShortOpenCachedHashMap(final Map<? extends K, ? extends Short> m) {
         this(m, DEFAULT_LOAD_FACTOR);
     }
 
+    /**
+     * 从给定映射复制条目。
+     *
+     * @param m 复制条目的来源映射
+     * @param f 触发扩容的负载因子
+     */
     public Object2ShortOpenCachedHashMap(final Object2ShortMap<K> m, final float f) {
         super(m.size(), f);
         hash = new int[n + 1];
         putAll(m);
     }
 
+    /**
+     * 从给定映射复制条目。 使用默认负载因子。
+     *
+     * @param m 复制条目的来源映射
+     */
     public Object2ShortOpenCachedHashMap(final Object2ShortMap<K> m) {
         this(m, DEFAULT_LOAD_FACTOR);
     }

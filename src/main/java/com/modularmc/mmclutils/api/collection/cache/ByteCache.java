@@ -3,7 +3,12 @@ package com.modularmc.mmclutils.api.collection.cache;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.bytes.Byte2ObjectFunction;
 
-/** 按键保存可复用的值。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 使用原始类型 {@code byte} 作为键，强引用缓存值，直到缓存条目被清除。
+ * 计算函数在分段锁外运行，并发写入在锁内合并。
+ *
+ * @param <V> 缓存值类型
+ */
 public final class ByteCache<V> extends SegmentedCache<ByteCache.Segment<V>> {
 
     private final Byte2ObjectFunction<? extends V> createFunction;

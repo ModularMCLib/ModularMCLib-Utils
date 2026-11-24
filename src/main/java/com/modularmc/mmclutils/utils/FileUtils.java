@@ -45,7 +45,11 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
-/** 文件与流读写、二进制格式、目录操作、路径互斥及内容摘要。 */
+/**
+ * 文件与流读写、二进制格式、目录操作、路径互斥及内容摘要。
+ * 使用 {@link Reader} 和 {@link Writer} 定义文件布局。
+ * 需要保留上一份完整数据的写入使用 {@link #writeAtomically(Path, Object, Writer)}。
+ */
 @NullMarked
 public final class FileUtils {
 
@@ -121,7 +125,15 @@ public final class FileUtils {
         }
     }
 
-    /** 文件存在时读取。打开文件时若路径缺失，返回空值。读取失败会保留原文件并抛出异常。 */
+    /**
+     * 尝试打开并读取文件。成功打开后，由本方法在读取结束时关闭输入流。
+     *
+     * @param <T>    解码值类型
+     * @param path   要读取的文件
+     * @param reader 解码文件内容的读取器，须返回非空值
+     * @return 解码后的值，打开时路径缺失则为空
+     * @throws IOException 权限、读取、格式或关闭错误
+     */
     public static <T> @Nullable T readIfPresent(Path path, Reader<T> reader) throws IOException {
         InputStream stream;
         try {
@@ -132,7 +144,16 @@ public final class FileUtils {
         return read(stream, reader);
     }
 
-    /** 仅在输出流关闭成功后替换目标。读取方始终看到一份完整的文件。 */
+    /**
+     * 在目标目录创建临时文件，输出流成功关闭后原子替换目标。
+     * 写入失败时保留原目标并尝试删除临时文件。
+     *
+     * @param <T>    待写入的值类型
+     * @param path   最终文件路径，父目录缺失时创建
+     * @param value  要写入的值
+     * @param writer 接收临时文件输出流的写入器
+     * @throws IOException 创建目录、写入、关闭或原子替换失败
+     */
     public static <T> void writeAtomically(Path path, T value, Writer<? super T> writer) throws IOException {
         Path target = prepareWriteTarget(path);
         Path temporary = Files.createTempFile(target.getParent(), ".mmclutils-", ".tmp");
@@ -193,19 +214,41 @@ public final class FileUtils {
         });
     }
 
-    /** 取得按规范化绝对路径共享的进程内锁。调用方负责加锁与解锁。 */
+    /**
+     * 取得按规范化绝对路径共享的进程内锁。解析路径时保留符号链接。
+     * 需要互斥的读写方须使用同一规范化路径，并在完成操作后释放锁。
+     *
+     * @param path 用于标识锁的路径
+     * @return 供调用方加锁和解锁的共享锁
+     */
     public static ReentrantLock fileLock(Path path) {
         return FILE_LOCKS.computeIfAbsent(path.toAbsolutePath().normalize(), ignored -> new ReentrantLock());
     }
 
-    /** 以调用方指定的 JDK 算法计算文件摘要，返回小写十六进制。 */
+    /**
+     * 计算整个文件的内容摘要，并关闭本方法打开的流。
+     *
+     * @param path      要读取的文件
+     * @param algorithm 当前 JDK 提供的摘要算法，例如 {@code SHA-256} 或 {@code SHA-512}
+     * @return 小写十六进制摘要
+     * @throws IOException              打开、读取或关闭文件失败
+     * @throws NoSuchAlgorithmException JDK 未提供该摘要算法
+     */
     public static String digest(Path path, String algorithm) throws IOException, NoSuchAlgorithmException {
         try (InputStream input = Files.newInputStream(path)) {
             return digest(input, algorithm);
         }
     }
 
-    /** 从流的当前位置分块计算摘要。调用方负责关闭输入流。 */
+    /**
+     * 从流的当前位置读到末尾并计算内容摘要。调用方负责关闭输入流。
+     *
+     * @param input     已打开的输入流
+     * @param algorithm 当前 JDK 提供的摘要算法
+     * @return 小写十六进制摘要
+     * @throws IOException              输入流读取失败
+     * @throws NoSuchAlgorithmException JDK 未提供该摘要算法
+     */
     public static String digest(InputStream input, String algorithm) throws IOException, NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance(algorithm);
         byte[] buffer = new byte[8192];
@@ -216,7 +259,14 @@ public final class FileUtils {
         return HexFormat.of().formatHex(digest.digest());
     }
 
-    /** 计算字节数组的摘要，输出小写十六进制。 */
+    /**
+     * 计算字节数组的内容摘要。
+     *
+     * @param bytes     原始字节
+     * @param algorithm 当前 JDK 提供的摘要算法
+     * @return 小写十六进制摘要
+     * @throws NoSuchAlgorithmException JDK 未提供该摘要算法
+     */
     public static String digest(byte[] bytes, String algorithm) throws NoSuchAlgorithmException {
         return HexFormat.of().formatHex(MessageDigest.getInstance(algorithm).digest(bytes));
     }

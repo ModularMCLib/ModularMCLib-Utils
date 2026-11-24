@@ -5,11 +5,17 @@ import it.unimi.dsi.fastutil.HashCommon;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** 按键保存弱引用值，无外部引用的值可由回收线程移除。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 按键的值相等性保存弱引用值。值失去外部强引用后可回收。
+ *
+ * @param <K> 缓存键类型
+ * @param <V> 缓存值类型
+ */
 public final class WeakValueHashCache<K, V> extends WeakSegmentedCache<WeakValueHashCache.Segment<K, V>> implements LoadingCache<K, V>, ReclaimableCache {
 
     private final Function<? super K, ? extends V> createFunction;
 
+    /** 以默认并发级别创建弱值缓存，缺失值由调用处提供加载函数。 */
     public WeakValueHashCache() {
         this(SegmentedCache.DEFAULT_CONCURRENCY, null);
     }
@@ -19,6 +25,7 @@ public final class WeakValueHashCache<K, V> extends WeakSegmentedCache<WeakValue
         this(SegmentedCache.DEFAULT_CONCURRENCY, createFunction);
     }
 
+    /** 以指定并发级别创建弱值缓存。键按相等性索引，值允许被垃圾回收。 */
     public WeakValueHashCache(int concurrencyLevel) {
         this(concurrencyLevel, null);
     }

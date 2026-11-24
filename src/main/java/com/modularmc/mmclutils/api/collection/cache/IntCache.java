@@ -4,7 +4,12 @@ import it.unimi.dsi.fastutil.HashCommon;
 
 import java.util.function.IntFunction;
 
-/** 按键保存可复用的值。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 使用原始类型 {@code int} 作为键，强引用缓存值，直到缓存条目被清除。
+ * 计算函数在分段锁外运行，并发写入在锁内合并。
+ *
+ * @param <V> 缓存值类型
+ */
 public final class IntCache<V> extends SegmentedCache<IntCache.Segment<V>> {
 
     private final IntFunction<? extends V> createFunction;

@@ -6,7 +6,12 @@ import it.unimi.dsi.fastutil.HashCommon;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** 按键保存弱引用值，无外部引用的值可由回收线程移除。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 按指定的哈希与相等策略保存弱引用值。值失去外部强引用后可回收。
+ *
+ * @param <K> 缓存键类型
+ * @param <V> 缓存值类型
+ */
 public final class WeakValueCustomHashCache<K, V> extends WeakSegmentedCache<WeakValueCustomHashCache.Segment<K, V>> implements LoadingCache<K, V>, ReclaimableCache {
 
     private final Hash.Strategy<? super K> strategy;

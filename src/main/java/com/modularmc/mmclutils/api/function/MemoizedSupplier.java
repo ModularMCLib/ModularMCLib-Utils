@@ -10,10 +10,14 @@ import java.util.function.Supplier;
  */
 public class MemoizedSupplier<T> implements Supplier<T> {
 
+    /** 最近一次成功计算得到的值，由 {@link #invalidate()} 清空。 */
     protected T value = null;
+    /** 记录委托是否已成功计算，允许把空值作为计算结果缓存。 */
     protected boolean initialized = false;
+    /** 缓存尚未建立时调用的供应器。 */
     protected final Supplier<T> delegate;
 
+    /** 包装延迟执行的委托。调用 {@link #get()} 前不会运行委托。 */
     protected MemoizedSupplier(Supplier<T> delegate) {
         this.delegate = delegate;
     }

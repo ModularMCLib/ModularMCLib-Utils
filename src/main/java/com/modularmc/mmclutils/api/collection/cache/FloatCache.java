@@ -3,7 +3,13 @@ package com.modularmc.mmclutils.api.collection.cache;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.floats.Float2ObjectFunction;
 
-/** 按键保存可复用的值。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 使用原始类型 {@code float} 作为键，强引用缓存值，直到缓存条目被清除。
+ * 计算函数在分段锁外运行，并发写入在锁内合并。
+ * 浮点键区分正负零，同一类型的 NaN 使用相同的键。
+ *
+ * @param <V> 缓存值类型
+ */
 public final class FloatCache<V> extends SegmentedCache<FloatCache.Segment<V>> {
 
     private final Float2ObjectFunction<? extends V> createFunction;

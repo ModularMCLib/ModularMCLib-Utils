@@ -6,7 +6,12 @@ import it.unimi.dsi.fastutil.HashCommon;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** 按键保存可复用的值。 计算函数在锁外运行，并发写入在分段锁内合并。 */
+/**
+ * 按指定的哈希与相等策略保存强引用值。计算在分段锁外执行。
+ *
+ * @param <K> 缓存键类型
+ * @param <V> 缓存值类型
+ */
 public final class CustomHashCache<K, V> extends SegmentedCache<CustomHashCache.Segment<K, V>> implements LoadingCache<K, V> {
 
     private final Hash.Strategy<? super K> strategy;

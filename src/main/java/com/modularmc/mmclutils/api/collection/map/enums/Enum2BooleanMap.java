@@ -31,14 +31,14 @@ public final class Enum2BooleanMap<K extends Enum<K>> extends AbstractReference2
     private final ReferenceSet<K> keySet = new KeySet();
     private final BooleanCollection values = new Values();
 
-    /** 根据参数构造容器。 */
+    /** 为该枚举的全部常量分配槽位。 */
     public Enum2BooleanMap(Class<K> keyType) {
         this.keyType = keyType;
         this.keys = EnumMaps.universe(keyType);
         this.vals = new boolean[keys.length];
     }
 
-    /** 复制映射的数据和配置。 */
+    /** 复制槽位中的条目，使用新映射的初始默认返回值。 */
     public Enum2BooleanMap(Enum2BooleanMap<K> map) {
         this.keyType = map.keyType;
         this.keys = map.keys;

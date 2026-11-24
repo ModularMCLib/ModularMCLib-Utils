@@ -16,10 +16,12 @@ public final class MapUtils {
 
     private MapUtils() {}
 
+    /** 获取普通键 fastutil 映射的快速条目迭代器。迭代器可以反复使用同一条目对象。 */
     public static <K, V> ObjectIterator<Object2ObjectMap.Entry<K, V>> fast(Object2ObjectMap<K, V> map) {
         return Object2ObjectMaps.fastIterator(map);
     }
 
+    /** 获取引用键 fastutil 映射的快速条目迭代器。调用方应立即读取当前条目。 */
     public static <K, V> ObjectIterator<Reference2ObjectMap.Entry<K, V>> fast(Reference2ObjectMap<K, V> map) {
         return Reference2ObjectMaps.fastIterator(map);
     }
@@ -36,6 +38,7 @@ public final class MapUtils {
         return map.entrySet().iterator();
     }
 
+    /** 取得源映射的不可变副本，保留其当前迭代顺序。键和值引用沿用原对象。 */
     public static <K, V> Object2ObjectMap<K, V> immutableMap(Map<? extends K, ? extends V> source) {
         if (source.isEmpty()) return Object2ObjectMaps.emptyMap();
         if (source instanceof ImmutableMapCopy<?, ?>) {
@@ -49,18 +52,22 @@ public final class MapUtils {
         return new ImmutableMapCopy<>(copied);
     }
 
+    /** 取得共享空映射。 */
     public static <K, V> Object2ObjectMap<K, V> mapOf() {
         return Object2ObjectMaps.emptyMap();
     }
 
+    /** 创建持有一项的不可变映射。 */
     public static <K, V> Object2ObjectMap<K, V> mapOf(K key, V value) {
         return Object2ObjectMaps.singleton(key, value);
     }
 
+    /** 创建按传入顺序迭代的双条目不可变映射。重复键会抛出异常。 */
     public static <K, V> Object2ObjectMap<K, V> mapOf(K key1, V value1, K key2, V value2) {
         return mapOfEntries(key1, value1, key2, value2);
     }
 
+    /** 创建按输入顺序迭代的三条目不可变映射。 */
     public static <K, V> Object2ObjectMap<K, V> mapOf(
                                                       K key1, V value1,
                                                       K key2, V value2,
@@ -68,6 +75,7 @@ public final class MapUtils {
         return mapOfEntries(key1, value1, key2, value2, key3, value3);
     }
 
+    /** 创建按输入顺序迭代的四条目不可变映射。 */
     public static <K, V> Object2ObjectMap<K, V> mapOf(
                                                       K key1, V value1,
                                                       K key2, V value2,

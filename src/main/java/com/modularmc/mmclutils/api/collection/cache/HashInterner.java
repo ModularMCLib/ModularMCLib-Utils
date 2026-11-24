@@ -4,12 +4,17 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
-/** 按相等策略驻留或查找对象。驻留条目由该实例持有。 */
+/**
+ * 按值相等性驻留对象。驻留条目由该实例强引用。
+ *
+ * @param <T> 驻留对象类型
+ */
 public final class HashInterner<T> implements Interner<T> {
 
     private final ConcurrentHashMap<T, T> map;
     private final Function<T, T> function = Function.identity();
 
+    /** 按值的相等性创建驻留表，已登记者保留强引用。 */
     public HashInterner() {
         this.map = new ConcurrentHashMap<>();
     }
