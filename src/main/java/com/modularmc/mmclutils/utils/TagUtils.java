@@ -1,8 +1,12 @@
 package com.modularmc.mmclutils.utils;
 
+import com.modularmc.mmclutils.utils.FileUtils.Serializer;
+
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.tags.TagEntry;
 import net.minecraft.tags.TagKey;
+import net.minecraft.tags.TagLoader.EntryWithSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -18,8 +22,31 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/** 构造原版标签键并解析物品和流体的标签匹配表达式。 */
+/** 构造原版标签键，读写旧标签条目并解析物品和流体的标签匹配表达式。 */
 public final class TagUtils {
+
+    /**
+     * 旧标签条目的二进制格式。先写命名空间和路径，再按顺序写入标签引用、必需和移除三个布尔值。
+     * 此格式没有来源包名称字段，读取时将来源设为空字符串。
+     */
+    public static final Serializer<EntryWithSource> ENTRY_WITH_SOURCE_SERIALIZER = new Serializer<>(input -> {
+        Identifier id = Serializer.IDENTIFIER_PARTS.read(input);
+        boolean tag = input.readBoolean();
+        boolean required = input.readBoolean();
+        TagEntry entry;
+        if (tag) {
+            entry = required ? TagEntry.tag(id) : TagEntry.optionalTag(id);
+        } else {
+            entry = required ? TagEntry.element(id) : TagEntry.optionalElement(id);
+        }
+        return new EntryWithSource(entry, "", input.readBoolean());
+    }, (output, value) -> {
+        TagEntry entry = value.entry();
+        Serializer.IDENTIFIER_PARTS.write(output, entry.getId());
+        output.writeBoolean(entry.isTag());
+        output.writeBoolean(entry.isRequired());
+        output.writeBoolean(value.remove());
+    });
 
     private TagUtils() {}
 
