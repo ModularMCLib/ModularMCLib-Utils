@@ -1,0 +1,519 @@
+package com.modularmc.mmclutils.api.collection.map.hash;
+
+import it.unimi.dsi.fastutil.Hash;
+import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.objects.*;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Spliterator;
+import java.util.function.Consumer;
+
+/** 缓存键哈希的开放寻址容器。先比较哈希和对象身份，再检查调用方的相等策略。 扩容时复用哈希值，实例由单个线程使用。 */
+public final class ObjectOpenCustomCachedHashSet<K> extends ObjectOpenCustomHashSet<K> {
+
+    private int[] hash;
+
+    @Serial
+    private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+        input.defaultReadObject();
+        // fastutil 按读入后的槽位重建哈希表，缓存哈希要与新的槽位对齐。
+        hash = new int[n + 1];
+        for (int i = 0; i < n; i++) {
+            K entry = key[i];
+            if (entry != null) hash[i] = strategy.hashCode(entry);
+        }
+    }
+
+    /** 按预计元素数分配空集合，使用指定负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final int expected, final float f, final Hash.Strategy<? super K> strategy) {
+        super(expected, f, strategy);
+        hash = new int[n + 1];
+    }
+
+    /** 按预计元素数分配空集合，使用默认负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final int expected, final Hash.Strategy<? super K> strategy) {
+        super(expected, DEFAULT_LOAD_FACTOR, strategy);
+        hash = new int[n + 1];
+    }
+
+    /** 使用给定散列策略和默认容量参数创建空集合。 */
+    public ObjectOpenCustomCachedHashSet(final Hash.Strategy<? super K> strategy) {
+        super(DEFAULT_INITIAL_SIZE, DEFAULT_LOAD_FACTOR, strategy);
+        hash = new int[n + 1];
+    }
+
+    /** 复制普通集合的元素，以指定负载因子分配容量。 */
+    public ObjectOpenCustomCachedHashSet(final Collection<? extends K> c, final float f, final Hash.Strategy<? super K> strategy) {
+        super(c.size(), f, strategy);
+        hash = new int[n + 1];
+        addAll(c);
+    }
+
+    /** 复制普通集合的元素，使用默认负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final Collection<? extends K> c, final Hash.Strategy<? super K> strategy) {
+        this(c, DEFAULT_LOAD_FACTOR, strategy);
+    }
+
+    /** 复制 fastutil 集合的元素，使用指定负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final ObjectCollection<? extends K> c, final float f, final Hash.Strategy<? super K> strategy) {
+        super(c.size(), f, strategy);
+        hash = new int[n + 1];
+        addAll(c);
+    }
+
+    /** 复制 fastutil 集合的元素，使用默认负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final ObjectCollection<? extends K> c, final Hash.Strategy<? super K> strategy) {
+        this(c, DEFAULT_LOAD_FACTOR, strategy);
+    }
+
+    /** 消耗迭代器的剩余元素，使用指定负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final Iterator<? extends K> i, final float f, final Hash.Strategy<? super K> strategy) {
+        super(DEFAULT_INITIAL_SIZE, f, strategy);
+        hash = new int[n + 1];
+        while (i.hasNext()) add(i.next());
+    }
+
+    /** 消耗迭代器的剩余元素，使用默认负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final Iterator<? extends K> i, final Hash.Strategy<? super K> strategy) {
+        this(i, DEFAULT_LOAD_FACTOR, strategy);
+    }
+
+    /** 复制数组的一段连续区间，使用指定负载因子。偏移和长度须在数组范围内。 */
+    public ObjectOpenCustomCachedHashSet(final K[] a, final int offset, final int length, final float f, final Hash.Strategy<? super K> strategy) {
+        super(Math.max(length, 0), f, strategy);
+        hash = new int[n + 1];
+        ObjectArrays.ensureOffsetLength(a, offset, length);
+        for (int i = 0; i < length; i++) add(a[offset + i]);
+    }
+
+    /** 复制数组的一段连续区间，使用默认负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final K[] a, final int offset, final int length, final Hash.Strategy<? super K> strategy) {
+        this(a, offset, length, DEFAULT_LOAD_FACTOR, strategy);
+    }
+
+    /** 复制整个数组，使用指定负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final K[] a, final float f, final Hash.Strategy<? super K> strategy) {
+        this(a, 0, a.length, f, strategy);
+    }
+
+    /** 复制整个数组，使用默认负载因子。 */
+    public ObjectOpenCustomCachedHashSet(final K[] a, final Hash.Strategy<? super K> strategy) {
+        this(a, 0, a.length, DEFAULT_LOAD_FACTOR, strategy);
+    }
+
+    private int realSize() {
+        return containsNull ? size - 1 : size;
+    }
+
+    @Override
+    public boolean add(final K k) {
+        if (strategy.equals(k, null)) {
+            if (containsNull) return false;
+            containsNull = true;
+            key[n] = k;
+        } else {
+            final int h = strategy.hashCode(k);
+            K curr;
+            final K[] key = this.key;
+            final int[] hash = this.hash;
+            int pos;
+            if ((curr = key[pos = HashCommon.mix(h) & mask]) != null) {
+                do {
+                    if (hash[pos] == h && (k == curr || strategy.equals(k, curr))) return false;
+                } while ((curr = key[pos = (pos + 1) & mask]) != null);
+            }
+            key[pos] = k;
+            hash[pos] = h;
+        }
+        if (size++ >= maxFill) rehash(HashCommon.arraySize(size + 1, f));
+        return true;
+    }
+
+    @Override
+    public K addOrGet(final K k) {
+        if (strategy.equals(k, null)) {
+            if (containsNull) return key[n];
+            containsNull = true;
+            key[n] = k;
+        } else {
+            final int h = strategy.hashCode(k);
+            K curr;
+            final K[] key = this.key;
+            final int[] hash = this.hash;
+            int pos;
+            if ((curr = key[pos = HashCommon.mix(h) & mask]) != null) {
+                do {
+                    if (hash[pos] == h && (k == curr || strategy.equals(k, curr))) return curr;
+                } while ((curr = key[pos = (pos + 1) & mask]) != null);
+            }
+            key[pos] = k;
+            hash[pos] = h;
+        }
+        if (size++ >= maxFill) rehash(HashCommon.arraySize(size + 1, f));
+        return k;
+    }
+
+    private boolean removeEntry(int pos) {
+        size--;
+        int last, slot, ch;
+        K curr;
+        final K[] key = this.key;
+        final int[] hash = this.hash;
+        a:
+        for (;;) {
+            pos = ((last = pos) + 1) & mask;
+            for (;;) {
+                if ((curr = key[pos]) == null) {
+                    key[last] = null;
+                    hash[last] = 0;
+                    break a;
+                }
+                ch = hash[pos];
+                slot = HashCommon.mix(ch) & mask;
+                if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) break;
+                pos = (pos + 1) & mask;
+            }
+            key[last] = curr;
+            hash[last] = ch;
+        }
+        if (n > minN && size < maxFill / 4 && n > DEFAULT_INITIAL_SIZE) rehash(n / 2);
+        return true;
+    }
+
+    private boolean removeNullEntry() {
+        containsNull = false;
+        key[n] = null;
+        hash[n] = 0;
+        size--;
+        if (n > minN && size < maxFill / 4 && n > DEFAULT_INITIAL_SIZE) rehash(n / 2);
+        return true;
+    }
+
+    @Override
+    public boolean remove(final Object k) {
+        if (strategy.equals((K) k, null)) {
+            if (containsNull) return removeNullEntry();
+            return false;
+        }
+        @SuppressWarnings("unchecked")
+        final K kk = (K) k;
+        final int h = strategy.hashCode(kk);
+        K curr;
+        final K[] key = this.key;
+        final int[] hash = this.hash;
+        int pos;
+        if ((curr = key[pos = HashCommon.mix(h) & mask]) == null) return false;
+        if (hash[pos] == h && (kk == curr || strategy.equals(kk, curr))) return removeEntry(pos);
+        while (true) {
+            if ((curr = key[pos = (pos + 1) & mask]) == null) return false;
+            if (hash[pos] == h && (kk == curr || strategy.equals(kk, curr))) return removeEntry(pos);
+        }
+    }
+
+    @Override
+    public boolean contains(final Object k) {
+        if (strategy.equals((K) k, null)) return containsNull;
+        @SuppressWarnings("unchecked")
+        final K kk = (K) k;
+        final int h = strategy.hashCode(kk);
+        K curr;
+        final K[] key = this.key;
+        final int[] hash = this.hash;
+        int pos;
+        if ((curr = key[pos = HashCommon.mix(h) & mask]) == null) return false;
+        if (hash[pos] == h && (kk == curr || strategy.equals(kk, curr))) return true;
+        while (true) {
+            if ((curr = key[pos = (pos + 1) & mask]) == null) return false;
+            if (hash[pos] == h && (kk == curr || strategy.equals(kk, curr))) return true;
+        }
+    }
+
+    @Override
+    public K get(final Object k) {
+        if (strategy.equals((K) k, null)) return key[n];
+        @SuppressWarnings("unchecked")
+        final K kk = (K) k;
+        final int h = strategy.hashCode(kk);
+        K curr;
+        final K[] key = this.key;
+        final int[] hash = this.hash;
+        int pos;
+        if ((curr = key[pos = HashCommon.mix(h) & mask]) == null) return null;
+        if (hash[pos] == h && (kk == curr || strategy.equals(kk, curr))) return curr;
+        while (true) {
+            if ((curr = key[pos = (pos + 1) & mask]) == null) return null;
+            if (hash[pos] == h && (kk == curr || strategy.equals(kk, curr))) return curr;
+        }
+    }
+
+    @Override
+    public void clear() {
+        if (size == 0) return;
+        size = 0;
+        containsNull = false;
+        Arrays.fill(key, (null));
+        Arrays.fill(hash, 0);
+    }
+
+    @Override
+    public ObjectIterator<K> iterator() {
+        return new SetIterator();
+    }
+
+    @Override
+    public ObjectSpliterator<K> spliterator() {
+        return new SetSpliterator();
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void rehash(final int newN) {
+        final K[] key = this.key;
+        final int[] hash = this.hash;
+        final int mask = newN - 1;
+        final K[] newKey = (K[]) new Object[newN + 1];
+        final int[] newHash = new int[newN + 1];
+        int i = n, pos, h;
+        K k;
+        for (int j = realSize(); j-- != 0;) {
+            while ((k = key[--i]) == null);
+            h = hash[i];
+            pos = HashCommon.mix(h) & mask;
+            if (newKey[pos] != null) while ((newKey[pos = (pos + 1) & mask]) != null);
+            newKey[pos] = k;
+            newHash[pos] = h;
+        }
+        newKey[newN] = key[n];
+        n = newN;
+        this.mask = mask;
+        maxFill = HashCommon.maxFill(n, f);
+        this.key = newKey;
+        this.hash = newHash;
+    }
+
+    @Override
+    public ObjectOpenCustomCachedHashSet<K> clone() {
+        ObjectOpenCustomCachedHashSet<K> c = (ObjectOpenCustomCachedHashSet<K>) super.clone();
+        c.hash = hash.clone();
+        return c;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 0;
+        final K[] key = this.key;
+        final int[] hash = this.hash;
+        for (int j = realSize(), i = 0; j-- != 0;) {
+            while (key[i] == null) i++;
+            if (this != key[i]) h += hash[i];
+            i++;
+        }
+        return h;
+    }
+
+    private final class SetIterator implements ObjectIterator<K> {
+
+        int pos = n;
+        int last = -1;
+        int c = size;
+        boolean mustReturnNull = ObjectOpenCustomCachedHashSet.this.containsNull;
+        ObjectArrayList<K> wrapped;
+
+        @Override
+        public boolean hasNext() {
+            return c != 0;
+        }
+
+        @Override
+        public K next() {
+            c--;
+            final K[] key = ObjectOpenCustomCachedHashSet.this.key;
+            if (mustReturnNull) {
+                mustReturnNull = false;
+                last = n;
+                return key[n];
+            }
+            for (;;) {
+                if (--pos < 0) {
+                    last = Integer.MIN_VALUE;
+                    return wrapped.get(-pos - 1);
+                }
+                if (key[pos] != null) return key[last = pos];
+            }
+        }
+
+        private void shiftKeys(int pos) {
+            int last, slot, ch;
+            K curr;
+            final K[] key = ObjectOpenCustomCachedHashSet.this.key;
+            final int[] hash = ObjectOpenCustomCachedHashSet.this.hash;
+            for (;;) {
+                pos = ((last = pos) + 1) & mask;
+                for (;;) {
+                    if ((curr = key[pos]) == null) {
+                        key[last] = null;
+                        hash[last] = 0;
+                        return;
+                    }
+                    ch = hash[pos];
+                    slot = HashCommon.mix(ch) & mask;
+                    if (last <= pos ? last >= slot || slot > pos : last >= slot && slot > pos) break;
+                    pos = (pos + 1) & mask;
+                }
+                if (pos < last) {
+                    if (wrapped == null) wrapped = new ObjectArrayList<>(2);
+                    wrapped.add(key[pos]);
+                }
+                key[last] = curr;
+                hash[last] = ch;
+            }
+        }
+
+        @Override
+        public void remove() {
+            if (last == -1) throw new IllegalStateException();
+            if (last == n) {
+                ObjectOpenCustomCachedHashSet.this.containsNull = false;
+                ObjectOpenCustomCachedHashSet.this.key[n] = null;
+                ObjectOpenCustomCachedHashSet.this.hash[n] = 0;
+            } else if (pos >= 0) shiftKeys(last);
+            else {
+                ObjectOpenCustomCachedHashSet.this.remove(wrapped.set(-pos - 1, null));
+                last = -1;
+                return;
+            }
+            size--;
+            last = -1;
+        }
+
+        @Override
+        public void forEachRemaining(final Consumer<? super K> action) {
+            final K[] key = ObjectOpenCustomCachedHashSet.this.key;
+            if (mustReturnNull) {
+                mustReturnNull = false;
+                last = n;
+                action.accept(key[n]);
+                c--;
+            }
+            while (c != 0) {
+                if (--pos < 0) {
+                    last = Integer.MIN_VALUE;
+                    action.accept(wrapped.get(-pos - 1));
+                    c--;
+                } else if (key[pos] != null) {
+                    action.accept(key[last = pos]);
+                    c--;
+                }
+            }
+        }
+    }
+
+    private final class SetSpliterator implements ObjectSpliterator<K> {
+
+        private static final int POST_SPLIT_CHARACTERISTICS = ObjectSpliterators.SET_SPLITERATOR_CHARACTERISTICS & ~Spliterator.SIZED;
+        int pos = 0;
+        int max = n;
+        int c = 0;
+        boolean mustReturnNull = ObjectOpenCustomCachedHashSet.this.containsNull;
+        boolean hasSplit = false;
+
+        SetSpliterator() {}
+
+        SetSpliterator(int pos, int max, boolean mustReturnNull, boolean hasSplit) {
+            this.pos = pos;
+            this.max = max;
+            this.mustReturnNull = mustReturnNull;
+            this.hasSplit = hasSplit;
+        }
+
+        @Override
+        public boolean tryAdvance(final Consumer<? super K> action) {
+            if (mustReturnNull) {
+                mustReturnNull = false;
+                ++c;
+                action.accept(key[n]);
+                return true;
+            }
+            final K[] key = ObjectOpenCustomCachedHashSet.this.key;
+            while (pos < max) {
+                if (key[pos] != null) {
+                    ++c;
+                    action.accept(key[pos++]);
+                    return true;
+                } else {
+                    ++pos;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public void forEachRemaining(final Consumer<? super K> action) {
+            final K[] key = ObjectOpenCustomCachedHashSet.this.key;
+            if (mustReturnNull) {
+                mustReturnNull = false;
+                action.accept(key[n]);
+                ++c;
+            }
+            while (pos < max) {
+                if (key[pos] != null) {
+                    action.accept(key[pos]);
+                    ++c;
+                }
+                ++pos;
+            }
+        }
+
+        @Override
+        public int characteristics() {
+            return hasSplit ? POST_SPLIT_CHARACTERISTICS : ObjectSpliterators.SET_SPLITERATOR_CHARACTERISTICS;
+        }
+
+        @Override
+        public long estimateSize() {
+            if (!hasSplit) {
+                return size - c;
+            } else {
+                return Math.min(size - c, (long) (((double) realSize() / n) * (max - pos)) + (mustReturnNull ? 1 : 0));
+            }
+        }
+
+        @Override
+        public SetSpliterator trySplit() {
+            if (pos >= max - 1) return null;
+            int retLen = (max - pos) >> 1;
+            if (retLen <= 1) return null;
+            int myNewPos = pos + retLen;
+            int retPos = pos;
+            SetSpliterator split = new SetSpliterator(retPos, myNewPos, mustReturnNull, true);
+            this.pos = myNewPos;
+            this.mustReturnNull = false;
+            this.hasSplit = true;
+            return split;
+        }
+
+        @Override
+        public long skip(long n) {
+            if (n == 0) return 0;
+            long skipped = 0;
+            if (mustReturnNull) {
+                mustReturnNull = false;
+                ++skipped;
+                --n;
+            }
+            final K[] key = ObjectOpenCustomCachedHashSet.this.key;
+            while (pos < max && n > 0) {
+                if (key[pos++] != null) {
+                    ++skipped;
+                    --n;
+                }
+            }
+            return skipped;
+        }
+    }
+}

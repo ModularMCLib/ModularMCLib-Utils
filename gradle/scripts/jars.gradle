@@ -12,7 +12,7 @@ java {
     withSourcesJar()
 }
 
-// Use delombok'd files for sources
+// 将 Lombok 生成的成员一并纳入源码包。
 sourcesJar {
     exclude {
         sourceSets.main.allSource.contains it.file
@@ -28,7 +28,6 @@ afterEvaluate {
     tasks.withType(org.gradle.jvm.tasks.Jar).configureEach {
         destinationDirectory = file('build/libs/')
         manifest.attributes([
-                'MixinConfigs': "synceddata.mixins.json",
                 'Specification-Title': project.name,
                 'Specification-Version': mod_version,
                 'Specification-Vendor': 'ModularMCLib Team',

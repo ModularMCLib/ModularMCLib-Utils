@@ -1,0 +1,152 @@
+package com.modularmc.mmclutils.client.render.geometry;
+
+import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
+import net.minecraft.core.Direction;
+
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import org.joml.Matrix4f;
+
+/**
+ * 按每格十六像素生成轴对齐的纹理面，使流体或面板可以跨方块连续平铺。
+ * 顶点包含位置、颜色、UV、覆盖层、亮度和法线。
+ */
+public final class SpriteQuads {
+
+    /** 单个面的掩码，位编号使用原版方向编号。 */
+    public static final int DOWN = 1, UP = 2, NORTH = 4, SOUTH = 8, WEST = 16, EAST = 32;
+    /** 水平方向的四个侧面掩码。 */
+    public static final int SIDES = NORTH | SOUTH | WEST | EAST;
+    /** 六个方向的合并掩码。 */
+    public static final int ALL = SIDES | UP | DOWN;
+
+    private static final float P = 1F / 16F;
+
+    private SpriteQuads() {}
+
+    /**
+     * 将方向转为可与其他面掩码按位组合的标记。
+     *
+     * @param face 选中的方块面
+     * @return 原版方向编号对应的单个位
+     */
+    public static int bit(Direction face) {
+        return 1 << face.get3DDataValue();
+    }
+
+    /**
+     * 写入盒体选定的外侧面。每 16 个局部像素平铺一格纹理，边缘只取对应的 UV 子范围。
+     *
+     * @param buffer 接收四边形顶点的缓冲区，须支持位置、颜色、UV、覆盖层、光照和法线
+     * @param pose   将局部方块坐标变换到目标空间的矩阵
+     * @param sprite 用于平铺的图集精灵
+     * @param x0     盒体西侧的局部像素坐标
+     * @param y0     盒体底部的局部像素坐标
+     * @param z0     盒体北侧的局部像素坐标
+     * @param x1     盒体东侧的局部像素坐标
+     * @param y1     盒体顶部的局部像素坐标
+     * @param z1     盒体南侧的局部像素坐标
+     * @param faces  用 {@link #bit(Direction)} 组合的面掩码
+     * @param argb   应用于各顶点的 ARGB 颜色
+     * @param light  原版打包光照
+     */
+    public static void box(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, float x0, float y0, float z0, float x1, float y1, float z1,
+                           int faces, int argb, int light) {
+        for (var face : Direction.values()) {
+            if ((faces & bit(face)) != 0) face(buffer, pose, sprite, face, x0, y0, z0, x1, y1, z1, argb, light);
+        }
+    }
+
+    /**
+     * 写入盒体的一个外侧面。顶点顺序和法线朝外，纹理按每 16 像素平铺。
+     *
+     * @param buffer 接收四边形顶点的缓冲区
+     * @param pose   将局部方块坐标变换到目标空间的矩阵
+     * @param sprite 用于平铺的图集精灵
+     * @param face   要写入的面的朝向
+     * @param x0     盒体西侧的局部像素坐标
+     * @param y0     盒体底部的局部像素坐标
+     * @param z0     盒体北侧的局部像素坐标
+     * @param x1     盒体东侧的局部像素坐标
+     * @param y1     盒体顶部的局部像素坐标
+     * @param z1     盒体南侧的局部像素坐标
+     * @param argb   应用于各顶点的 ARGB 颜色
+     * @param light  原版打包光照
+     */
+    public static void face(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, Direction face, float x0, float y0, float z0, float x1,
+                            float y1, float z1, int argb, int light) {
+        switch (face) {
+            case UP -> horizontal(buffer, pose, sprite, x0, z0, x1, z1, y1, true, argb, light);
+            case DOWN -> horizontal(buffer, pose, sprite, x0, z0, x1, z1, y0, false, argb, light);
+            case NORTH -> vertical(buffer, pose, sprite, face, x0, x1, y0, y1, z0, argb, light);
+            case SOUTH -> vertical(buffer, pose, sprite, face, x0, x1, y0, y1, z1, argb, light);
+            case WEST -> vertical(buffer, pose, sprite, face, z0, z1, y0, y1, x0, argb, light);
+            case EAST -> vertical(buffer, pose, sprite, face, z0, z1, y0, y1, x1, argb, light);
+        }
+    }
+
+    private static void horizontal(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, float x0, float z0, float x1, float z1, float y,
+                                   boolean up, int argb, int light) {
+        for (float a = x0; a < x1;) {
+            float ta = tile(a), a1 = Math.min(x1, ta + 16);
+            for (float b = z0; b < z1;) {
+                float tb = tile(b), b1 = Math.min(z1, tb + 16);
+                float u0 = sprite.getU((a - ta) * P), u1 = sprite.getU((a1 - ta) * P);
+                float v0 = sprite.getV((b - tb) * P), v1 = sprite.getV((b1 - tb) * P);
+                if (up) {
+                    vertex(buffer, pose, a, y, b, u0, v0, argb, light, 0, 1, 0);
+                    vertex(buffer, pose, a, y, b1, u0, v1, argb, light, 0, 1, 0);
+                    vertex(buffer, pose, a1, y, b1, u1, v1, argb, light, 0, 1, 0);
+                    vertex(buffer, pose, a1, y, b, u1, v0, argb, light, 0, 1, 0);
+                } else {
+                    vertex(buffer, pose, a, y, b, u0, v0, argb, light, 0, -1, 0);
+                    vertex(buffer, pose, a1, y, b, u1, v0, argb, light, 0, -1, 0);
+                    vertex(buffer, pose, a1, y, b1, u1, v1, argb, light, 0, -1, 0);
+                    vertex(buffer, pose, a, y, b1, u0, v1, argb, light, 0, -1, 0);
+                }
+                b = b1;
+            }
+            a = a1;
+        }
+    }
+
+    private static void vertical(VertexConsumer buffer, Matrix4f pose, TextureAtlasSprite sprite, Direction face, float h0, float h1, float y0,
+                                 float y1, float plane, int argb, int light) {
+        float nx = face.getStepX(), nz = face.getStepZ();
+        for (float a = h0; a < h1;) {
+            float ta = tile(a), a1 = Math.min(h1, ta + 16);
+            for (float y = y0; y < y1;) {
+                float ty = tile(y), yb = Math.min(y1, ty + 16);
+                float u0 = sprite.getU((a - ta) * P), u1 = sprite.getU((a1 - ta) * P);
+                float v0 = sprite.getV(1 - (yb - ty) * P), v1 = sprite.getV(1 - (y - ty) * P);
+                switch (face) {
+                    case NORTH -> quad(buffer, pose, argb, light, nx, nz, a, y, plane, a, yb, plane, a1, yb, plane, a1, y, plane, u0, v1, u0, v0, u1, v0, u1, v1);
+                    case SOUTH -> quad(buffer, pose, argb, light, nx, nz, a1, y, plane, a1, yb, plane, a, yb, plane, a, y, plane, u1, v1, u1, v0, u0, v0, u0, v1);
+                    case WEST -> quad(buffer, pose, argb, light, nx, nz, plane, y, a1, plane, yb, a1, plane, yb, a, plane, y, a, u1, v1, u1, v0, u0, v0, u0, v1);
+                    default -> quad(buffer, pose, argb, light, nx, nz, plane, y, a, plane, yb, a, plane, yb, a1, plane, y, a1, u0, v1, u0, v0, u1, v0, u1, v1);
+                }
+                y = yb;
+            }
+            a = a1;
+        }
+    }
+
+    private static float tile(float v) {
+        return (float) Math.floor(v / 16F + 1e-4F) * 16F;
+    }
+
+    private static void quad(VertexConsumer buffer, Matrix4f pose, int argb, int light, float nx, float nz, float xa, float ya, float za, float xb,
+                             float yb, float zb, float xc, float yc, float zc, float xd, float yd, float zd, float ua, float va, float ub, float vb,
+                             float uc, float vc, float ud, float vd) {
+        vertex(buffer, pose, xa, ya, za, ua, va, argb, light, nx, 0, nz);
+        vertex(buffer, pose, xb, yb, zb, ub, vb, argb, light, nx, 0, nz);
+        vertex(buffer, pose, xc, yc, zc, uc, vc, argb, light, nx, 0, nz);
+        vertex(buffer, pose, xd, yd, zd, ud, vd, argb, light, nx, 0, nz);
+    }
+
+    private static void vertex(VertexConsumer buffer, Matrix4f pose, float x, float y, float z, float u, float v, int argb, int light, float nx,
+                               float ny, float nz) {
+        buffer.addVertex(pose, x * P, y * P, z * P).setColor(argb).setUv(u, v)
+                .setOverlay(OverlayTexture.NO_OVERLAY).setLight(light).setNormal(nx, ny, nz);
+    }
+}
