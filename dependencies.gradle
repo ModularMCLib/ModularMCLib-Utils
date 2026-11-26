@@ -9,6 +9,8 @@ dependencies {
         exclude group: 'org.jetbrains', module: 'annotations'
     }
 
+    jarJar(api(libs.zstd.get()))
+
 
     // Runtime Recipe Viewers - uncomment whichever one you want to use //
 

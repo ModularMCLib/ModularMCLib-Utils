@@ -14,10 +14,13 @@ fastutil = "8.5.12"
 renderNurse = "0.0.26"
 mixin = "0.8.7"
 
+zstd = "1.5.7-8"
+
 [libraries]
 minecraft               = { module = "com.mojang:minecraft", version.ref = "minecraft" }
 neoForge                = { module = "net.neoforged:neoforge", version.ref = "neoForge" }
 testframework           = { module = "net.neoforged:testframework", version.ref = "neoForge" }
+zstd                    = { module = "com.github.luben:zstd-jni", version.ref = "zstd" }
 kotlin-stdlib           = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 renderNurse             = { module = "net.neoforged:render-nurse", version.ref = "renderNurse" }
 mixin                   = { module = "org.spongepowered:mixin", version.ref = "mixin" }
